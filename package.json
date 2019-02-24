@@ -12,7 +12,7 @@
     "prettier:fix": "npm run prettier:base -- --write",
     "check": "npm run lint:check && npm run prettier:check && npm run build:check",
     "fix": "npm run lint:fix && npm run prettier:fix",
-    "test": "jest --coverage",
+    "test": "jest --coverage  --forceExit",
     "test:watch": "npm run test -- --watch",
     "prepublish": "in-publish && gulp build || not-in-publish"
   },
