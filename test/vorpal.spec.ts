@@ -390,16 +390,6 @@ describe("help menu", function() {
       return args;
     });
   });
-
-  it.skip("show help on an invalid command", function() {
-    const stdout = "";
-    mute();
-    var fixture =
-      "\n  Invalid Command. Showing Help:\n\n  Commands:\n\n    help [command...]  Provides help for a given command.\n    exit               Exits application.\n    foo [args...]      \n\n\n";
-    help.execSync("cows");
-    unmute();
-    expect(stdout).toBe(fixture);
-  });
 });
 
 describe("descriptors", function() {
