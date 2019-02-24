@@ -1,12 +1,11 @@
-var Vantage = require('../../');
-var _ = require('lodash');
-var path = require('path');
+var Vantage = require("../../dist/vorpal");
+var _ = require("lodash");
+var path = require("path");
 
 module.exports = {
-
   instances: [],
 
-  spawn: function (options, cb) {
+  spawn: function(options, cb) {
     options = options || {};
     options = _.defaults(options, {
       ports: [],
@@ -17,8 +16,8 @@ module.exports = {
       var vorpal = new Vantage();
       var port = options.ports[i];
       vorpal
-        .delimiter(port + ':')
-        .use(path.join(__dirname, '/server'))
+        .delimiter(port + ":")
+        .use(path.join(__dirname, "/server"))
         .listen(port);
       module.exports.instances.push(vorpal);
     }
@@ -27,7 +26,7 @@ module.exports = {
     return;
   },
 
-  kill: function (what, cb) {
-    cb = cb || function () {};
+  kill: function(what, cb) {
+    cb = cb || function() {};
   }
 };
