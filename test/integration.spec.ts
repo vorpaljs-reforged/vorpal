@@ -180,19 +180,12 @@ describe("integration tests:", () => {
         });
       });
 
-      it("should chain two async commands", () => {
-        vorpal
-          .exec("foo")
-          .then(() => {
-            expect(stdout()).toBe("bar");
-            return vorpal.exec("fuzzy");
-          })
-          .then(() => {
-            expect(stdout()).toBe("wuzzy");
-          })
-          .catch(function(err) {
-            expect(err).toBe(undefined);
-          });
+      it("should chain two async commands", async () => {
+        await vorpal.exec("foo");
+        expect(stdout()).toBe("bar");
+
+        await vorpal.exec("fuzzy");
+        expect(stdout()).toBe("wuzzy");
       });
 
       it("should execute a two-word-deep command", () => {
@@ -205,33 +198,6 @@ describe("integration tests:", () => {
         exec("very deep command arg", function(err) {
           expect(stdout()).toBe("arg");
         });
-      });
-
-      // This has ... promise ... problems.
-      it.skip("should execute 50 async commands in sync", () => {
-        this.timeout(4000);
-        var dones = 0;
-        var result = "";
-        var should = "";
-        var total = 50;
-        var handler = () => {
-          dones++;
-          if (dones === total - 1) {
-            expect(result).toBe(should);
-          }
-        };
-        var hnFn = () => {
-          result += stdout();
-          handler();
-        };
-        var cFn = function(err) {};
-        for (var i = 1; i < total; ++i) {
-          should += i;
-          vorpal
-            .exec("count " + i)
-            .then(hnFn)
-            .catch(cFn);
-        }
       });
     });
 
@@ -247,23 +213,28 @@ describe("integration tests:", () => {
         vorpal.ui.detach(parent);
       });
 
-      it("should show the default value", () => {
+      it("should show the default value", function(done) {
         var execPromise = vorpal.exec("prompt default myawesomeproject");
 
         expect(vorpal.ui.inquirerStdout.join("\n")).toContain(
           "(myawesomeproject)"
         );
 
-        try {
-          execPromise.then(function(s) {
-            expect(s).toEqual("myawesomeproject");
+        execPromise
+          .then(function(s) {
+            expect(s.project).toBe("myawesomeproject");
+            // stdout should have cleared once the prompt is finished
             expect(vorpal.ui.inquirerStdout.join("\n")).not.toContain(
               "(myawesomeproject)"
             );
+            done();
+          })
+          .catch(function(err) {
+            console.log(stdout());
+            console.log("b", err.stack);
+            fail(err);
+            done(err);
           });
-        } catch (e) {
-          fail(e);
-        }
 
         // submit the default
         vorpal.ui.submit();
@@ -486,24 +457,12 @@ describe("integration tests:", () => {
           );
         });
       });
-
-      it.skip("should show subcommand help on invalid subcommand", () => {
-        exec("very complicated", () => {
-          expect(stdout()).toContain("very complicated deep *");
-        });
-      });
     });
 
     describe("mode", () => {
       it("should enter REPL mode", async () => {
         await vorpal.exec("repl");
         expect(stdout()).toContain("Entering REPL Mode.");
-      });
-
-      it("should execute arbitrary JS", async () => {
-        vorpal.exec("3*9").catch(function(err) {
-          expect(err).toBeDefined();
-        });
       });
 
       it("should exit REPL mode properly", async () => {
