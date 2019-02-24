@@ -4,7 +4,7 @@
   "description": "Node's first framework for building immersive CLI apps.",
   "main": "./dist/vorpal.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage  --forceExit",
     "test:watch": "npm run test -- --watch",
     "prepublish": "in-publish && gulp build || not-in-publish"
   },
