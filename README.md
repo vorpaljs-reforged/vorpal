@@ -6,7 +6,7 @@
 [![Build Status](https://travis-ci.com/vorpaljs-reforged/vorpal.svg)](https://travis-ci.com/vorpaljs-reforged/vorpal/)
 [![NPM Downloads](https://img.shields.io/npm/dt/vorpal.svg)](https://www.npmjs.com/package/vorpal)
 [![Package Quality](http://npm.packagequality.com/shield/vorpal.svg)](http://packagequality.com/#?package=vorpal)
-[![Coverage Status](https://coveralls.io/repos/github/vorpaljs-reforged/vorpal/badge.svg?branch=master)](https://coveralls.io/github/vorpaljs-reforged/vorpal?branch=master)
+[![codecov](https://codecov.io/gh/vorpaljs-reforged/vorpal/branch/master/graph/badge.svg)](https://codecov.io/gh/vorpaljs-reforged/vorpal)
 [![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
 [![Gitter](https://badges.gitter.im/dthree/vorpal.svg)](https://gitter.im/dthree/vorpal)
 
