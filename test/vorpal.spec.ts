@@ -22,7 +22,7 @@ const mute = function() {
   });
 };
 
-vorpal = Vorpal();
+vorpal = new Vorpal();
 vorpal
   .command('foo [args...]')
   .option('-b, --bool')
@@ -363,7 +363,7 @@ describe('help menu', function() {
   let help;
 
   beforeAll(function() {
-    help = Vorpal();
+    help = new Vorpal();
     help.command('foo [args...]').action(function(args, cb) {
       return args;
     });
@@ -374,7 +374,7 @@ describe('descriptors', function() {
   let instance;
 
   beforeEach(function() {
-    instance = Vorpal();
+    instance = new Vorpal();
   });
 
   it('sets the version', function() {

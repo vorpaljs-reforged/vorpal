@@ -39,8 +39,6 @@ function Session(options) {
   // Special command mode vorpal is in at the moment,
   // such as REPL. See mode documentation.
   this._mode = undefined;
-
-  return this;
 }
 
 /**

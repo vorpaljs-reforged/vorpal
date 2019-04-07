@@ -1,7 +1,6 @@
 import Vorpal from '../src/vorpal';
 import commands from './util/server';
 import * as fs from 'fs';
-import * as BlueBirdPromise from 'bluebird';
 import intercept from '../src/intercept';
 
 let integrationStdoutput = '';
@@ -192,7 +191,7 @@ describe('integration tests:', () => {
     });
 
     describe('inquirer prompt', () => {
-      const parent = Vorpal();
+      const parent = new Vorpal();
 
       beforeEach(() => {
         // attach a parent so the prompt will run
@@ -526,7 +525,7 @@ describe('integration tests:', () => {
       beforeEach(() => {
         longRunningCommand = vorpal
           .command('LongRunning', 'This command keeps running.')
-          .action(() => {
+          .action(function() {
             const self = this;
             self._cancelled = false;
             const cancelInt = setInterval(() => {
@@ -535,7 +534,7 @@ describe('integration tests:', () => {
                 clearInterval(cancelInt);
               }
             }, 1000);
-            return new BlueBirdPromise(() => {});
+            return new Promise(() => {});
           });
       });
       it('should cancel promise', () => {
@@ -548,7 +547,7 @@ describe('integration tests:', () => {
         vorpal.session.cancelCommands();
       });
       it('should call registered cancel function', () => {
-        longRunningCommand.cancel(() => {
+        longRunningCommand.cancel(function() {
           this._cancelled = true;
         });
         vorpal.exec('LongRunning');
@@ -557,7 +556,7 @@ describe('integration tests:', () => {
       it('should be able to call cancel in action', () => {
         vorpal
           .command('SelfCancel', 'This command cancels itself.')
-          .action(() => {
+          .action(function() {
             this.cancel();
           })
           .cancel(() => {});
@@ -566,7 +565,7 @@ describe('integration tests:', () => {
       });
       it('should handle event client_command_cancelled', () => {
         vorpal.on('client_command_cancelled', () => {});
-        longRunningCommand.cancel(() => {
+        longRunningCommand.cancel(function() {
           this._cancelled = true;
         });
         vorpal.exec('LongRunning');
