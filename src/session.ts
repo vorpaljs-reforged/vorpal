@@ -10,12 +10,11 @@ import Command from './command';
 import CommandInstance from './command-instance';
 import util from './util';
 
-
 type CommandResponse = {
   error?: Error;
-  data?: any
-  args?: any
-}
+  data?: any;
+  args?: any;
+};
 
 export default class Session extends EventEmitter {
   _registeredCommands: number;
@@ -81,7 +80,7 @@ export default class Session extends EventEmitter {
   public log(...argz) {
     const args = util.fixArgsForApply(arguments);
     return this._log.apply(this, args);
-  };
+  }
 
   /**
    * Routes logging for a given session.
@@ -110,7 +109,7 @@ export default class Session extends EventEmitter {
       });
     }
     return this;
-  };
+  }
 
   /**
    * Returns whether given session
@@ -121,7 +120,7 @@ export default class Session extends EventEmitter {
    */
   public isLocal() {
     return this._isLocal;
-  };
+  }
 
   /**
    * Maps to vorpal.prompt for a session
@@ -136,7 +135,7 @@ export default class Session extends EventEmitter {
     options = options || {};
     options.sessionId = this.id;
     return this.parent.prompt(options, cb);
-  };
+  }
 
   /**
    * Gets the full (normal + mode) delimiter
@@ -149,7 +148,7 @@ export default class Session extends EventEmitter {
   public fullDelimiter() {
     const result = this._delimiter + (this._modeDelimiter !== undefined ? this._modeDelimiter : '');
     return result;
-  };
+  }
 
   /**
    * Sets the delimiter for this session.
@@ -173,7 +172,7 @@ export default class Session extends EventEmitter {
       });
     }
     return this;
-  };
+  }
 
   /**
    * Sets the mode delimiter for this session.
@@ -202,7 +201,7 @@ export default class Session extends EventEmitter {
       this.parent.ui.refresh();
     }
     return this;
-  };
+  }
 
   /**
    * Returns the result of a keypress
@@ -229,21 +228,21 @@ export default class Session extends EventEmitter {
         const fn = this.parent._useDeprecatedAutocompletion
           ? 'getAutocompleteDeprecated'
           : 'getAutocomplete';
-        this[fn](value, function (err, data) {
+        this[fn](value, function(err, data) {
           cb(err, data);
         });
       }
     } else {
       this._histCtr = 0;
     }
-  };
+  }
 
   public history(str) {
     const exceptions = [];
     if (str && exceptions.indexOf(String(str).toLowerCase()) === -1) {
       this.cmdHistory.newCommand(str);
     }
-  };
+  }
 
   /**
    * New autocomplete.
@@ -255,7 +254,7 @@ export default class Session extends EventEmitter {
 
   private getAutocomplete(str, cb) {
     return autocomplete.exec.call(this, str, cb);
-  };
+  }
 
   // FIXME TO kill
   /**
@@ -267,7 +266,7 @@ export default class Session extends EventEmitter {
    * @api private
    */
   private getAutocompleteDeprecated(str, cb) {
-    cb = cb || function () { };
+    cb = cb || function() {};
 
     // Entire command string
     const cursor = this.parent.ui._activePrompt.screen.rl.cursor;
@@ -300,7 +299,7 @@ export default class Session extends EventEmitter {
     let match;
     let extra;
 
-    names.forEach(function (name) {
+    names.forEach(function(name) {
       if (trimmed.substr(0, name.length) === name && String(name).trim() !== '') {
         match = name;
         extra = trimmed.substr(name.length).trim();
@@ -318,7 +317,7 @@ export default class Session extends EventEmitter {
 
     if (command && _.isFunction(command._autocompletion)) {
       this._tabCount++;
-      command._autocompletion.call(this, extra, this._tabCount, function (err, autocomplete) {
+      command._autocompletion.call(this, extra, this._tabCount, function(err, autocomplete) {
         if (err) {
           return cb(err);
         }
@@ -332,11 +331,11 @@ export default class Session extends EventEmitter {
     } else {
       cb(undefined, undefined);
     }
-  };
+  }
 
   public _autocomplete(str, arr) {
     return autocomplete.match.call(this, str, arr);
-  };
+  }
 
   /**
    * Public facing autocomplete helper.
@@ -349,7 +348,7 @@ export default class Session extends EventEmitter {
 
   public help(command) {
     this.log(this.parent._commandHelp(command || ''));
-  };
+  }
 
   /**
    * Public facing autocomplete helper.
@@ -362,7 +361,7 @@ export default class Session extends EventEmitter {
 
   public match(str, arr) {
     return this._autocomplete(str, arr);
-  };
+  }
 
   /**
    * Gets a new command set ready.
@@ -399,8 +398,8 @@ export default class Session extends EventEmitter {
     }
 
     // Called when command is cancelled
-    this.cancelCommands = function () {
-      const callCancel = function (commandInstance) {
+    this.cancelCommands = function() {
+      const callCancel = function(commandInstance) {
         if (_.isFunction(commandInstance.commandObject._cancel)) {
           commandInstance.commandObject._cancel.call(commandInstance);
         }
@@ -485,7 +484,7 @@ export default class Session extends EventEmitter {
     }
 
     // Call the root command.
-    res = wrapper.fn.call(commandInstance, wrapper.args, function () {
+    res = wrapper.fn.call(commandInstance, wrapper.args, function() {
       const argus = util.fixArgsForApply(arguments);
       onCompletion(wrapper, argus[0], argus[1], argus);
     });
@@ -494,16 +493,16 @@ export default class Session extends EventEmitter {
     // returns a promise, handle accordingly.
     if (res && _.isFunction(res.then)) {
       res
-        .then(function (data) {
+        .then(function(data) {
           onCompletion(wrapper, undefined, data);
         })
-        .catch(function (err) {
+        .catch(function(err) {
           onCompletion(wrapper, true, err);
         });
     }
 
     return this;
-  };
+  }
 
   /**
    * Adds on a command or sub-command in progress.
@@ -519,7 +518,7 @@ export default class Session extends EventEmitter {
     this._registeredCommands = this._registeredCommands || 0;
     this._registeredCommands++;
     return this;
-  };
+  }
 
   /**
    * Marks a command or subcommand as having completed.
@@ -540,7 +539,7 @@ export default class Session extends EventEmitter {
       this._commandSetCallback = undefined;
     }
     return this;
-  };
+  }
 
   /**
    * Returns the appropriate command history
@@ -560,7 +559,7 @@ export default class Session extends EventEmitter {
       history = this.cmdHistory.getNextHistory();
     }
     return history;
-  };
+  }
 
   /**
    * Generates random GUID for Session ID.
@@ -576,5 +575,5 @@ export default class Session extends EventEmitter {
         .substring(1);
     }
     return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-  };
-};
+  }
+}

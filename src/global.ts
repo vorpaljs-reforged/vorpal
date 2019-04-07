@@ -1,5 +1,5 @@
-declare module NodeJS  {
-    interface Global {
-        __vorpal: any
-    }
+declare module NodeJS {
+  interface Global {
+    __vorpal: any;
+  }
 }

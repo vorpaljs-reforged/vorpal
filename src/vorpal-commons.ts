@@ -22,7 +22,9 @@ export default function(vorpal) {
       const self = this;
       if (args.command) {
         args.command = args.command.join(' ');
-        const commandWithName = _.find(this.parent.commands, { _name: String(args.command).trim() });
+        const commandWithName = _.find(this.parent.commands, {
+          _name: String(args.command).trim(),
+        });
         if (commandWithName && !commandWithName._hidden) {
           if (_.isFunction(commandWithName._help)) {
             commandWithName._help(args.command, function(str) {

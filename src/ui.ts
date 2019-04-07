@@ -546,7 +546,7 @@ class UI extends EventEmitter {
   public redraw = function(str) {
     logUpdate(str);
     return this;
-  }
+  };
 }
 
 /**

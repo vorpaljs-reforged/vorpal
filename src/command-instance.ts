@@ -11,8 +11,8 @@ type CommandInstanceParams = {
   commandObject?: any;
   command?: any;
   callback?: any;
-  downstream?: any; 
-}
+  downstream?: any;
+};
 class CommandInstance {
   commandWrapper: any;
   args: any;
@@ -59,7 +59,7 @@ class CommandInstance {
       const fn = this.downstream.commandObject._fn || _.noop;
       this.session.registerCommand();
       this.downstream.args.stdin = args;
-      const onComplete = (err: Error|undefined) => {
+      const onComplete = (err: Error | undefined) => {
         if (this.session.isLocal() && err) {
           this.session.log(err.stack || err);
           this.session.parent.emit('client_command_error', {

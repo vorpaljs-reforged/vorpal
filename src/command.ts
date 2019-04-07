@@ -13,7 +13,6 @@ export interface Arg {
 }
 
 export default class Command extends EventEmitter {
-
   public commands = [];
   public options;
   private _args;
@@ -22,12 +21,12 @@ export default class Command extends EventEmitter {
   private _relay;
   private _hidden;
   private _parent;
-  public _description
-  public _delimiter
+  public _description;
+  public _delimiter;
   public _mode;
   public _catch;
   public _help;
-  public _noHelp
+  public _noHelp;
   private _types;
   private _init;
   private _after;
@@ -39,7 +38,7 @@ export default class Command extends EventEmitter {
   private _usage;
   private _fn;
   private _validate;
-  private _parse; 
+  private _parse;
   parent: this;
 
   /**
