@@ -1,6 +1,6 @@
 {
   "include": [
-    "./lib"
+    "./src"
   ],
   "compilerOptions": {
     "target": "es2015",
@@ -10,7 +10,7 @@
     // "declarationMap": true,                /* Generates a sourcemap for each corresponding '.d.ts' file. */
     // "sourceMap": true,                     /* Generates corresponding '.map' file. */
     "outDir": "./dist",
-    "rootDir": "./lib",
+    "rootDir": "./src",
     "removeComments": false,
     // "noEmit": true,                        /* Do not emit outputs. */
     /* Strict mode */
