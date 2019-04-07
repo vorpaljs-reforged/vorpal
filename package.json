@@ -4,7 +4,8 @@
   "description": "Node's first framework for building immersive CLI apps.",
   "main": "./dist/vorpal.js",
   "scripts": {
-    "compile": "gulp build",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
     "lint:base": "tslint -p tsconfig.json",
     "lint:check": "npm run lint:base",
     "lint:fix": "npm run lint:base -- --fix",
@@ -16,7 +17,7 @@
     "publish-coverage": "codecov",
     "test": "jest --coverage  --forceExit",
     "test:watch": "npm run test -- --watch",
-    "prepublish": "in-publish && gulp build || not-in-publish"
+    "prepublish": "in-publish && npm run compile || not-in-publish"
   },
   "repository": {
     "type": "git",
@@ -54,12 +55,6 @@
     "@types/node-localstorage": "^1.3.0",
     "babel-jest": "^24.7.1",
     "codecov": "^3.3.0",
-    "gulp": "^3.9.0",
-    "gulp-babel": "^8.0.0",
-    "gulp-changed": "^1.3.0",
-    "gulp-eslint": "^1.1.1",
-    "gulp-typescript": "^5.0.0-alpha.3",
-    "gulp-xo": "^0.7.0",
     "jest": "^24.1.0",
     "jest-junit": "^6.3.0",
     "load-plugins": "^2.1.0",
