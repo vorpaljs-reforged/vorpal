@@ -18,7 +18,10 @@ class UI extends EventEmitter {
   private _sigintCalled: boolean;
   private _sigintCount: number;
   private _cancel: boolean;
-  private inquirerStdout: string;
+  public inquirer;
+  private inquirerStdout: string[];
+  _cancelled: boolean;
+  _pipeFn: any;
   // FIXME §here: more to add
 
   /**
@@ -406,7 +409,7 @@ class UI extends EventEmitter {
    */
 
   public log(...message) {
-    let args = util.fixArgsForApply(arguments);
+    let args = util.fixArgsForApply(arguments); //FIXME
     args = _.isFunction(this._pipeFn) ? this._pipeFn(args) : args;
     if (args === '') {
       return this;
@@ -476,7 +479,7 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public input(str) {
+  public input(str?) {
     if (!this._activePrompt) {
       return undefined;
     }
@@ -540,7 +543,7 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public redraw(str) {
+  public redraw = function(str) {
     logUpdate(str);
     return this;
   }
@@ -579,6 +582,7 @@ ui.redraw.done = function() {
   return ui;
 };
 
+// FIXME
 /**
  * Expose `ui`.
  *

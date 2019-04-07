@@ -134,12 +134,12 @@ const autocomplete = {
 function handleTabCounts(str, freezeTabs) {
   let result;
   if (_.isArray(str)) {
-    this._tabCtr += 1;
-    if (this._tabCtr > 1) {
+    this._tabCount += 1;
+    if (this._tabCount > 1) {
       result = str.length === 0 ? undefined : str;
     }
   } else {
-    this._tabCtr = freezeTabs === true ? this._tabCtr + 1 : 0;
+    this._tabCount = freezeTabs === true ? this._tabCount + 1 : 0;
     result = str;
   }
   return result;
@@ -155,7 +155,7 @@ function handleTabCounts(str, freezeTabs) {
  * @api private
  */
 
-function getMatch(ctx, data, options) {
+function getMatch(ctx, data, options?) {
   // Look for a command match, eliminating and then
   // re-introducing leading spaces.
   const len = ctx.length;
@@ -242,9 +242,9 @@ function parseInput(str, idx) {
   const raw = String(str || '');
   const sliced = raw.slice(0, idx);
   const sections = sliced.split('|');
-  let prefix = sections.slice(0, sections.length - 1) || [];
-  prefix.push('');
-  prefix = prefix.join('|');
+  const prefixParts = sections.slice(0, sections.length - 1) || [];
+  prefixParts.push('');
+  const prefix = prefixParts.join('|');
   const suffix = getSuffix(raw.slice(idx));
   const context = sections[sections.length - 1];
   return {

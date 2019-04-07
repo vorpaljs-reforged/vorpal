@@ -5,7 +5,23 @@
 import _ from 'lodash';
 import util from './util';
 
+type CommandInstanceParams = {
+  commandWrapper?: any;
+  args?: any;
+  commandObject?: any;
+  command?: any;
+  callback?: any;
+  downstream?: any; 
+}
 class CommandInstance {
+  commandWrapper: any;
+  args: any;
+  commandObject: any;
+  command: any;
+  session: any;
+  parent: any;
+  callback: any;
+  downstream: any;
   /**
    * Initialize a new `CommandInstance` instance.
    *
@@ -14,7 +30,8 @@ class CommandInstance {
    * @api public
    */
 
-  constructor({ command, commandObject, args, commandWrapper, callback, downstream } = {}) {
+  constructor(params: CommandInstanceParams = {}) {
+    const { command, commandObject, args, commandWrapper, callback, downstream } = params;
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
@@ -37,13 +54,12 @@ class CommandInstance {
    * Route stdout either through a piped command, or the session's stdout.
    */
 
-  public log() {
-    const args = util.fixArgsForApply(arguments);
+  public log(...args) {
     if (this.downstream) {
-      const fn = this.downstream.commandObject._fn || function() {};
+      const fn = this.downstream.commandObject._fn || _.noop;
       this.session.registerCommand();
       this.downstream.args.stdin = args;
-      const onComplete = err => {
+      const onComplete = (err: Error|undefined) => {
         if (this.session.isLocal() && err) {
           this.session.log(err.stack || err);
           this.session.parent.emit('client_command_error', {
@@ -61,7 +77,7 @@ class CommandInstance {
         } catch (e) {
           // Log error without piping to downstream on validation error.
           this.session.log(e.toString());
-          onComplete();
+          onComplete(null);
           return;
         }
       }

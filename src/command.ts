@@ -36,7 +36,6 @@ export default class Command extends EventEmitter {
   public _autocompletion;
   public _done;
   public _cancel;
-  public _parseExpectedArgs;
   private _usage;
   private _fn;
   private _validate;
@@ -538,7 +537,7 @@ export default class Command extends EventEmitter {
    * @api private
    */
 
-  private _parseExpectedArgs(args) {
+  public _parseExpectedArgs(args) {
     if (!args.length) {
       return;
     }

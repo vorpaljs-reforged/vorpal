@@ -11,7 +11,30 @@ import CommandInstance from './command-instance';
 import util from './util';
 
 
+type CommandResponse = {
+  error?: Error;
+  data?: any
+  args?: any
+}
+
 export default class Session extends EventEmitter {
+  _registeredCommands: number;
+  _completedCommands: number;
+  _commandSetCallback: any;
+  id: any;
+  parent: any;
+  authenticating: any;
+  user: any;
+  host: any;
+  address: any;
+  _isLocal: any;
+  _delimiter: any;
+  _modeDelimiter: any;
+  _tabCount: number;
+  cmdHistory: any;
+  _mode: any;
+  _histCtr: number;
+  cancelCommands: any;
   /**
    * Initialize a new `Session` instance.
    *
@@ -20,13 +43,14 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
+  // tslint:disable-next-line: cyclomatic-complexity
   constructor(options) {
     super();
     options = options || {};
     this.id = options.id || this._guid();
     this.parent = options.parent || undefined;
     this.authenticating = options.authenticating || false;
-    this.authenticated = options.authenticated || undefined;
+    this.authenticating = options.authenticated || undefined;
     this.user = options.user || 'guest';
     this.host = options.host;
     this.address = options.address || undefined;
@@ -36,7 +60,7 @@ export default class Session extends EventEmitter {
 
     // Keeps history of how many times in a row `tab` was
     // pressed on the keyboard.
-    this._tabCtr = 0;
+    this._tabCount = 0;
 
     this.cmdHistory = this.parent.cmdHistory;
 
@@ -54,7 +78,7 @@ export default class Session extends EventEmitter {
    * @return {Session}
    * @api public
    */
-  public log() {
+  public log(...argz) {
     const args = util.fixArgsForApply(arguments);
     return this._log.apply(this, args);
   };
@@ -189,11 +213,10 @@ export default class Session extends EventEmitter {
    * @return {Function}
    * @api private
    */
-  private getKeypressResult(key, value, cb) {
-    cb = cb || function () { };
+  private getKeypressResult(key, value, cb = _.noop) {
     const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
     if (key !== 'tab') {
-      this._tabCtr = 0;
+      this._tabCount = 0;
     }
     if (keyMatch) {
       if (['up', 'down'].indexOf(key) > -1) {
@@ -294,8 +317,8 @@ export default class Session extends EventEmitter {
     }
 
     if (command && _.isFunction(command._autocompletion)) {
-      this._tabCtr++;
-      command._autocompletion.call(this, extra, this._tabCtr, function (err, autocomplete) {
+      this._tabCount++;
+      command._autocompletion.call(this, extra, this._tabCount, function (err, autocomplete) {
         if (err) {
           return cb(err);
         }
@@ -350,7 +373,7 @@ export default class Session extends EventEmitter {
 
   public execCommandSet(wrapper, callback) {
     const self = this;
-    let response = {};
+    let response: CommandResponse = {};
     let res;
     const cbk = callback;
     this._registeredCommands = 1;
@@ -407,7 +430,7 @@ export default class Session extends EventEmitter {
     this.on('vorpal_command_cancel', self.cancelCommands);
 
     // Gracefully handles all instances of the command completing.
-    this._commandSetCallback = function () {
+    this._commandSetCallback = () => {
       const err = response.error;
       const data = response.data;
       const argus = response.args;
@@ -432,7 +455,7 @@ export default class Session extends EventEmitter {
       sendDones(commandInstance);
     };
 
-    function onCompletion(wrapper, err, data, argus) {
+    function onCompletion(wrapper, err, data?, argus?) {
       response = {
         error: err,
         data,

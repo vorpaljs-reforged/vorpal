@@ -5,8 +5,8 @@
   "compilerOptions": {
     "target": "es2015",
     "module": "commonjs",
-    // "lib": [],                             /* Specify library files to be included in the compilation. */,
-    // "declaration": true,                   /* Generates corresponding '.d.ts' file. */
+    //"lib": [],                             /* Specify library files to be included in the compilation. */,
+    // "declaration": true,                   /* Generates corresponding '.d.ts' file. */ // TODO
     // "declarationMap": true,                /* Generates a sourcemap for each corresponding '.d.ts' file. */
     // "sourceMap": true,                     /* Generates corresponding '.map' file. */
     "outDir": "./dist",
@@ -27,7 +27,7 @@
     // "noImplicitReturns": true,             /* Report error when not all code paths in function return a value. */
     // "noFallthroughCasesInSwitch": true,    /* Report errors for fallthrough cases in switch statement. */
     /* Module Resolution Options */
-    "baseUrl": "./lib" /* Base directory to resolve non-absolute module names. */,
+    "baseUrl": "./src" /* Base directory to resolve non-absolute module names. */,
     // "paths": {},                           /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
     // "typeRoots": [],                       /* List of folders to include type definitions from. */
     // "types": [],                           /* Type declaration files to be included in compilation. */
