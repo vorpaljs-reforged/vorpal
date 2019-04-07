@@ -4,6 +4,8 @@
     "ban-comma-operator": [true],
     "cyclomatic-complexity": [true, 8],
     "deprecation": true,
+    "no-relative-imports": [true, "allow-siblings"],
+    "import-name": [false],
     "max-classes-per-file": [true, 1],
     "member-ordering": [
       false,

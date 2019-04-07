@@ -18,548 +18,559 @@ import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
 
-/**
- * Initialize a new `Vorpal` instance.
- *
- * @return {Vorpal}
- * @api public
- */
+export default class Vorpal extends EventEmitter {
+  public chalk;
+  public lodash: _.LoDashStatic;
+  private _version: string;
+  private _title: string;
+  private _description: string;
+  private _banner: string;
+  private cmdHistory: History;
+  public commands: any[];
+  private _queue: any[];
+  private _command: any;
+  public ui: any;
+  private _delimiter: string;
+  private server: { sessions: any[]; };
+  private _hooked: boolean;
+  private _useDeprecatedAutocompletion: boolean;
+  public util: any;
+  public Session: typeof Session;
+  public session: any;
+  private isCommandArgKeyPairNormalized: boolean;
+  private executables: boolean;
 
-function Vorpal() {
-  // Program version
-  // Exposed through vorpal.version(str);
-  this._version = '';
+  constructor() {
+    super();
+    // Program version
+    // Exposed through vorpal.version(str);
+    this._version = '';
 
-  // Program title
-  this._title = '';
+    // Program title
+    this._title = '';
 
-  // Program description
-  this._description = '';
+    // Program description
+    this._description = '';
 
-  // Program baner
-  this._banner = '';
+    // Program baner
+    this._banner = '';
 
-  // Command line history instance
-  this.cmdHistory = new this.CmdHistoryExtension();
+    // Command line history instance
+    this.cmdHistory = new this.CmdHistoryExtension();
 
-  // Registered `vorpal.command` commands and
-  // their options.
-  this.commands = [];
+    // Registered `vorpal.command` commands and
+    // their options.
+    this.commands = [];
 
-  // Queue of IP requests, executed async, in sync.
-  this._queue = [];
+    // Queue of IP requests, executed async, in sync.
+    this._queue = [];
 
-  // Current command being executed.
-  this._command = undefined;
+    // Current command being executed.
+    this._command = undefined;
 
-  // Expose UI.
-  this.ui = ui;
+    // Expose UI.
+    this.ui = ui;
 
-  // Expose chalk as a convenience.
-  this.chalk = chalk;
+    // Expose chalk as a convenience.
+    this.chalk = chalk;
 
-  // Expose lodash as a convenience.
-  this.lodash = _;
+    // Expose lodash as a convenience.
+    this.lodash = _;
 
-  // Exposed through vorpal.delimiter(str).
-  this._delimiter = 'local@' + String(os.hostname()).split('.')[0] + '~$ ';
-  ui.setDelimiter(this._delimiter);
+    // Exposed through vorpal.delimiter(str).
+    this._delimiter = 'local@' + String(os.hostname()).split('.')[0] + '~$ ';
+    ui.setDelimiter(this._delimiter);
 
-  // Placeholder for vantage server. If vantage
-  // is used, this will be over-written.
-  this.server = {
-    sessions: [],
+    // Placeholder for vantage server. If vantage
+    // is used, this will be over-written.
+    this.server = {
+      sessions: [],
+    };
+
+    // Whether all stdout is being hooked through a function.
+    this._hooked = false;
+
+    this._useDeprecatedAutocompletion = false;
+
+    // Expose common utilities, like padding.
+    this.util = VorpalUtil;
+
+    this.Session = Session;
+
+    // Active vorpal server session.
+    this.session = new this.Session({
+      local: true,
+      user: 'local',
+      parent: this,
+      delimiter: this._delimiter,
+    });
+
+    // Allow unix-like key value pair normalization to be turned off by toggling this switch on.
+    this.isCommandArgKeyPairNormalized = true;
+
+    this._init();
+  }
+
+
+  /**
+   * Extension to `constructor`.
+   * @api private
+   */
+
+  public _init() {
+    const self = this;
+
+    ui.on('vorpal_ui_keypress', function (data) {
+      self.emit('keypress', data);
+      self._onKeypress(data.key, data.value);
+    });
+
+    self.use(commons);
   };
 
-  // Whether all stdout is being hooked through a function.
-  this._hooked = false;
+  /**
+   * Parses `process.argv` and executes
+   * a Vorpal command based on it.
+   * @api public
+   */
 
-  this._useDeprecatedAutocompletion = false;
-
-  // Expose common utilities, like padding.
-  this.util = VorpalUtil;
-
-  this.Session = Session;
-
-  // Active vorpal server session.
-  this.session = new this.Session({
-    local: true,
-    user: 'local',
-    parent: this,
-    delimiter: this._delimiter,
-  });
-
-  // Allow unix-like key value pair normalization to be turned off by toggling this switch on.
-  this.isCommandArgKeyPairNormalized = true;
-
-  this._init();
-}
-
-/**
- * Extend Vorpal prototype as an event emitter.
- */
-
-Vorpal.prototype = Object.create(EventEmitter.prototype);
-
-/**
- * Vorpal prototype.
- */
-
-const vorpal = Vorpal.prototype;
-
-/**
- * Extension to `constructor`.
- * @api private
- */
-
-Vorpal.prototype._init = function() {
-  const self = this;
-
-  ui.on('vorpal_ui_keypress', function(data) {
-    self.emit('keypress', data);
-    self._onKeypress(data.key, data.value);
-  });
-
-  self.use(commons);
-};
-
-/**
- * Parses `process.argv` and executes
- * a Vorpal command based on it.
- * @api public
- */
-
-Vorpal.prototype.parse = function(argv, options) {
-  options = options || {};
-  const args = argv;
-  let result = this;
-  const catchExists = !(_.find(this.commands, { _catch: true }) === undefined);
-  args.shift();
-  args.shift();
-  if (args.length > 0 || catchExists) {
-    if (options.use === 'minimist') {
-      result = minimist(args);
-    } else {
-      // Wrap the spaced args back in quotes.
-      for (let i = 0; i < args.length; ++i) {
-        if (i === 0) {
-          continue;
-        }
-        if (args[i].indexOf(' ') > -1) {
-          args[i] = `"${args[i]}"`;
-        }
-      }
-      this.exec(args.join(' '), function(err) {
-        if (err !== undefined && err !== null) {
-          throw new Error(err);
-        }
-        process.exit(0);
-      });
-    }
-  }
-  return result;
-};
-
-/**
- * Sets version of your application's API.
- *
- * @param {String} version
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.version = function(version) {
-  this._version = version;
-  return this;
-};
-
-/**
- * Sets the title of your application.
- *
- * @param {String} title
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.title = function(title) {
-  this._title = title;
-  return this;
-};
-
-/**
- * Sets the description of your application.
- *
- * @param {String} description
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.description = function(description) {
-  this._description = description;
-  return this;
-};
-
-/**
- * Sets the banner of your application.
- *
- * @param {String} banner
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.banner = function(banner) {
-  this._banner = banner;
-  return this;
-};
-
-/**
- * Sets the permanent delimiter for this
- * Vorpal server instance.
- *
- * @param {String} str
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.delimiter = function(str) {
-  this._delimiter = str;
-  if (this.session.isLocal() && !this.session.client) {
-    this.session.delimiter(str);
-  }
-  return this;
-};
-
-/**
- * Imports a library of Vorpal API commands
- * from another Node module as an extension
- * of Vorpal.
- *
- * @param {Array} commands
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.use = function(commands, options) {
-  if (!commands) {
-    return this;
-  }
-  if (_.isFunction(commands)) {
-    commands.call(this, this, options);
-  } else if (_.isString(commands)) {
-    return this.use(require(commands), options);
-  } else {
-    commands = _.isArray(commands) ? commands : [commands];
-    for (let i = 0; i < commands.length; ++i) {
-      const cmd = commands[i];
-      if (cmd.command) {
-        const command = this.command(cmd.command);
-        if (cmd.description) {
-          command.description(cmd.description);
-        }
-        if (cmd.options) {
-          cmd.options = _.isArray(cmd.options) ? cmd.options : [cmd.options];
-          for (let j = 0; j < cmd.options.length; ++j) {
-            command.option(cmd.options[j][0], cmd.options[j][1]);
+  public parse(argv, options) {
+    options = options || {};
+    const args = argv;
+    let result = this;
+    const catchExists = !(_.find(this.commands, { _catch: true }) === undefined);
+    args.shift();
+    args.shift();
+    if (args.length > 0 || catchExists) {
+      if (options.use === 'minimist') {
+        result = minimist(args);
+      } else {
+        // Wrap the spaced args back in quotes.
+        for (let i = 0; i < args.length; ++i) {
+          if (i === 0) {
+            continue;
+          }
+          if (args[i].indexOf(' ') > -1) {
+            args[i] = `"${args[i]}"`;
           }
         }
-        if (cmd.action) {
-          command.action(cmd.action);
+        this.exec(args.join(' '), function (err) {
+          if (err !== undefined && err !== null) {
+            throw new Error(err);
+          }
+          process.exit(0);
+        });
+      }
+    }
+    return result;
+  }exec(arg0: any, arg1: (err: any) => void): any {
+    throw new Error("Method not implemented.");
+  }
+;
+
+  /**
+   * Sets version of your application's API.
+   *
+   * @param {String} version
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public version(version) {
+    this._version = version;
+    return this;
+  };
+
+  /**
+   * Sets the title of your application.
+   *
+   * @param {String} title
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public title(title) {
+    this._title = title;
+    return this;
+  };
+
+  /**
+   * Sets the description of your application.
+   *
+   * @param {String} description
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public description(description) {
+    this._description = description;
+    return this;
+  };
+
+  /**
+   * Sets the banner of your application.
+   *
+   * @param {String} banner
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public banner(banner) {
+    this._banner = banner;
+    return this;
+  }
+
+  /**
+   * Sets the permanent delimiter for this
+   * Vorpal server instance.
+   *
+   * @param {String} str
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public delimiter(str) {
+    this._delimiter = str;
+    if (this.session.isLocal() && !this.session.client) {
+      this.session.delimiter(str);
+    }
+    return this;
+  };
+
+  /**
+   * Imports a library of Vorpal API commands
+   * from another Node module as an extension
+   * of Vorpal.
+   *
+   * @param {Array} commands
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public use(commands, options?) {
+    if (!commands) {
+      return this;
+    }
+    if (_.isFunction(commands)) {
+      commands.call(this, this, options);
+    } else if (_.isString(commands)) {
+      return this.use(require(commands), options);
+    } else {
+      commands = _.isArray(commands) ? commands : [commands];
+      for (let i = 0; i < commands.length; ++i) {
+        const cmd = commands[i];
+        if (cmd.command) {
+          const command = this.command(cmd.command);
+          if (cmd.description) {
+            command.description(cmd.description);
+          }
+          if (cmd.options) {
+            cmd.options = _.isArray(cmd.options) ? cmd.options : [cmd.options];
+            for (let j = 0; j < cmd.options.length; ++j) {
+              command.option(cmd.options[j][0], cmd.options[j][1]);
+            }
+          }
+          if (cmd.action) {
+            command.action(cmd.action);
+          }
         }
       }
     }
-  }
-  return this;
-};
+    return this;
+  };
 
-/**
- * Registers a new command in the vorpal API.
- *
- * @param {String} name
- * @param {String} desc
- * @param {Object} opts
- * @return {Command}
- * @api public
- */
+  /**
+   * Registers a new command in the vorpal API.
+   *
+   * @param {String} name
+   * @param {String} desc
+   * @param {Object} opts
+   * @return {Command}
+   * @api public
+   */
 
-vorpal.command = function(name, desc, opts) {
-  opts = opts || {};
-  name = String(name);
+  public command(name, desc, opts) {
+    opts = opts || {};
+    name = String(name);
 
-  const argsRegExp = /(\[[^\]]*\]|\<[^\>]*\>)/g;
-  const args = [];
-  let arg;
+    const argsRegExp = /(\[[^\]]*\]|\<[^\>]*\>)/g;
+    const args = [];
+    let arg;
 
-  while ((arg = argsRegExp.exec(name)) !== null) {
-    args.push(arg[1]);
-  }
-
-  const cmdNameRegExp = /^([^\[\<]*)/;
-  const cmdName = cmdNameRegExp.exec(name)[0].trim();
-
-  const cmd = new Command(cmdName, this);
-
-  if (desc) {
-    cmd.description(desc);
-    this.executables = true;
-  }
-
-  cmd._noHelp = Boolean(opts.noHelp);
-  cmd._mode = opts.mode || false;
-  cmd._catch = opts.catch || false;
-  cmd._parseExpectedArgs(args);
-  cmd.parent = this;
-
-  let exists = false;
-  for (let i = 0; i < this.commands.length; ++i) {
-    exists = this.commands[i]._name === cmd._name ? true : exists;
-    if (exists) {
-      this.commands[i] = cmd;
-      break;
+    while ((arg = argsRegExp.exec(name)) !== null) {
+      args.push(arg[1]);
     }
-  }
-  if (!exists) {
-    this.commands.push(cmd);
-  } else {
-    /* // DISABLED While fixing tests
-    console.warn(
-      chalk.yellow(
-        'Warning: command named "' +
-          name +
-          '" was registered more than once.\nIf you intend to override a command, you should explicitly remove the first command with command.remove().'
-      )
-    );*/
-  }
 
-  this.emit('command_registered', { command: cmd, name });
+    const cmdNameRegExp = /^([^\[\<]*)/;
+    const cmdName = cmdNameRegExp.exec(name)[0].trim();
 
-  return cmd;
-};
+    const cmd = new Command(cmdName, this);
 
-/**
- * Registers a new 'mode' command in the vorpal API.
- *
- * @param {String} name
- * @param {String} desc
- * @param {Object} opts
- * @return {Command}
- * @api public
- */
+    if (desc) {
+      cmd.description(desc);
+      this.executables = true;
+    }
 
-vorpal.mode = function(name, desc, opts) {
-  return this.command(name, desc, _.extend(opts || {}, { mode: true }));
-};
+    cmd._noHelp = Boolean(opts.noHelp);
+    cmd._mode = opts.mode || false;
+    cmd._catch = opts.catch || false;
+    cmd._parseExpectedArgs(args);
+    cmd.parent = this;
 
-/**
- * Registers a 'catch' command in the vorpal API.
- * This is executed when no command matches are found.
- *
- * @param {String} name
- * @param {String} desc
- * @param {Object} opts
- * @return {Command}
- * @api public
- */
-
-vorpal.catch = function(name, desc, opts) {
-  return this.command(name, desc, _.extend(opts || {}, { catch: true }));
-};
-
-/**
- * An alias to the `catch` command.
- *
- * @param {String} name
- * @param {String} desc
- * @param {Object} opts
- * @return {Command}
- * @api public
- */
-
-vorpal.default = function(name, desc, opts) {
-  return this.command(name, desc, _.extend(opts || {}, { catch: true }));
-};
-
-/**
- * Delegates to ui.log.
- *
- * @param {String} log
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.log = function() {
-  this.ui.log.apply(this.ui, arguments);
-  return this;
-};
-
-/**
- * Intercepts all logging through `vorpal.log`
- * and runs it through the function declared by
- * `vorpal.pipe()`.
- *
- * @param {Function} fn
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.pipe = function(fn) {
-  if (this.ui) {
-    this.ui._pipeFn = fn;
-  }
-  return this;
-};
-
-/**
- * If Vorpal is the local terminal,
- * hook all stdout, through a fn.
- *
- * @return {Vorpal}
- * @api private
- */
-
-vorpal.hook = function(fn) {
-  if (fn !== undefined) {
-    this._hook(fn);
-  } else {
-    this._unhook();
-  }
-  return this;
-};
-
-/**
- * Unhooks stdout capture.
- *
- * @return {Vorpal}
- * @api public
- */
-
-vorpal._unhook = function() {
-  if (this._hooked && this._unhook !== undefined) {
-    this._unhook();
-    this._hooked = false;
-  }
-  return this;
-};
-
-/**
- * Hooks all stdout through a given function.
- *
- * @param {Function} fn
- * @return {Vorpal}
- * @api public
- */
-
-vorpal._hook = function(fn) {
-  if (this._hooked && this._unhook !== undefined) {
-    this._unhook();
-  }
-  this._unhook = intercept(fn);
-  this._hooked = true;
-  return this;
-};
-
-/**
- * History module used to get command history
- */
-vorpal.CmdHistoryExtension = History;
-
-/**
- * Set id for command line history
- * @param id
- * @return {Vorpal}
- * @api public
- */
-vorpal.history = function(id) {
-  this.cmdHistory.setId(id);
-  return this;
-};
-
-/**
- * Set id for local storage
- * @param id
- * @return {Vorpal}
- * @api public
- */
-vorpal.localStorage = function(id) {
-  if (id === undefined) {
-    throw new Error('vorpal.localStorage() requires a unique key to be passed in.');
-  }
-  const ls = new LocalStorage(id);
-  _.forEach(['getItem', 'setItem', 'removeItem'], method => {
-    this.localStorage[method] = ls[method].bind(ls);
-  });
-  return this;
-};
-
-/**
- * Set the path to where command line history is persisted.
- * Must be called before vorpal.history
- * @param path
- * @return {Vorpal}
- * @api public
- */
-vorpal.historyStoragePath = function(path) {
-  this.cmdHistory.setStoragePath(path);
-  return this;
-};
-
-/**
- * Hook the tty prompt to this given instance
- * of vorpal.
- *
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.show = function() {
-  ui.attach(this);
-  return this;
-};
-
-/**
- * Disables the vorpal prompt on the
- * local terminal.
- *
- * @return {Vorpal}
- * @api public
- */
-
-vorpal.hide = function() {
-  ui.detach(this);
-  return this;
-};
-
-/**
- * Listener for a UI keypress. Either
- * handles the keypress locally or sends
- * it upstream.
- *
- * @param {String} key
- * @param {String} value
- * @api private
- */
-
-vorpal._onKeypress = function(key, value) {
-  const self = this;
-  if (this.session.isLocal() && !this.session.client && !this._command) {
-    this.session.getKeypressResult(key, value, function(err, result) {
-      if (!err && result !== undefined) {
-        if (_.isArray(result)) {
-          const formatted = VorpalUtil.prettifyArray(result);
-          self.ui.imprint();
-          self.session.log(formatted);
-        } else {
-          self.ui.input(result);
-        }
+    let exists = false;
+    for (let i = 0; i < this.commands.length; ++i) {
+      exists = this.commands[i]._name === cmd._name ? true : exists;
+      if (exists) {
+        this.commands[i] = cmd;
+        break;
       }
+    }
+    if (!exists) {
+      this.commands.push(cmd);
+    } else {
+      /* // DISABLED While fixing tests
+      console.warn(
+        chalk.yellow(
+          'Warning: command named "' +
+            name +
+            '" was registered more than once.\nIf you intend to override a command, you should explicitly remove the first command with command.remove().'
+        )
+      );*/
+    }
+
+    this.emit('command_registered', { command: cmd, name });
+
+    return cmd;
+  };
+
+  /**
+   * Registers a new 'mode' command in the vorpal API.
+   *
+   * @param {String} name
+   * @param {String} desc
+   * @param {Object} opts
+   * @return {Command}
+   * @api public
+   */
+
+  public mode(name, desc, opts) {
+    return this.command(name, desc, _.extend(opts || {}, { mode: true }));
+  };
+
+  /**
+   * Registers a 'catch' command in the vorpal API.
+   * This is executed when no command matches are found.
+   *
+   * @param {String} name
+   * @param {String} desc
+   * @param {Object} opts
+   * @return {Command}
+   * @api public
+   */
+
+  public catch(name, desc, opts) {
+    return this.command(name, desc, _.extend(opts || {}, { catch: true }));
+  };
+
+  /**
+   * An alias to the `catch` command.
+   *
+   * @param {String} name
+   * @param {String} desc
+   * @param {Object} opts
+   * @return {Command}
+   * @api public
+   */
+
+  public default(name, desc, opts) {
+    return this.command(name, desc, _.extend(opts || {}, { catch: true }));
+  };
+
+  /**
+   * Delegates to ui.log.
+   *
+   * @param {String} log
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public log() {
+    this.ui.log.apply(this.ui, arguments);
+    return this;
+  };
+
+  /**
+   * Intercepts all logging through `vorpal.log`
+   * and runs it through the function declared by
+   * `vorpal.pipe()`.
+   *
+   * @param {Function} fn
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public pipe(fn) {
+    if (this.ui) {
+      this.ui._pipeFn = fn;
+    }
+    return this;
+  };
+
+  /**
+   * If Vorpal is the local terminal,
+   * hook all stdout, through a fn.
+   *
+   * @return {Vorpal}
+   * @api private
+   */
+
+  public hook(fn) {
+    if (fn !== undefined) {
+      this._hook(fn);
+    } else {
+      this._unhook();
+    }
+    return this;
+  };
+
+  /**
+   * Unhooks stdout capture.
+   *
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public _unhook() {
+    if (this._hooked && this._unhook !== undefined) {
+      this._unhook();
+      this._hooked = false;
+    }
+    return this;
+  };
+
+  /**
+   * Hooks all stdout through a given function.
+   *
+   * @param {Function} fn
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public _hook(fn) {
+    if (this._hooked && this._unhook !== undefined) {
+      this._unhook();
+    }
+    this._unhook = intercept(fn);
+    this._hooked = true;
+    return this;
+  };
+
+  /**
+   * History module used to get command history
+   */
+  vorpal.CmdHistoryExtension = History;
+
+  /**
+   * Set id for command line history
+   * @param id
+   * @return {Vorpal}
+   * @api public
+   */
+  public history(id) {
+    this.cmdHistory.setId(id);
+    return this;
+  };
+
+  /**
+   * Set id for local storage
+   * @param id
+   * @return {Vorpal}
+   * @api public
+   */
+  public localStorage(id) {
+    if (id === undefined) {
+      throw new Error('vorpal.localStorage() requires a unique key to be passed in.');
+    }
+    const ls = new LocalStorage(id);
+    _.forEach(['getItem', 'setItem', 'removeItem'], method => {
+      this.localStorage[method] = ls[method].bind(ls);
     });
-  } else {
-    this._send('vantage-keypress-upstream', 'upstream', {
-      key,
-      value,
-      sessionId: this.session.id,
-    });
+    return this;
+  };
+
+  /**
+   * Set the path to where command line history is persisted.
+   * Must be called before vorpal.history
+   * @param path
+   * @return {Vorpal}
+   * @api public
+   */
+  public historyStoragePath(path) {
+    this.cmdHistory.setStoragePath(path);
+    return this;
+  };
+
+  /**
+   * Hook the tty prompt to this given instance
+   * of vorpal.
+   *
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public show() {
+    ui.attach(this);
+    return this;
+  };
+
+  /**
+   * Disables the vorpal prompt on the
+   * local terminal.
+   *
+   * @return {Vorpal}
+   * @api public
+   */
+
+  public hide() {
+    ui.detach(this);
+    return this;
+  };
+
+  /**
+   * Listener for a UI keypress. Either
+   * handles the keypress locally or sends
+   * it upstream.
+   *
+   * @param {String} key
+   * @param {String} value
+   * @api private
+   */
+
+  public _onKeypress(key, value) {
+    const self = this;
+    if (this.session.isLocal() && !this.session.client && !this._command) {
+      this.session.getKeypressResult(key, value, function (err, result) {
+        if (!err && result !== undefined) {
+          if (_.isArray(result)) {
+            const formatted = VorpalUtil.prettifyArray(result);
+            self.ui.imprint();
+            self.session.log(formatted);
+          } else {
+            self.ui.input(result);
+          }
+        }
+      });
+    } else {
+      this._send('vantage-keypress-upstream', 'upstream', {
+        key,
+        value,
+        sessionId: this.session.id,
+      });
+    }
+  }_send(arg0: string, arg1: string, arg2: { key: any; value: any; sessionId: any; }): any {
+    throw new Error("Method not implemented.");
   }
-};
+;
 
 interface PromptOption {
   sessionId?: string;
@@ -577,7 +588,7 @@ interface PromptOption {
  * @api public
  */
 
-vorpal.prompt = function(options: PromptOption = {}, userCallback) {
+public prompt(options: PromptOption = {}, userCallback) {
   return new Promise(resolve => {
     // Setup callback to also resolve promise.
     const cb = response => {
@@ -628,7 +639,7 @@ vorpal.prompt = function(options: PromptOption = {}, userCallback) {
  * @api private
  */
 
-vorpal._prompt = function(data) {
+public _prompt(data) {
   const self = this;
   let prompt;
   data = data || {};
@@ -654,7 +665,7 @@ vorpal._prompt = function(data) {
       name: 'command',
       message: ssn.fullDelimiter(),
     },
-    function(result) {
+    function (result) {
       if (self.ui._cancelled === true) {
         self.ui._cancelled = false;
         return;
@@ -665,7 +676,7 @@ vorpal._prompt = function(data) {
         self._prompt(data);
         return;
       }
-      self.exec(str, function() {
+      self.exec(str, function () {
         self._prompt(data);
       });
     }
@@ -703,7 +714,7 @@ vorpal._prompt = function(data) {
  * @api public
  */
 
-vorpal.exec = function(cmd, args, cb) {
+public exec(cmd, args, cb) {
   const self = this;
   let ssn = self.session;
 
@@ -729,7 +740,7 @@ vorpal.exec = function(cmd, args, cb) {
     return self;
   }
 
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     command.resolve = resolve;
     command.reject = reject;
     self._queue.push(command);
@@ -746,7 +757,7 @@ vorpal.exec = function(cmd, args, cb) {
  * @api public
  */
 
-vorpal.execSync = function(cmd, options) {
+public execSync(cmd, options) {
   const self = this;
   let ssn = self.session;
   options = options || {};
@@ -775,7 +786,7 @@ vorpal.execSync = function(cmd, options) {
  * @api private
  */
 
-vorpal._queueHandler = function() {
+public _queueHandler() {
   if (this._queue.length > 0 && this._command === undefined) {
     const item = this._queue.shift();
     this._execQueueItem(item);
@@ -790,7 +801,7 @@ vorpal._queueHandler = function() {
  * @api private
  */
 
-vorpal._execQueueItem = function(cmd) {
+public _execQueueItem(cmd) {
   const self = this;
   self._command = cmd;
   if (cmd.session.isLocal() && !cmd.session.client) {
@@ -812,7 +823,7 @@ vorpal._execQueueItem = function(cmd) {
  * @api private
  */
 
-vorpal._exec = function(item) {
+public _exec(item) {
   const self = this;
   item = item || {};
   item.command = item.command || '';
@@ -891,7 +902,7 @@ vorpal._exec = function(item) {
     item.commandObject = match;
     const init =
       match._init ||
-      function(arrgs, cb) {
+      function (arrgs, cb) {
         cb();
       };
     const delimiter = match._delimiter || String(item.command) + ':';
@@ -996,7 +1007,7 @@ vorpal._exec = function(item) {
     // execution string.
 
     // Build the instances for each pipe.
-    item.pipes = item.pipes.map(function(pipe) {
+    item.pipes = item.pipes.map(function (pipe) {
       return new CommandInstance({
         commandWrapper: item,
         command: pipe.command._name,
@@ -1013,7 +1024,7 @@ vorpal._exec = function(item) {
       item.pipes[k].downstream = downstream;
     }
 
-    item.session.execCommandSet(item, function(wrapper, err, data, argus) {
+    item.session.execCommandSet(item, function (wrapper, err, data, argus) {
       callback(wrapper, err, data, argus);
     });
   } else {
@@ -1031,7 +1042,7 @@ vorpal._exec = function(item) {
  * @api private
  */
 
-vorpal._exitMode = function(options) {
+public _exitMode(options) {
   const ssn = this.getSessionById(options.sessionId);
   ssn._mode = false;
   this.cmdHistory.exitMode();
@@ -1049,7 +1060,7 @@ vorpal._exitMode = function(options) {
  * @api public
  */
 
-vorpal.sigint = function(fn) {
+public sigint(fn) {
   if (_.isFunction(fn)) {
     ui.sigint(fn);
   } else {
@@ -1066,7 +1077,7 @@ vorpal.sigint = function(fn) {
  * @api public
  */
 
-vorpal.find = function(name) {
+public find(name) {
   return _.find(this.commands, { _name: name });
 };
 
@@ -1078,7 +1089,7 @@ vorpal.find = function(name) {
  * @api public
  */
 
-vorpal.help = function(fn) {
+public help(fn) {
   this._help = fn;
 };
 
@@ -1089,7 +1100,7 @@ vorpal.help = function(fn) {
  * @api private
  */
 
-vorpal._commandHelp = function(command) {
+public _commandHelp(command) {
   if (!this.commands.length) {
     return '';
   }
@@ -1130,24 +1141,24 @@ vorpal._commandHelp = function(command) {
   const commandMatch = matches.length > 0;
   const commandMatchLength = commandMatch
     ? String(command)
-        .trim()
-        .split(' ').length + 1
+      .trim()
+      .split(' ').length + 1
     : 1;
   matches = matches.length === 0 ? this.commands : matches;
 
   const skipGroups = !(matches.length + 6 > process.stdout.rows);
 
   const commands = matches
-    .filter(function(cmd) {
+    .filter(function (cmd) {
       return !cmd._noHelp;
     })
-    .filter(function(cmd) {
+    .filter(function (cmd) {
       return !cmd._catch;
     })
-    .filter(function(cmd) {
+    .filter(function (cmd) {
       return !cmd._hidden;
     })
-    .filter(function(cmd) {
+    .filter(function (cmd) {
       if (skipGroups === true) {
         return true;
       }
@@ -1157,24 +1168,24 @@ vorpal._commandHelp = function(command) {
           .split(' ').length <= commandMatchLength
       );
     })
-    .map(function(cmd) {
+    .map(function (cmd) {
       const args = cmd._args
-        .map(function(arg) {
+        .map(function (arg) {
           return VorpalUtil.humanReadableArgName(arg);
         })
         .join(' ');
 
       return [
         cmd._name +
-          (cmd._alias ? '|' + cmd._alias : '') +
-          (cmd.options.length ? ' [options]' : '') +
-          ' ' +
-          args,
+        (cmd._alias ? '|' + cmd._alias : '') +
+        (cmd.options.length ? ' [options]' : '') +
+        ' ' +
+        args,
         cmd.description() || '',
       ];
     });
 
-  const width = commands.reduce(function(max, commandX) {
+  const width = commands.reduce(function (max, commandX) {
     return Math.max(max, commandX[0].length);
   }, 0);
 
@@ -1182,28 +1193,28 @@ vorpal._commandHelp = function(command) {
 
   let groups = _.uniq(
     matches
-      .filter(function(cmd) {
+      .filter(function (cmd) {
         return (
           String(cmd._name)
             .trim()
             .split(' ').length > commandMatchLength
         );
       })
-      .map(function(cmd) {
+      .map(function (cmd) {
         return String(cmd._name)
           .split(' ')
           .slice(0, commandMatchLength)
           .join(' ');
       })
-      .map(function(cmd) {
+      .map(function (cmd) {
         counts[cmd] = counts[cmd] || 0;
         counts[cmd]++;
         return cmd;
       })
-  ).map(function(cmd) {
+  ).map(function (cmd) {
     const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
       counts[cmd] === 1 ? '' : 's'
-    }.`;
+      }.`;
     return prefix;
   });
 
@@ -1215,20 +1226,20 @@ vorpal._commandHelp = function(command) {
     commands.length < 1
       ? ''
       : '\n  Commands:\n\n' +
-        commands
-          .map(function(cmd) {
-            const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
-            let suffix = wrap(cmd[1], descriptionWidth - 8).split('\n');
-            for (let i = 0; i < suffix.length; ++i) {
-              if (i !== 0) {
-                suffix[i] = VorpalUtil.pad('', width + 6) + suffix[i];
-              }
+      commands
+        .map(function (cmd) {
+          const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
+          let suffix = wrap(cmd[1], descriptionWidth - 8).split('\n');
+          for (let i = 0; i < suffix.length; ++i) {
+            if (i !== 0) {
+              suffix[i] = VorpalUtil.pad('', width + 6) + suffix[i];
             }
-            suffix = suffix.join('\n');
-            return prefix + suffix;
-          })
-          .join('\n') +
-        '\n\n';
+          }
+          suffix = suffix.join('\n');
+          return prefix + suffix;
+        })
+        .join('\n') +
+      '\n\n';
 
   const groupsString = groups.length < 1 ? '' : '  Command Groups:\n\n' + groups.join('\n') + '\n';
 
@@ -1241,7 +1252,7 @@ vorpal._commandHelp = function(command) {
   return results;
 };
 
-vorpal._helpHeader = function(hideTitle) {
+public _helpHeader(hideTitle) {
   const header = [];
 
   if (this._banner) {
@@ -1288,7 +1299,7 @@ vorpal._helpHeader = function(hideTitle) {
  * @api private
  */
 
-vorpal._send = function(str, direction, data, options) {
+public _send(str, direction, data, options) {
   options = options || {};
   data = data || {};
   const ssn = this.getSessionById(data.sessionId);
@@ -1322,9 +1333,9 @@ vorpal._send = function(str, direction, data, options) {
  * @param {Object} options
  * @api private
  */
-vorpal._proxy = function(str, direction, data, options) {
+public _proxy(str, direction, data, options) {
   const self = this;
-  return new Promise(function(resolve) {
+  return new Promise(function (resolve) {
     const ssn = self.getSessionById(data.sessionId);
     if (ssn && (!ssn.isLocal() && ssn.client)) {
       self._send(str, direction, data, options);
@@ -1342,7 +1353,7 @@ vorpal._proxy = function(str, direction, data, options) {
  * @api public
  */
 
-vorpal.getSessionById = function(id) {
+public getSessionById(id) {
   if (_.isObject(id)) {
     throw new Error(
       'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'
@@ -1360,9 +1371,9 @@ vorpal.getSessionById = function(id) {
     };
     throw new Error(
       'No session found for id ' +
-        id +
-        ' in vorpal.getSessionById. Sessions: ' +
-        JSON.stringify(sessions)
+      id +
+      ' in vorpal.getSessionById. Sessions: ' +
+      JSON.stringify(sessions)
     );
   }
   return ssn;
@@ -1378,7 +1389,7 @@ vorpal.getSessionById = function(id) {
  * @api private
  */
 
-vorpal.exit = function(options) {
+public exit(options) {
   const ssn = this.getSessionById(options.sessionId);
   this.emit('vorpal_exit');
   if (ssn.isLocal()) {
@@ -1394,9 +1405,4 @@ Object.defineProperty(vorpal, 'activeCommand', {
     return result;
   },
 });
-
-/**
- * Expose `Vorpal`.
- */
-
-export default Vorpal;
+}

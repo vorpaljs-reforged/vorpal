@@ -40,6 +40,7 @@ export default class Command extends EventEmitter {
   private _fn;
   private _validate;
   private _parse; 
+  parent: this;
 
   /**
    * Initialize a new `Command` instance.
