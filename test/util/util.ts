@@ -1,4 +1,4 @@
-var Vantage = require('../../dist/vorpal');
+var Vantage = require('../../lib/vorpal');
 var _ = require('lodash');
 var path = require('path');
 

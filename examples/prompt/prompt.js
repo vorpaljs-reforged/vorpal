@@ -1,5 +1,3 @@
-'use strict';
-
 var vorpal = require('./../../')();
 
 vorpal.command('login', 'Login (u: root p: vorpal)')

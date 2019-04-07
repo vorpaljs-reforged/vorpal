@@ -1,5 +1,3 @@
-'use strict';
-
 var _ = require('lodash');
 var LocalStorage = require('node-localstorage').LocalStorage;
 var path = require('path');

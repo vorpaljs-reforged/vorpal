@@ -1,6 +1,6 @@
-var Vorpal = require('../');
+const Vorpal = require('..');
 
-var vorpal = new Vorpal();
+const vorpal = new Vorpal();
 
 require('assert');
 
@@ -19,7 +19,7 @@ describe('vorpal', function() {
     });
 
     it('should expose minimist', function() {
-      var result = vorpal.parse(['a', 'b', 'foo', 'bar', '-r'], {
+      const result = vorpal.parse(['a', 'b', 'foo', 'bar', '-r'], {
         use: 'minimist',
       });
       expect(result.r).toBe(true);
@@ -31,8 +31,8 @@ describe('vorpal', function() {
 
   describe('mode context', function() {
     it('parent should have the same context in init and action', function(done) {
-      var vorpal = Vorpal();
-      var initCtx;
+      const vorpal = Vorpal();
+      let initCtx;
       vorpal
         .mode('ooga')
         .init(function(args, cb) {

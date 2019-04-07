@@ -1,33 +1,31 @@
-'use strict';
+const Vorpal = require('../lib/vorpal');
+const commands = require('./util/server');
+const BlueBirdPromise = require('bluebird');
+const fs = require('fs');
 
-var Vorpal = require('../lib/vorpal');
-var commands = require('./util/server');
-var BlueBirdPromise = require('bluebird');
-var fs = require('fs');
-
-var intercept = require('../lib/intercept');
+const intercept = require('../lib/intercept');
 let integrationStdoutput = '';
-var unmute;
-var mute = () => {
+let unmute;
+const mute = () => {
   unmute = intercept(function(str) {
     integrationStdoutput += str;
     return '';
   });
 };
 
-var vorpal = new Vorpal();
-var _all = '';
-var _stdout = '';
-var _excess = '';
+const vorpal = new Vorpal();
+let _all = '';
+let _stdout = '';
+let _excess = '';
 
-var onStdout = function(str) {
+const onStdout = function(str) {
   _stdout += str;
   _all += str;
   return '';
 };
 
-var stdout = () => {
-  var out = _stdout;
+const stdout = () => {
+  const out = _stdout;
   _stdout = '';
   return String(out || '');
 };
@@ -46,7 +44,7 @@ const exec = function(cmd, cb) {
 describe('integration tests:', () => {
   describe('vorpal', () => {
     it('should overwrite duplicate commands', () => {
-      var arr = ['a', 'b', 'c'];
+      const arr = ['a', 'b', 'c'];
       arr.forEach(function(item) {
         vorpal.command('overwritten', 'This command gets overwritten.').action(function(args, cb) {
           cb(undefined, item);
@@ -75,8 +73,8 @@ describe('integration tests:', () => {
           cb(undefined, 'You have found me.');
         });
 
-      var ctr = 0;
-      var arr = [
+      const ctr = 0;
+      const arr = [
         'donald trump',
         'sinterclaus',
         'linus torvalds',
@@ -112,7 +110,7 @@ describe('integration tests:', () => {
     });
 
     it('should validate arguments', () => {
-      var errorThrown = new Error('Invalid Argument');
+      const errorThrown = new Error('Invalid Argument');
       vorpal
         .command('validate-me [arg]', 'This command only allows argument "valid"')
         .validate(function(args) {
@@ -194,7 +192,7 @@ describe('integration tests:', () => {
     });
 
     describe('inquirer prompt', () => {
-      var parent = Vorpal();
+      const parent = Vorpal();
 
       beforeEach(() => {
         // attach a parent so the prompt will run
@@ -206,7 +204,7 @@ describe('integration tests:', () => {
       });
 
       it('should show the default value', function(done) {
-        var execPromise = vorpal.exec('prompt default myawesomeproject');
+        const execPromise = vorpal.exec('prompt default myawesomeproject');
 
         expect(vorpal.ui.inquirerStdout.join('\n')).toContain('(myawesomeproject)');
 
@@ -231,17 +229,17 @@ describe('integration tests:', () => {
 
     describe('synchronous execution', () => {
       it('should execute a sync command', () => {
-        var result = vorpal.execSync('sync');
+        const result = vorpal.execSync('sync');
         expect(result).toBe('no args were passed');
       });
 
       it('should execute a sync command with args', () => {
-        var result = vorpal.execSync('sync foobar');
+        const result = vorpal.execSync('sync foobar');
         expect(result).toBe('you said foobar');
       });
 
       it('should fail silently', () => {
-        var result = vorpal.execSync('sync throwme');
+        const result = vorpal.execSync('sync throwme');
         expect(result.message).toBe('You said so...');
       });
 
@@ -454,8 +452,8 @@ describe('integration tests:', () => {
     });
 
     describe('history', () => {
-      var vorpalHistory;
-      var UNIT_TEST_STORAGE_PATH = './.unit_test_cmd_history';
+      const vorpalHistory;
+      const UNIT_TEST_STORAGE_PATH = './.unit_test_cmd_history';
       beforeEach(() => {
         vorpalHistory = new Vorpal();
         vorpalHistory.historyStoragePath(UNIT_TEST_STORAGE_PATH);
@@ -496,7 +494,7 @@ describe('integration tests:', () => {
       });
 
       it('should persist history', () => {
-        var vorpalHistory2 = new Vorpal();
+        const vorpalHistory2 = new Vorpal();
         vorpalHistory2.historyStoragePath(UNIT_TEST_STORAGE_PATH);
         vorpalHistory2.history('unit_test');
         expect(vorpalHistory2.session.getHistory('up')).toBe('command2');
@@ -524,14 +522,14 @@ describe('integration tests:', () => {
     });
 
     describe('cancel', () => {
-      var longRunningCommand;
+      const longRunningCommand;
       beforeEach(() => {
         longRunningCommand = vorpal
           .command('LongRunning', 'This command keeps running.')
           .action(() => {
-            var self = this;
+            const self = this;
             self._cancelled = false;
-            var cancelInt = setInterval(() => {
+            const cancelInt = setInterval(() => {
               if (self._cancelled) {
                 // break off
                 clearInterval(cancelInt);
@@ -608,7 +606,7 @@ describe('integration tests:', () => {
         vorpal.exec('fail me plzz');
       });
       it('should handle piped event client_command_error', () => {
-        var vorpal2 = new Vorpal();
+        const vorpal2 = new Vorpal();
         vorpal2
           .on('client_command_error', () => {})
           .command('fail')
@@ -653,7 +651,7 @@ describe('integration tests:', () => {
       });
 
       it('should set and get items', () => {
-        var a = new Vorpal();
+        const a = new Vorpal();
         a.localStorage('foo');
         a.localStorage.setItem('cow', 'lick');
         expect(a.localStorage.getItem('cow')).toBe('lick');

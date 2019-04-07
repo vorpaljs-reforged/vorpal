@@ -1,5 +1,3 @@
-'use strict';
-
 var LocalStorageO = require('node-localstorage').LocalStorage;
 var path = require('path');
 var os = require('os');

@@ -5,10 +5,10 @@
  * this one.
  */
 
-var Vorpal = require('../');
-var intercept = require('../dist/intercept');
+const Vorpal = require('..');
+const intercept = require('../lib/intercept');
 
-var vorpal;
+let vorpal;
 
 // Normalize inputs to objects.
 function obj(inp) {
@@ -19,9 +19,9 @@ function obj(inp) {
   }
 }
 
-var vorpalStoutput = '';
-var unmute;
-var mute = function() {
+let vorpalStoutput = '';
+let unmute;
+const mute = function() {
   unmute = intercept(function(str) {
     vorpalStoutput += str;
     return '';
@@ -75,34 +75,34 @@ vorpal.command('multi word command [variadic...]').action(function(args, cb) {
 
 describe('argument parsing', function() {
   it('should execute a command with no args', function() {
-    var fixture = obj({ options: {} });
+    const fixture = obj({ options: {} });
     expect(obj(vorpal.execSync('foo'))).toBe(fixture);
   });
 
   it('should execute a command without an optional arg', function() {
-    var fixture = obj({ options: {} });
+    const fixture = obj({ options: {} });
     expect(obj(vorpal.execSync('optional'))).toBe(fixture);
   });
 
   it('should execute a command with an optional arg', function() {
-    var fixture = obj({ options: {}, str: 'bar' });
+    const fixture = obj({ options: {}, str: 'bar' });
     expect(obj(vorpal.execSync('optional bar'))).toBe(fixture);
   });
 
   it('should execute a command with a required arg', function() {
-    var fixture = obj({ options: {}, str: 'bar' });
+    const fixture = obj({ options: {}, str: 'bar' });
     expect(obj(vorpal.execSync('required bar'))).toBe(fixture);
   });
 
   it('should throw help when not passed a required arg', function() {
     mute();
-    var fixture = '\n  Missing required argument. Showing Help:';
+    const fixture = '\n  Missing required argument. Showing Help:';
     expect(vorpal.execSync('required')).toBe(fixture);
     unmute();
   });
 
   it('should execute a command with multiple arg types', function() {
-    var fixture = obj({
+    const fixture = obj({
       options: {},
       req: 'foo',
       opt: 'bar',
@@ -112,7 +112,7 @@ describe('argument parsing', function() {
   });
 
   it('should correct a command with wrong arg sequences declared', function() {
-    var fixture = obj({
+    const fixture = obj({
       options: {},
       req: 'foo',
       opt: 'bar',
@@ -122,7 +122,7 @@ describe('argument parsing', function() {
   });
 
   it('should normalize key=value pairs', function() {
-    var fixture = obj({
+    const fixture = obj({
       options: {},
       req: "a='b'",
       opt: "c='d and e'",
@@ -138,7 +138,7 @@ describe('argument parsing', function() {
   });
 
   it('should NOT normalize key=value pairs when isCommandArgKeyPairNormalized is false', function() {
-    var fixture = obj({
+    const fixture = obj({
       options: {},
       req: 'hello=world',
       opt: 'hello="world"',
@@ -152,40 +152,40 @@ describe('argument parsing', function() {
   });
 
   it('should execute multi-word command with arguments', function() {
-    var fixture = obj({ options: {}, variadic: ['and', 'so', 'on'] });
+    const fixture = obj({ options: {}, variadic: ['and', 'so', 'on'] });
     expect(obj(vorpal.execSync('multi word command and so on'))).toBe(fixture);
   });
 
   it('should parse command with undefine in it as invalid', function() {
-    var fixture = obj('Invalid command.');
+    const fixture = obj('Invalid command.');
     expect(obj(vorpal.execSync('has undefine in it'))).toBe(fixture);
   });
 });
 
 describe('option parsing', function() {
   it('should execute a command with no options', function() {
-    var fixture = obj({ options: {} });
+    const fixture = obj({ options: {} });
     expect(obj(vorpal.execSync('foo'))).toBe(fixture);
   });
 
   it('should execute a command with args and no options', function() {
-    var fixture = obj({ options: {}, args: ['bar', 'smith'] });
+    const fixture = obj({ options: {}, args: ['bar', 'smith'] });
     expect(obj(vorpal.execSync('foo bar smith'))).toBe(fixture);
   });
 
   describe('options before an arg', function() {
     it('should accept a short boolean option', function() {
-      var fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
+      const fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
       expect(obj(vorpal.execSync('foo -b bar smith'))).toBe(fixture);
     });
 
     it('should accept a long boolean option', function() {
-      var fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
+      const fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
       expect(obj(vorpal.execSync('foo --bool bar smith'))).toBe(fixture);
     });
 
     it('should accept a short optional option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { optional: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -193,7 +193,7 @@ describe('option parsing', function() {
     });
 
     it('should accept a long optional option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { optional: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -201,7 +201,7 @@ describe('option parsing', function() {
     });
 
     it('should accept a short required option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { required: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -209,7 +209,7 @@ describe('option parsing', function() {
     });
 
     it('should accept a long required option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { required: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -219,17 +219,17 @@ describe('option parsing', function() {
 
   describe('options after args', function() {
     it('should accept a short boolean option', function() {
-      var fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
+      const fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
       expect(obj(vorpal.execSync('foo bar smith -b '))).toBe(fixture);
     });
 
     it('should accept a long boolean option', function() {
-      var fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
+      const fixture = obj({ options: { bool: true }, args: ['bar', 'smith'] });
       expect(obj(vorpal.execSync('foo bar smith --bool '))).toBe(fixture);
     });
 
     it('should accept a short optional option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { optional: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -237,7 +237,7 @@ describe('option parsing', function() {
     });
 
     it('should accept a long optional option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { optional: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -245,7 +245,7 @@ describe('option parsing', function() {
     });
 
     it('should accept a short required option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { required: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -253,7 +253,7 @@ describe('option parsing', function() {
     });
 
     it('should accept a long required option', function() {
-      var fixture = obj({
+      const fixture = obj({
         options: { required: 'cheese' },
         args: ['bar', 'smith'],
       });
@@ -263,59 +263,59 @@ describe('option parsing', function() {
 
   describe('options without an arg', function() {
     it('should accept a short boolean option', function() {
-      var fixture = obj({ options: { bool: true } });
+      const fixture = obj({ options: { bool: true } });
       expect(obj(vorpal.execSync('foo -b '))).toBe(fixture);
     });
 
     it('should accept a long boolean option', function() {
-      var fixture = obj({ options: { bool: true } });
+      const fixture = obj({ options: { bool: true } });
       expect(obj(vorpal.execSync('foo --bool '))).toBe(fixture);
     });
 
     it('should accept a short optional option', function() {
-      var fixture = obj({ options: { optional: 'cheese' } });
+      const fixture = obj({ options: { optional: 'cheese' } });
       expect(obj(vorpal.execSync('foo --o cheese '))).toBe(fixture);
     });
 
     it('should accept a long optional option', function() {
-      var fixture = obj({ options: { optional: 'cheese' } });
+      const fixture = obj({ options: { optional: 'cheese' } });
       expect(obj(vorpal.execSync('foo --optional cheese '))).toBe(fixture);
     });
 
     it('should accept a short required option', function() {
-      var fixture = obj({ options: { required: 'cheese' } });
+      const fixture = obj({ options: { required: 'cheese' } });
       expect(obj(vorpal.execSync('foo -r cheese '))).toBe(fixture);
     });
 
     it('should accept a long required option', function() {
-      var fixture = obj({ options: { required: 'cheese' } });
+      const fixture = obj({ options: { required: 'cheese' } });
       expect(obj(vorpal.execSync('foo --required cheese '))).toBe(fixture);
     });
   });
 
   describe('option validation', function() {
     it('should execute a boolean option without an arg', function() {
-      var fixture = obj({ options: { bool: true } });
+      const fixture = obj({ options: { bool: true } });
       expect(obj(vorpal.execSync('foo -b'))).toBe(fixture);
     });
 
     it('should execute an optional option without an arg', function() {
-      var fixture = obj({ options: { optional: true } });
+      const fixture = obj({ options: { optional: true } });
       expect(obj(vorpal.execSync('foo -o'))).toBe(fixture);
     });
 
     it('should execute an optional option with an arg', function() {
-      var fixture = obj({ options: { optional: 'cows' } });
+      const fixture = obj({ options: { optional: 'cows' } });
       expect(obj(vorpal.execSync('foo -o cows'))).toBe(fixture);
     });
 
     it('should execute a required option with an arg', function() {
-      var fixture = obj({ options: { required: 'cows' } });
+      const fixture = obj({ options: { required: 'cows' } });
       expect(obj(vorpal.execSync('foo -r cows'))).toBe(fixture);
     });
 
     it('should throw help on a required option without an arg', function() {
-      var fixture = '\n  Missing required value for option --required. Showing Help:';
+      const fixture = '\n  Missing required value for option --required. Showing Help:';
       mute();
       expect(vorpal.execSync('foo -r')).toBe(fixture);
       unmute();
@@ -324,49 +324,49 @@ describe('option parsing', function() {
 
   describe('negated options', function() {
     it('should make a boolean option false', function() {
-      var fixture = obj({ options: { bool: false }, args: ['cows'] });
+      const fixture = obj({ options: { bool: false }, args: ['cows'] });
       expect(obj(vorpal.execSync('foo --no-bool cows'))).toBe(fixture);
     });
 
     it('should make an unfilled optional option false', function() {
-      var fixture = obj({ options: { optional: false }, args: ['cows'] });
+      const fixture = obj({ options: { optional: false }, args: ['cows'] });
       expect(obj(vorpal.execSync('foo --no-optional cows'))).toBe(fixture);
     });
 
     it('should ignore a filled optional option', function() {
-      var fixture = obj({ options: { optional: false }, args: ['cows'] });
+      const fixture = obj({ options: { optional: false }, args: ['cows'] });
       expect(obj(vorpal.execSync('foo --no-optional cows'))).toBe(fixture);
     });
 
     it('should return help on a required option', function() {
-      var fixture = '\n  Missing required value for option --required. Showing Help:';
+      const fixture = '\n  Missing required value for option --required. Showing Help:';
       mute();
       expect(vorpal.execSync('foo --no-required cows')).toBe(fixture);
       unmute();
     });
 
     it('should throw help on an unknown option', function() {
-      var fixture = "\n  Invalid option: 'unknown'. Showing Help:";
+      const fixture = "\n  Invalid option: 'unknown'. Showing Help:";
       expect(vorpal.execSync('foo --unknown')).toBe(fixture);
     });
 
     it('should allow unknown options when allowUnknownOptions is set to true', function() {
-      var fixture = obj({ options: { unknown: true } });
+      const fixture = obj({ options: { unknown: true } });
       expect(obj(vorpal.execSync('bar --unknown'))).toBe(fixture);
     });
 
     it('should allow the allowUnknownOptions state to be set with a boolean', function() {
-      var fixture = "\n  Invalid option: 'unknown'. Showing Help:";
+      const fixture = "\n  Invalid option: 'unknown'. Showing Help:";
       expect(vorpal.execSync('baz --unknown')).toBe(fixture);
     });
   });
 });
 
 describe('help menu', function() {
-  var longFixture =
+  const longFixture =
     'Twas brillig and the slithy toves, did gyre and gimble in the wabe. All mimsy were the borogoves. And the mome wraths outgrabe. Beware the Jabberwock, my son. The claws that bite, the jaws that catch. Beware the jubjub bird and shun, the frumious bandersnatch. Twas brillig and the slithy toves, did gyre and gimble in the wabe. All mimsy were the borogoves. And the mome wraths outgrabe. Beware the Jabberwock, my son. The claws that bite, the jaws that catch. Beware the jubjub bird and shun, the frumious bandersnatch. Twas brillig and the slithy toves, did gyre and gimble in the wabe. All mimsy were the borogoves. And the mome wraths outgrabe. Beware the Jabberwock, my son. The claws that bite, the jaws that catch. Beware the jubjub bird and shun, the frumious bandersnatch.';
-  var shortFixture = 'Twas brillig and the slithy toves.';
-  var help;
+  const shortFixture = 'Twas brillig and the slithy toves.';
+  let help;
 
   beforeAll(function() {
     help = Vorpal();
@@ -377,7 +377,7 @@ describe('help menu', function() {
 });
 
 describe('descriptors', function() {
-  var instance;
+  let instance;
 
   beforeEach(function() {
     instance = Vorpal();

@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Function library for Vorpal's out-of-the-box
  * API commands. Imported into a Vorpal server
