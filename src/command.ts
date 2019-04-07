@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import _ from 'lodash';
 import Option from './option';
 import util from './util';
+import { IVorpal } from './vorpal-interface';
 export interface Arg {
   required: boolean;
   name: string;
@@ -39,7 +40,7 @@ export default class Command extends EventEmitter {
   private _fn;
   private _validate;
   private _parse;
-  parent: this;
+  parent: IVorpal;
 
   /**
    * Initialize a new `Command` instance.
@@ -78,7 +79,7 @@ export default class Command extends EventEmitter {
    * @api public
    */
 
-  public option(flags, description, autocomplete) {
+  public option(flags, description, autocomplete?) {
     const self = this;
     const option = new Option(flags, description, autocomplete);
     const oname = option.name();
@@ -284,7 +285,7 @@ export default class Command extends EventEmitter {
    * @api public
    */
 
-  public alias() {
+  public alias(...aliases) {
     const self = this;
     for (let i = 0; i < arguments.length; ++i) {
       // tODO: to spread args
@@ -431,17 +432,15 @@ export default class Command extends EventEmitter {
    * @api public
    */
 
-  public usage(str) {
-    const args = this._args.map(function(arg) {
-      return util.humanReadableArgName(arg);
-    });
+  public usage(str?) {
+    const args = this._args.map((arg) => util.humanReadableArgName(arg));
 
     const usage =
       '[options]' +
       (this.commands.length ? ' [command]' : '') +
       (this._args.length ? ' ' + args.join(' ') : '');
 
-    if (arguments.length === 0) {
+    if (_.isNil(str)) {
       return this._usage || usage;
     }
 

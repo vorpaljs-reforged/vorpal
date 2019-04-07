@@ -17,13 +17,13 @@ import Session from './session';
 import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
-
+import { IVorpal } from './vorpal-interface';
 interface PromptOption {
   sessionId?: string;
   message?: string;
 }
 
-export default class Vorpal extends EventEmitter {
+export default class Vorpal extends EventEmitter implements IVorpal{
   public chalk;
   public lodash: _.LoDashStatic;
   private _version: string;
@@ -291,7 +291,7 @@ export default class Vorpal extends EventEmitter {
    * @api public
    */
 
-  public command(name, desc, opts) {
+  public command(name, desc?, opts?) {
     opts = opts || {};
     name = String(name);
 
@@ -447,7 +447,7 @@ export default class Vorpal extends EventEmitter {
       this._unhook();
       this._hooked = false;
     }
-    return this;
+    // return this; // TODO check
   }
 
   /**
@@ -628,10 +628,9 @@ export default class Vorpal extends EventEmitter {
    * @api private
    */
 
-  public _prompt(data) {
+  public _prompt(data = {}) {
     const self = this;
     let prompt;
-    data = data || {};
     if (!data.sessionId) {
       data.sessionId = self.session.id;
     }
@@ -703,7 +702,7 @@ export default class Vorpal extends EventEmitter {
    * @api public
    */
 
-  public exec(cmd, args, cb) {
+  public exec(cmd, args, cb = _.noop) {
     const self = this;
     let ssn = self.session;
 
@@ -1289,9 +1288,7 @@ export default class Vorpal extends EventEmitter {
    * @api private
    */
 
-  public _send(str, direction, data, options) {
-    options = options || {};
-    data = data || {};
+  public _send(str, direction, data = {}, options ={}) {
     const ssn = this.getSessionById(data.sessionId);
     if (!ssn) {
       throw new Error('No Sessions logged for ID ' + data.sessionId + ' in vorpal._send.');

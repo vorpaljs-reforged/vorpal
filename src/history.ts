@@ -107,8 +107,7 @@ export default class History {
    *
    * @return {String}
    */
-  public peek(depth) {
-    depth = depth || 0;
+  public peek(depth = 0) {
     return this._hist[this._hist.length - 1 - depth];
   }
 
