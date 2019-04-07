@@ -2,21 +2,21 @@
  * Module dependencies.
  */
 
-import _ from 'lodash';
+import chalk from 'chalk';
 import { EventEmitter } from 'events';
+import _ from 'lodash';
+import minimist from 'minimist';
+import os from 'os';
+import wrap from 'wrap-ansi';
 import Command from './command';
 import CommandInstance from './command-instance';
-import VorpalUtil from './util';
-import ui from './ui';
-import Session from './session';
-import intercept from './intercept';
-import minimist from 'minimist';
-import commons from './vorpal-commons';
-import chalk from 'chalk';
-import os from 'os';
 import History from './history';
+import intercept from './intercept';
 import LocalStorage from './local-storage';
-import wrap from 'wrap-ansi';
+import Session from './session';
+import ui from './ui';
+import VorpalUtil from './util';
+import commons from './vorpal-commons';
 
 /**
  * Initialize a new `Vorpal` instance.
@@ -105,7 +105,7 @@ Vorpal.prototype = Object.create(EventEmitter.prototype);
  * Vorpal prototype.
  */
 
-let vorpal = Vorpal.prototype;
+const vorpal = Vorpal.prototype;
 
 /**
  * Extension to `constructor`.
@@ -561,10 +561,10 @@ vorpal._onKeypress = function(key, value) {
   }
 };
 
-type PromptOption = {
+interface PromptOption {
   sessionId?: string;
   message?: string;
-};
+}
 /**
  * For use in vorpal API commands, sends
  * a prompt command downstream to the local

@@ -10,7 +10,15 @@ import logUpdate from 'log-update';
 import util from './util';
 
 class UI extends EventEmitter {
-  private _activePrompt: string;
+  private _activePrompt;
+  private parent;
+  private _midPrompt: boolean;
+  private _lastDelimiter: string;
+  private _sigint: Function;
+  private _sigintCalled: boolean;
+  private _sigintCount: number;
+  private _cancel: boolean;
+  private inquirerStdout: string;
   // FIXME §here: more to add
 
   /**
@@ -66,19 +74,19 @@ class UI extends EventEmitter {
           // There are commands running if
           // cancelCommands function is available.
           this.imprint();
-          this.submit('');
+          this.submit();
           this._sigintCalled = false;
           this._sigintCount = 0;
           this.parent.session.emit('vorpal_command_cancel');
         } else if (String(text).trim() !== '') {
           this.imprint();
-          this.submit('');
+          this.submit();
           this._sigintCalled = false;
           this._sigintCount = 0;
         } else {
           this._sigintCalled = false;
           this.delimiter(' ');
-          this.submit('');
+          this.submit();
           this.log('(^C again to quit)');
         }
       }
@@ -350,7 +358,7 @@ class UI extends EventEmitter {
   public cancel() {
     if (this.midPrompt()) {
       this._cancel = true;
-      this.submit('');
+      this.submit();
       this._midPrompt = false;
     }
     return this;
@@ -397,7 +405,7 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public log() {
+  public log(...message) {
     let args = util.fixArgsForApply(arguments);
     args = _.isFunction(this._pipeFn) ? this._pipeFn(args) : args;
     if (args === '') {
@@ -445,7 +453,7 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public delimiter(str) {
+  public delimiter(str?) {
     if (!this._activePrompt) {
       return this;
     }

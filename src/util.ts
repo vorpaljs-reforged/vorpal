@@ -19,7 +19,7 @@ export default {
    */
   parseArgs(str, opts) {
     const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi;
-    let array = [];
+    const array = [];
     let match;
     do {
       match = reg.exec(str);
@@ -73,7 +73,7 @@ export default {
       let commandPart = '';
 
       // Loop through each naive pipe.
-      for (const key in naivePipes) {
+      _.forEach(_.range(0, naivePipes.length), key => {
         // It's possible/likely that this naive pipe is the whole pipe if it doesn't contain an unfinished quote.
         const possiblePipe = naivePipes[key];
         commandPart += possiblePipe;
@@ -97,7 +97,7 @@ export default {
           // Quote was left open. The pipe character was previously removed when the array was split.
           commandPart += '|';
         }
-      }
+      });
 
       // Set the first pipe to command and the rest to pipes.
       command = newPipes.shift();

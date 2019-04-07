@@ -9,12 +9,14 @@ export default class LocalStorage {
   public _localStorage: LocalStorageO;
 
   constructor(id: string) {
-    if (!id) throw new TypeError('Id need to be provided');
+    if (!id) {
+      throw new TypeError('Id need to be provided');
+    }
     this._localStorage = new LocalStorageO(DEFAULT_STORAGE_PATH + id);
   }
 
-  public getItem(key, value) {
-    return this._localStorage.getItem(key, value);
+  public getItem(key) {
+    return this._localStorage.getItem(key);
   }
 
   public setItem(key, value) {

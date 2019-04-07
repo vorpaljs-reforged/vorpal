@@ -2,8 +2,8 @@
  * Module dependencies.
  */
 
-import util from './util';
 import _ from 'lodash';
+import util from './util';
 
 class CommandInstance {
   /**

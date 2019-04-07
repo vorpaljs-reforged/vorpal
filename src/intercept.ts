@@ -24,9 +24,9 @@ export default function(callback) {
     };
   })(process.stdout.write);
 
-  console.error = (function() {
+  console.error = (function(...args) {
+    // TODO: check
     return function() {
-      const args = _.toArray(arguments);
       args.unshift('\x1b[31m[ERROR]\x1b[0m');
       console.log.apply(console.log, args);
     };

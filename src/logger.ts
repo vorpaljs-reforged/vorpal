@@ -3,15 +3,9 @@
  */
 
 import _ from 'lodash';
-import util from 'util';
+import { inspect } from 'util';
 import util from './util';
 
-/**
- * Initialize a new `Logger` instance.
- *
- * @return {Logger}
- * @api public
- */
 function viewed(str) {
   const re = /\u001b\[\d+m/gm;
   return String(str).replace(re, '');
@@ -44,16 +38,22 @@ function trimTo(str, amt) {
     }
   }
 
-  if (found === true) {
+  if (found) {
     return newResult;
   }
 
   return result;
 }
 
+/**
+ * Initialize a new `Logger` instance.
+ *
+ * @return {Logger}
+ * @api public
+ */
 function Logger(cons) {
   const logger = cons || console;
-  log = function() {
+  const log = function() {
     logger.log.apply(logger, arguments);
   };
 
@@ -94,7 +94,7 @@ function Logger(cons) {
           let trimmed = trimTo(input[i], colsWidth);
           const trimmedLength = trimmed.length;
           const re = /\\u001b\[\d+m/gm;
-          const matches = ut.inspect(trimmed).match(re);
+          const matches = inspect(trimmed).match(re);
           let color = '';
           // Ugh. We're chopping a line, so we have to look for unfinished
           // color assignments and throw them on the next line.

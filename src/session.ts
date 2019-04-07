@@ -3,11 +3,12 @@
  */
 
 import { EventEmitter } from 'events';
-import os from 'os';
 import _ from 'lodash';
-import util from './util';
+import os from 'os';
 import autocomplete from './autocomplete';
+import Command from './command';
 import CommandInstance from './command-instance';
+import util from './util';
 
 /**
  * Initialize a new `Session` instance.
@@ -302,7 +303,7 @@ session.getAutocompleteDeprecated = function(str, cb) {
     }
   });
 
-  let command = match ? _.find(this.parent.commands, { _name: match }) : undefined;
+  let command: Command = match ? _.find(this.parent.commands, { _name: match }) : undefined;
 
   if (!command) {
     command = _.find(this.parent.commands, { _catch: true });
