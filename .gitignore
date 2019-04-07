@@ -13,3 +13,4 @@ test/util/playground.js
 .idea/
 electron*
 test-reports/
+dist
