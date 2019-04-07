@@ -9,8 +9,9 @@
  */
 
 import _ from 'lodash';
+import {IVorpal, ICommand}  from './types';
 
-export default function(vorpal) {
+export default function(vorpal: IVorpal) {
   /**
    * Help for a particular command.
    */
@@ -18,11 +19,11 @@ export default function(vorpal) {
   vorpal
     .command('help [command...]')
     .description('Provides help for a given command.')
-    .action(function(args, cb) {
+    .action(function(this:IVorpal, args, cb) {
       const self = this;
       if (args.command) {
         args.command = args.command.join(' ');
-        const commandWithName = _.find(this.parent.commands, {
+        const commandWithName = _.find(self.parent.commands, {
           _name: String(args.command).trim(),
         });
         if (commandWithName && !commandWithName._hidden) {

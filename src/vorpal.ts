@@ -17,28 +17,39 @@ import Session from './session';
 import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
-import { IVorpal } from './vorpal-interface';
-interface PromptOption {
+import { IVorpal } from './types';
+
+type PromptOption = {
   sessionId?: string;
   message?: string;
 }
+type DataSession = {
+  sessionId?: string,
+  command?: string,
+  args?,
+  options?: PromptOption,
+  value?: any,
+  key?: string,
+  completed?: boolean
+}
 
-export default class Vorpal extends EventEmitter implements IVorpal{
+export default class Vorpal extends EventEmitter implements IVorpal {
   public chalk;
   public lodash: _.LoDashStatic;
+  public parent: Vorpal;
   private _version: string;
   private _title: string;
   private _description: string;
   private _banner: string;
-  private cmdHistory: History;
-  public commands: any[];
+  public cmdHistory: History;
+  public commands: Command[];
   private _queue: any[];
   private _command: any;
   public ui: any;
   private _delimiter: string;
   private server: { sessions: any[] };
   private _hooked: boolean;
-  private _useDeprecatedAutocompletion: boolean;
+  public _useDeprecatedAutocompletion: boolean;
   public util: any;
   public Session: typeof Session;
   public session: any;
@@ -143,7 +154,7 @@ export default class Vorpal extends EventEmitter implements IVorpal{
   public parse(argv, options) {
     options = options || {};
     const args = argv;
-    let result = this;
+    let result: Vorpal|minimist.ParsedArgs = this;
     const catchExists = !(_.find(this.commands, { _catch: true }) === undefined);
     args.shift();
     args.shift();
@@ -396,7 +407,7 @@ export default class Vorpal extends EventEmitter implements IVorpal{
    * @api public
    */
 
-  public log() {
+  public log(...args) {
     this.ui.log.apply(this.ui, arguments);
     return this;
   }
@@ -628,7 +639,7 @@ export default class Vorpal extends EventEmitter implements IVorpal{
    * @api private
    */
 
-  public _prompt(data = {}) {
+  public _prompt(data:DataSession = {}) {
     const self = this;
     let prompt;
     if (!data.sessionId) {
@@ -702,7 +713,7 @@ export default class Vorpal extends EventEmitter implements IVorpal{
    * @api public
    */
 
-  public exec(cmd, args, cb = _.noop) {
+  public exec(cmd, args, cb?) {
     const self = this;
     let ssn = self.session;
 
@@ -1288,7 +1299,7 @@ export default class Vorpal extends EventEmitter implements IVorpal{
    * @api private
    */
 
-  public _send(str, direction, data = {}, options ={}) {
+  public _send(str, direction, data: DataSession = {}, options = {}) {
     const ssn = this.getSessionById(data.sessionId);
     if (!ssn) {
       throw new Error('No Sessions logged for ID ' + data.sessionId + ' in vorpal._send.');

@@ -418,7 +418,7 @@ export default {
    * @return {String}
    * @api private
    */
-  pad(str: string, width: number, delimiter: string = ' '): string {
+  pad(str: string|string[], width: number, delimiter: string = ' '): string {
     width = Math.floor(width);
     const len = Math.max(0, width - strip(str).length);
     return str + Array(len + 1).join(delimiter);

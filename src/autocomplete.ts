@@ -1,5 +1,16 @@
 import _ from 'lodash';
 import strip from 'strip-ansi';
+import { IVorpal } from './types';
+import Command from './command';
+
+type Input = {
+  raw,
+  prefix,
+  suffix,
+  context,
+  match?: Command,
+  option?
+};
 
 const autocomplete = {
   /**
@@ -238,7 +249,7 @@ function filterData(str, data) {
  * @api private
  */
 
-function parseInput(str, idx) {
+function parseInput(str, idx) : Input{
   const raw = String(str || '');
   const sliced = raw.slice(0, idx);
   const sections = sliced.split('|');
@@ -324,7 +335,7 @@ function getCommandNames(cmds) {
  * @api private
  */
 
-function getMatchObject(input, commands) {
+function getMatchObject(this:IVorpal, input, commands) {
   const len = input.context.length;
   const trimmed = String(input.context).replace(/^\s+/g, '');
   let prefix = new Array(len - trimmed.length + 1).join(' ');
@@ -353,7 +364,7 @@ function getMatchObject(input, commands) {
   }
 
   if (!matchObject) {
-    matchObject = _.find(this.parent.commands, { _catch: true });
+    matchObject = this.parent.commands.find(cmd => !_.isNil(cmd._catch));
     if (matchObject) {
       suffix = input.context;
     }
@@ -384,7 +395,7 @@ function getMatchObject(input, commands) {
  * @api private
  */
 
-function getMatchData(input, cb) {
+function getMatchData(input: Input, cb) {
   const string = input.context;
   const cmd = input.match;
   const midOption =
@@ -438,9 +449,7 @@ function getMatchData(input, cb) {
 
   if (afterOption === true) {
     const opt = strip(input.option).trim();
-    const shortMatch = _.find(cmd.options, { short: opt });
-    const longMatch = _.find(cmd.options, { long: opt });
-    const match = longMatch || shortMatch;
+    const match = cmd.options.find(o => o.short === opt || o.long === opt);
     if (match) {
       const config = match.autocomplete;
       handleDataFormat(string, config, cb);

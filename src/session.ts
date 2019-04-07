@@ -9,6 +9,7 @@ import autocomplete from './autocomplete';
 import Command from './command';
 import CommandInstance from './command-instance';
 import util from './util';
+import Vorpal from './vorpal';
 
 type CommandResponse = {
   error?: Error;
@@ -20,8 +21,8 @@ export default class Session extends EventEmitter {
   _registeredCommands: number;
   _completedCommands: number;
   _commandSetCallback: any;
-  id: any;
-  parent: any;
+  id: any;vorpal
+  parent: Vorpal;
   authenticating: any;
   user: any;
   host: any;
@@ -296,8 +297,8 @@ export default class Session extends EventEmitter {
     }
 
     // Find custom autocompletion
-    let match;
-    let extra;
+    let match: string;
+    let extra: string;
 
     names.forEach(function(name) {
       if (trimmed.substr(0, name.length) === name && String(name).trim() !== '') {
@@ -306,10 +307,13 @@ export default class Session extends EventEmitter {
       }
     });
 
-    let command: Command = match ? _.find(this.parent.commands, { _name: match }) : undefined;
+    let command: Command;
+    if(match)
+      command = this.parent.commands.find(cmd => cmd._name === match);
+      // lodash _.find was drop since untipable
 
     if (!command) {
-      command = _.find(this.parent.commands, { _catch: true });
+      command = this.parent.commands.find(cmd => cmd._catch === true)
       if (command) {
         extra = trimmed;
       }
