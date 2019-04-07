@@ -117,10 +117,10 @@ export default {
         }
 
         return ({
-            command  : command,
-            match    : match,
-            matchArgs: matchArgs,
-            pipes    : pipes,
+            command,
+            match,
+            matchArgs,
+            pipes,
         })
     },
 
@@ -238,7 +238,7 @@ export default {
             return String(str).replace(/^-*/, '')
         }).filter(function(str) {
             let match   = false
-            let strings = [`-${str}`, `--${str}`, `--no-${str}`]
+            const strings = [`-${str}`, `--${str}`, `--no-${str}`]
             for (let i = 0; i < passedArgParts.length; ++i) {
                 if (strings.indexOf(passedArgParts[i]) > -1) {
                     match = true

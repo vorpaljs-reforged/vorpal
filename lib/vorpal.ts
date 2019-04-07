@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Polyfill for ES6.
  */
@@ -14,21 +12,21 @@ if (!global._babelPolyfill) {
  * Module dependencies.
  */
 
-var _ = require('lodash');
-var EventEmitter = require('events').EventEmitter;
-var Command = require('./command');
-var CommandInstance = require('./command-instance');
-var VorpalUtil = require('./util');
-var ui = require('./ui');
-var Session = require('./session');
-var intercept = require('./intercept');
-var minimist = require('minimist');
-var commons = require('./vorpal-commons');
-var chalk = require('chalk');
-var os = require('os');
-var History = require('./history');
-var LocalStorage = require('./local-storage');
-var wrap = require('wrap-ansi');
+const _ = require('lodash');
+const {EventEmitter} = require('events');
+const Command = require('./command');
+const CommandInstance = require('./command-instance');
+const VorpalUtil = require('./util');
+const ui = require('./ui');
+const Session = require('./session');
+const intercept = require('./intercept');
+const minimist = require('minimist');
+const commons = require('./vorpal-commons');
+const chalk = require('chalk');
+const os = require('os');
+const History = require('./history');
+const LocalStorage = require('./local-storage');
+const wrap = require('wrap-ansi');
 
 /**
  * Initialize a new `Vorpal` instance.
@@ -122,7 +120,7 @@ Vorpal.prototype = Object.create(EventEmitter.prototype);
  * Vorpal prototype.
  */
 
-var vorpal = Vorpal.prototype;
+let vorpal = Vorpal.prototype;
 
 /**
  * Expose `Vorpal`.
@@ -136,7 +134,7 @@ exports = module.exports = Vorpal;
  */
 
 Vorpal.prototype._init = function () {
-  var self = this;
+  const self = this;
 
   ui.on('vorpal_ui_keypress', function (data) {
     self.emit('keypress', data);
@@ -154,9 +152,9 @@ Vorpal.prototype._init = function () {
 
 Vorpal.prototype.parse = function (argv, options) {
   options = options || {};
-  var args = argv;
-  var result = this;
-  var catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
+  const args = argv;
+  let result = this;
+  const catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
   args.shift();
   args.shift();
   if (args.length > 0 || catchExists) {
@@ -272,16 +270,16 @@ vorpal.use = function (commands, options) {
     return this.use(require(commands), options);
   } else {
     commands = _.isArray(commands) ? commands : [commands];
-    for (var i = 0; i < commands.length; ++i) {
-      var cmd = commands[i];
+    for (let i = 0; i < commands.length; ++i) {
+      const cmd = commands[i];
       if (cmd.command) {
-        var command = this.command(cmd.command);
+        const command = this.command(cmd.command);
         if (cmd.description) {
           command.description(cmd.description);
         }
         if (cmd.options) {
           cmd.options = _.isArray(cmd.options) ? cmd.options : [cmd.options];
-          for (var j = 0; j < cmd.options.length; ++j) {
+          for (let j = 0; j < cmd.options.length; ++j) {
             command.option(cmd.options[j][0], cmd.options[j][1]);
           }
         }
@@ -308,18 +306,18 @@ vorpal.command = function (name, desc, opts) {
   opts = opts || {};
   name = String(name);
 
-  var argsRegExp = /(\[[^\]]*\]|\<[^\>]*\>)/g;
-  var args = [];
-  var arg;
+  const argsRegExp = /(\[[^\]]*\]|\<[^\>]*\>)/g;
+  const args = [];
+  let arg;
 
   while ((arg = argsRegExp.exec(name)) !== null) {
     args.push(arg[1]);
   }
 
-  var cmdNameRegExp = /^([^\[\<]*)/;
-  var cmdName = cmdNameRegExp.exec(name)[0].trim();
+  const cmdNameRegExp = /^([^\[\<]*)/;
+  const cmdName = cmdNameRegExp.exec(name)[0].trim();
 
-  var cmd = new Command(cmdName, this);
+  const cmd = new Command(cmdName, this);
 
   if (desc) {
     cmd.description(desc);
@@ -332,8 +330,8 @@ vorpal.command = function (name, desc, opts) {
   cmd._parseExpectedArgs(args);
   cmd.parent = this;
 
-  var exists = false;
-  for (var i = 0; i < this.commands.length; ++i) {
+  let exists = false;
+  for (let i = 0; i < this.commands.length; ++i) {
     exists = (this.commands[i]._name === cmd._name) ? true : exists;
     if (exists) {
       this.commands[i] = cmd;
@@ -346,7 +344,7 @@ vorpal.command = function (name, desc, opts) {
     console.warn(chalk.yellow('Warning: command named "' + name + '" was registered more than once.\nIf you intend to override a command, you should explicitly remove the first command with command.remove().'));
   }
 
-  this.emit('command_registered', {command: cmd, name: name});
+  this.emit('command_registered', {command: cmd, name});
 
   return cmd;
 };
@@ -496,7 +494,7 @@ vorpal.history = function (id) {
  * @api public
  */
 vorpal.localStorage = function (id) {
-  var ls = Object.create(LocalStorage);
+  const ls = Object.create(LocalStorage);
   ls.setId(id);
   _.extend(this.localStorage, ls);
   return this;
@@ -551,12 +549,12 @@ vorpal.hide = function () {
  */
 
 vorpal._onKeypress = function (key, value) {
-  var self = this;
+  const self = this;
   if (this.session.isLocal() && !this.session.client && !this._command) {
     this.session.getKeypressResult(key, value, function (err, result) {
       if (!err && result !== undefined) {
         if (_.isArray(result)) {
-          var formatted = VorpalUtil.prettifyArray(result);
+          const formatted = VorpalUtil.prettifyArray(result);
           self.ui.imprint();
           self.session.log(formatted);
         } else {
@@ -566,8 +564,8 @@ vorpal._onKeypress = function (key, value) {
     });
   } else {
     this._send('vantage-keypress-upstream', 'upstream', {
-      key: key,
-      value: value,
+      key,
+      value,
       sessionId: this.session.id
     });
   }
@@ -617,7 +615,7 @@ vorpal.prompt = function (options = {}, userCallback) {
       });
     } else {
       this.on('vantage-prompt-upstream', handler);
-      this._send('vantage-prompt-downstream', 'downstream', {options: options, value: undefined, sessionId: ssn.id});
+      this._send('vantage-prompt-downstream', 'downstream', {options, value: undefined, sessionId: ssn.id});
     }
     return prompt;
   });
@@ -633,13 +631,13 @@ vorpal.prompt = function (options = {}, userCallback) {
  */
 
 vorpal._prompt = function (data) {
-  var self = this;
-  var prompt;
+  const self = this;
+  let prompt;
   data = data || {};
   if (!data.sessionId) {
     data.sessionId = self.session.id;
   }
-  var ssn = self.getSessionById(data.sessionId);
+  const ssn = self.getSessionById(data.sessionId);
 
   // If we somehow got to _prompt and aren't the
   // local client, send the command downstream.
@@ -660,7 +658,7 @@ vorpal._prompt = function (data) {
     if (self.ui._cancelled === true) {
       self.ui._cancelled = false; return;
     }
-    var str = String(result.command).trim();
+    const str = String(result.command).trim();
     self.emit('client_prompt_submit', str);
     if (str === '' || str === 'undefined') {
       self._prompt(data); return;
@@ -703,8 +701,8 @@ vorpal._prompt = function (data) {
  */
 
 vorpal.exec = function (cmd, args, cb) {
-  var self = this;
-  var ssn = self.session;
+  const self = this;
+  let ssn = self.session;
 
   cb = (_.isFunction(args)) ? args : cb;
   args = args || {};
@@ -713,9 +711,9 @@ vorpal.exec = function (cmd, args, cb) {
     ssn = self.getSessionById(args.sessionId);
   }
 
-  var command = {
+  const command = {
     command: cmd,
-    args: args,
+    args,
     callback: cb,
     session: ssn
   };
@@ -744,19 +742,19 @@ vorpal.exec = function (cmd, args, cb) {
  */
 
 vorpal.execSync = function (cmd, options) {
-  var self = this;
-  var ssn = self.session;
+  const self = this;
+  let ssn = self.session;
   options = options || {};
   if (options.sessionId) {
     ssn = self.getSessionById(options.sessionId);
   }
 
-  var command = {
+  const command = {
     command: cmd,
     args: options,
     session: ssn,
     sync: true,
-    options: options
+    options
   };
 
   return self._execQueueItem(command);
@@ -774,7 +772,7 @@ vorpal.execSync = function (cmd, options) {
 
 vorpal._queueHandler = function () {
   if (this._queue.length > 0 && this._command === undefined) {
-    var item = this._queue.shift();
+    const item = this._queue.shift();
     this._execQueueItem(item);
   }
 };
@@ -788,7 +786,7 @@ vorpal._queueHandler = function () {
  */
 
 vorpal._execQueueItem = function (cmd) {
-  var self = this;
+  const self = this;
   self._command = cmd;
   if (cmd.session.isLocal() && !cmd.session.client) {
     return this._exec(cmd);
@@ -810,13 +808,13 @@ vorpal._execQueueItem = function (cmd) {
  */
 
 vorpal._exec = function (item) {
-  var self = this;
+  const self = this;
   item = item || {};
   item.command = item.command || '';
-  var modeCommand = item.command;
+  const modeCommand = item.command;
   item.command = (item.session._mode) ? item.session._mode : item.command;
 
-  var promptCancelled = false;
+  let promptCancelled = false;
   if (this.ui._midPrompt) {
     promptCancelled = true;
     this.ui.cancel();
@@ -833,17 +831,17 @@ vorpal._exec = function (item) {
   // History for our 'up' and 'down' arrows.
   item.session.history((item.session._mode ? modeCommand : item.command));
 
-  var commandData = this.util.parseCommand(item.command, this.commands);
+  const commandData = this.util.parseCommand(item.command, this.commands);
   item.command = commandData.command;
   item.pipes = commandData.pipes;
-  var match = commandData.match;
-  var matchArgs = commandData.matchArgs;
+  const match = commandData.match;
+  const matchArgs = commandData.matchArgs;
 
   function throwHelp(cmd, msg, alternativeMatch) {
     if (msg) {
       cmd.session.log(msg);
     }
-    var pickedMatch = alternativeMatch || match;
+    const pickedMatch = alternativeMatch || match;
     cmd.session.log(pickedMatch.helpInformation());
   }
 
@@ -886,10 +884,10 @@ vorpal._exec = function (item) {
     item._cancel = match._cancel;
     item.validate = match._validate;
     item.commandObject = match;
-    var init = match._init || function (arrgs, cb) {
+    const init = match._init || function (arrgs, cb) {
       cb();
     };
-    var delimiter = match._delimiter || String(item.command) + ':';
+    const delimiter = match._delimiter || String(item.command) + ':';
 
     item.args = self.util.buildCommandArgs(matchArgs, match, item, self.isCommandArgKeyPairNormalized);
 
@@ -901,9 +899,9 @@ vorpal._exec = function (item) {
     }
 
     // Build the piped commands.
-    var allValid = true;
-    for (var j = 0; j < item.pipes.length; ++j) {
-      var commandParts = self.util.matchCommand(item.pipes[j], self.commands);
+    let allValid = true;
+    for (let j = 0; j < item.pipes.length; ++j) {
+      const commandParts = self.util.matchCommand(item.pipes[j], self.commands);
       if (!commandParts.command) {
         item.session.log(self._commandHelp(item.pipes[j]));
         allValid = false;
@@ -963,8 +961,8 @@ vorpal._exec = function (item) {
     if (item.sync === true) {
       // If we're running synchronous commands,
       // we don't support piping.
-      var response;
-      var error;
+      let response;
+      let error;
       try {
         response = item.fn.call(new CommandInstance({
           downstream: undefined,
@@ -995,8 +993,8 @@ vorpal._exec = function (item) {
     // Reverse through the pipes and assign the
     // `downstream` object of each parent to its
     // child command.
-    for (var k = item.pipes.length - 1; k > -1; --k) {
-      var downstream = item.pipes[k + 1];
+    for (let k = item.pipes.length - 1; k > -1; --k) {
+      const downstream = item.pipes[k + 1];
       item.pipes[k].downstream = downstream;
     }
 
@@ -1019,7 +1017,7 @@ vorpal._exec = function (item) {
  */
 
 vorpal._exitMode = function (options) {
-  var ssn = this.getSessionById(options.sessionId);
+  const ssn = this.getSessionById(options.sessionId);
   ssn._mode = false;
   this.cmdHistory.exitMode();
   ssn.modeDelimiter(false);
@@ -1085,17 +1083,17 @@ vorpal._commandHelp = function (command) {
     return this._help(command);
   }
 
-  var matches = [];
-  var singleMatches = [];
+  let matches = [];
+  const singleMatches = [];
 
   command = (command) ? String(command).trim() : undefined;
-  for (var i = 0; i < this.commands.length; ++i) {
-    var parts = String(this.commands[i]._name).split(' ');
+  for (let i = 0; i < this.commands.length; ++i) {
+    const parts = String(this.commands[i]._name).split(' ');
     if (parts.length === 1 && parts[0] === command && !this.commands[i]._hidden && !this.commands[i]._catch) {
       singleMatches.push(command);
     }
-    var str = '';
-    for (var j = 0; j < parts.length; ++j) {
+    let str = '';
+    for (let j = 0; j < parts.length; ++j) {
       str = String(str + ' ' + parts[j]).trim();
       if (str === command && !this.commands[i]._hidden && !this.commands[i]._catch) {
         matches.push(this.commands[i]);
@@ -1104,18 +1102,18 @@ vorpal._commandHelp = function (command) {
     }
   }
 
-  var invalidString =
+  const invalidString =
     (command && matches.length === 0 && singleMatches.length === 0) ?
     ['', '  Invalid Command. Showing Help:', ''].join('\n') :
     '';
 
-  var commandMatch = (matches.length > 0);
-  var commandMatchLength = (commandMatch) ? String(command).trim().split(' ').length + 1 : 1;
+  const commandMatch = (matches.length > 0);
+  const commandMatchLength = (commandMatch) ? String(command).trim().split(' ').length + 1 : 1;
   matches = (matches.length === 0) ? this.commands : matches;
 
   const skipGroups = !((matches.length + 6) > process.stdout.rows);
 
-  var commands = matches.filter(function (cmd) {
+  const commands = matches.filter(function (cmd) {
     return !cmd._noHelp;
   }).filter(function (cmd) {
     return !cmd._catch;
@@ -1127,7 +1125,7 @@ vorpal._commandHelp = function (command) {
     }
     return (String(cmd._name).trim().split(' ').length <= commandMatchLength);
   }).map(function (cmd) {
-    var args = cmd._args.map(function (arg) {
+    const args = cmd._args.map(function (arg) {
       return VorpalUtil.humanReadableArgName(arg);
     }).join(' ');
 
@@ -1144,13 +1142,13 @@ vorpal._commandHelp = function (command) {
     ];
   });
 
-  var width = commands.reduce(function (max, commandX) {
+  const width = commands.reduce(function (max, commandX) {
     return Math.max(max, commandX[0].length);
   }, 0);
 
-  var counts = {};
+  const counts = {};
 
-  var groups = _.uniq(matches.filter(function (cmd) {
+  let groups = _.uniq(matches.filter(function (cmd) {
     return (String(cmd._name).trim().split(' ').length > commandMatchLength);
   }).map(function (cmd) {
     return String(cmd._name).split(' ').slice(0, commandMatchLength).join(' ');
@@ -1159,18 +1157,18 @@ vorpal._commandHelp = function (command) {
     counts[cmd]++;
     return cmd;
   })).map(function (cmd) {
-    let prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${((counts[cmd] === 1) ? '' : 's')}.`;
+    const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${((counts[cmd] === 1) ? '' : 's')}.`;
     return prefix;
   });
 
   groups = (skipGroups) ? [] : groups;
 
-  let descriptionWidth = process.stdout.columns - (width + 4);
+  const descriptionWidth = process.stdout.columns - (width + 4);
 
-  var commandsString = (commands.length < 1) ? '' : '\n  Commands:\n\n' +
+  const commandsString = (commands.length < 1) ? '' : '\n  Commands:\n\n' +
     commands.map(function (cmd) {
-      var prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
-      var suffix = wrap(cmd[1], descriptionWidth - 8).split('\n');
+      const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
+      let suffix = wrap(cmd[1], descriptionWidth - 8).split('\n');
       for (let i = 0; i < suffix.length; ++i) {
         if (i !== 0) {
           suffix[i] = VorpalUtil.pad('', width + 6) + suffix[i];
@@ -1182,11 +1180,11 @@ vorpal._commandHelp = function (command) {
     .join('\n') +
     '\n\n';
 
-  var groupsString = (groups.length < 1) ?
+  const groupsString = (groups.length < 1) ?
     '' :
     '  Command Groups:\n\n' + groups.join('\n') + '\n';
 
-  var results = String(
+  const results = String(
     this._helpHeader(!!invalidString) +
     invalidString +
     commandsString + '\n' +
@@ -1199,7 +1197,7 @@ vorpal._commandHelp = function (command) {
 };
 
 vorpal._helpHeader = function (hideTitle) {
-  var header = [];
+  const header = [];
 
   if (this._banner) {
     header.push(VorpalUtil.padRow(this._banner), '');
@@ -1207,7 +1205,7 @@ vorpal._helpHeader = function (hideTitle) {
 
   // Only show under specific conditions
   if (this._title && !hideTitle) {
-    var title = this._title;
+    let title = this._title;
 
     if (this._version) {
       title += ' v' + this._version;
@@ -1216,7 +1214,7 @@ vorpal._helpHeader = function (hideTitle) {
     header.push(VorpalUtil.padRow(title));
 
     if (this._description) {
-      var descWidth = process.stdout.columns * 0.75; // Only 75% of the screen
+      const descWidth = process.stdout.columns * 0.75; // Only 75% of the screen
 
       header.push(VorpalUtil.padRow(wrap(this._description, descWidth)));
     }
@@ -1248,7 +1246,7 @@ vorpal._helpHeader = function (hideTitle) {
 vorpal._send = function (str, direction, data, options) {
   options = options || {};
   data = data || {};
-  var ssn = this.getSessionById(data.sessionId);
+  const ssn = this.getSessionById(data.sessionId);
   if (!ssn) {
     throw new Error('No Sessions logged for ID ' + data.sessionId + ' in vorpal._send.');
   }
@@ -1280,9 +1278,9 @@ vorpal._send = function (str, direction, data, options) {
  * @api private
  */
 vorpal._proxy = function (str, direction, data, options) {
-  var self = this;
+  const self = this;
   return new Promise(function (resolve) {
-    var ssn = self.getSessionById(data.sessionId);
+    const ssn = self.getSessionById(data.sessionId);
     if (ssn && (!ssn.isLocal() && ssn.client)) {
       self._send(str, direction, data, options);
     } else {
@@ -1303,13 +1301,13 @@ vorpal.getSessionById = function (id) {
   if (_.isObject(id)) {
     throw new Error('vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.');
   }
-  var ssn = _.find(this.server.sessions, {id: id});
+  let ssn = _.find(this.server.sessions, {id});
   ssn = (this.session.id === id) ? this.session : ssn;
   if (!id) {
     throw new Error('vorpal.getSessionById was called with no ID passed.');
   }
   if (!ssn) {
-    var sessions = {
+    const sessions = {
       local: this.session.id,
       server: _.map(this.server.sessions, 'id')
     };
@@ -1329,7 +1327,7 @@ vorpal.getSessionById = function (id) {
  */
 
 vorpal.exit = function (options) {
-  var ssn = this.getSessionById(options.sessionId);
+  const ssn = this.getSessionById(options.sessionId);
   this.emit('vorpal_exit');
   if (ssn.isLocal()) {
     process.exit(0);
@@ -1339,8 +1337,8 @@ vorpal.exit = function (options) {
 };
 
 Object.defineProperty(vorpal, 'activeCommand', {
-  get: function () {
-    var result = (this._command) ? this._command.commandInstance : undefined;
+  get () {
+    const result = (this._command) ? this._command.commandInstance : undefined;
     return result;
   }
 });

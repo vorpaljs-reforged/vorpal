@@ -32,7 +32,7 @@ class CommandInstance {
    * Cancel running command.
    */
 
-  cancel() {
+  public cancel() {
     this.session.emit('vorpal_command_cancel');
   }
 
@@ -40,7 +40,7 @@ class CommandInstance {
    * Route stdout either through a piped command, or the session's stdout.
    */
 
-  log() {
+  public log() {
     const args = util.fixArgsForApply(arguments);
     if (this.downstream) {
       const fn = this.downstream.commandObject._fn || function () {};
@@ -75,19 +75,19 @@ class CommandInstance {
     }
   }
 
-  prompt(a, b, c) {
+  public prompt(a, b, c) {
     return this.session.prompt(a, b, c);
   }
 
-  delimiter(a, b, c) {
+  public delimiter(a, b, c) {
     return this.session.delimiter(a, b, c);
   }
 
-  help(a, b, c) {
+  public help(a, b, c) {
     return this.session.help(a, b, c);
   }
 
-  match(a, b, c) {
+  public match(a, b, c) {
     return this.session.match(a, b, c);
   }
 }

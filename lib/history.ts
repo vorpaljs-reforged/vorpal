@@ -2,46 +2,46 @@
 
 import _              from 'lodash'
 import {LocalStorage} from 'node-localstorage'
-import path           from 'path'
 import os             from 'os'
+import path           from 'path'
 
 // Number of command histories kept in persistent storage
-var HISTORY_SIZE = 500
+const HISTORY_SIZE = 500
 
 const temp                 = path.normalize(path.join(os.tmpdir(), '/.local_storage'))
 const DEFAULT_STORAGE_PATH = temp
 
 export default class History {
-    _localStorage?: LocalStorage
-    _inMode?: boolean
+    public _localStorage?: LocalStorage
+    public _inMode?: boolean
 
-    _storageKey = undefined
+    public _storageKey = undefined
 
     // Prompt Command History
     // Histctr moves based on number of times 'up' (+= ctr)
     //  or 'down' (-= ctr) was pressed in traversing
     // command history.
-    _hist    = []
-    _histCtr = 0
+    public _hist    = []
+    public _histCtr = 0
 
     // When in a 'mode', we reset the
     // history and store it in a cache until
     // exiting the 'mode', at which point we
     // resume the original history.
-    _histCache    = []
-    _histCtrCache = 0
+    public _histCache    = []
+    public _histCtrCache = 0
 
     /**
      * Initialize the history with local storage data
      * Called from setId when history id is set
      */
-    _init() {
+    public _init() {
         if (!this._storageKey) {
             return
         }
 
         // Load history from local storage
-        var persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey))
+        const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey))
         if (_.isArray(persistedHistory)) {
             Array.prototype.push.apply(this._hist, persistedHistory)
         }
@@ -52,7 +52,7 @@ export default class History {
      * Calls init internally to initialize
      * the history with the id.
      */
-    setId(id) {
+    public setId(id) {
         // Initialize a localStorage instance with default
         // path if it is not initialized
         if (!this._localStorage) {
@@ -68,7 +68,7 @@ export default class History {
      *
      * @param path
      */
-    setStoragePath(path) {
+    public setStoragePath(path) {
         if (!this._localStorage) {
             this._localStorage = new LocalStorage(path)
         }
@@ -79,7 +79,7 @@ export default class History {
      *
      * @return {String}
      */
-    getPreviousHistory() {
+    public getPreviousHistory() {
         this._histCtr++
         this._histCtr = (this._histCtr > this._hist.length) ?
             this._hist.length :
@@ -92,7 +92,7 @@ export default class History {
      *
      * @return {String}
      */
-    getNextHistory() {
+    public getNextHistory() {
         this._histCtr--
 
         // Return empty prompt if the we dont have any history to show
@@ -109,7 +109,7 @@ export default class History {
      *
      * @return {String}
      */
-    peek(depth) {
+    public peek(depth) {
         depth = depth || 0
         return this._hist[this._hist.length - 1 - depth]
     }
@@ -119,7 +119,7 @@ export default class History {
      *
      * @param cmd
      */
-    newCommand(cmd) {
+    public newCommand(cmd) {
         // Always reset history when new command is executed.
         this._histCtr = 0
 
@@ -133,8 +133,8 @@ export default class History {
 
         // Only persist history when not in mode
         if (this._storageKey && !this._inMode) {
-            var persistedHistory = this._hist
-            var historyLen       = this._hist.length
+            let persistedHistory = this._hist
+            const historyLen       = this._hist.length
             if (historyLen > HISTORY_SIZE) {
                 persistedHistory = this._hist.slice(historyLen - HISTORY_SIZE - 1, historyLen - 1)
             }
@@ -147,7 +147,7 @@ export default class History {
     /**
      * Called when entering a mode
      */
-    enterMode() {
+    public enterMode() {
         // Reassign the command history to a
         // cache, replacing it with a blank
         // history for the mode.
@@ -161,7 +161,7 @@ export default class History {
     /**
      * Called when exiting a mode
      */
-    exitMode() {
+    public exitMode() {
         this._hist         = this._histCache
         this._histCtr      = this._histCtrCache
         this._histCache    = []
@@ -173,7 +173,7 @@ export default class History {
      * Clears the command history
      * (Currently only used in unit test)
      */
-    clear() {
+    public clear() {
         if (this._storageKey) {
             this._localStorage.removeItem(this._storageKey)
         }

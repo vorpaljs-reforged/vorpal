@@ -2,12 +2,12 @@
  * Expose `Option`.
  */
 export default class Option {
-    required: number
-    optional: number
-    bool: boolean
-    flags: string[]
-    long?: string
-    short?: string
+    public required: number
+    public optional: number
+    public bool: boolean
+    public flags: string[]
+    public long?: string
+    public short?: string
 
     /**
      * Initialize a new `Option` instance.
@@ -38,7 +38,7 @@ export default class Option {
      * @api private
      */
 
-    name() {
+    public name() {
         if (this.long !== undefined) {
             return this.long
                 .replace('--', '')
@@ -56,7 +56,7 @@ export default class Option {
      * @api private
      */
 
-    is(arg) {
+    public is(arg) {
         return (arg === this.short || arg === this.long)
     }
 
@@ -67,7 +67,7 @@ export default class Option {
      * @api private
      */
 
-    assignFlag(flag) {
+    public assignFlag(flag) {
         if (flag.startsWith('--')) {
             this.long = flag
         } else {

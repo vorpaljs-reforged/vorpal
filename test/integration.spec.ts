@@ -1,11 +1,11 @@
 "use strict";
 
-var Vorpal = require("../dist/vorpal");
+var Vorpal = require("../lib/vorpal");
 var commands = require("./util/server");
 var BlueBirdPromise = require("bluebird");
 var fs = require("fs");
 
-var intercept = require("../dist/intercept");
+var intercept = require("../lib/intercept");
 let integrationStdoutput = "";
 var unmute;
 var mute = () => {

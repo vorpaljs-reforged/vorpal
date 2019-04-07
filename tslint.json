@@ -1,5 +1,5 @@
 {
-  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "extends": ["tslint:recommended", "tslint-config-prettier", "tslint-microsoft-contrib/recommended"],
   "rules": {
     "ban-comma-operator": [true],
     "cyclomatic-complexity": [true, 8],

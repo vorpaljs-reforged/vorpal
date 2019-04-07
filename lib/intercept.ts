@@ -14,11 +14,11 @@ import _ from 'lodash'
  * @return {Function}
  */
 export default function(callback) {
-    var oldStdoutWrite   = process.stdout.write
-    var oldConsoleError  = console.error
+    const oldStdoutWrite   = process.stdout.write
+    const oldConsoleError  = console.error
     process.stdout.write = (function(write) {
         return function(string) {
-            var args = _.toArray(arguments)
+            const args = _.toArray(arguments)
             args[0]  = interceptor(string)
             write.apply(process.stdout, args)
         }
@@ -26,7 +26,7 @@ export default function(callback) {
 
     console.error = (function() {
         return function() {
-            var args = _.toArray(arguments)
+            const args = _.toArray(arguments)
             args.unshift('\x1b[31m[ERROR]\x1b[0m')
             console.log.apply(console.log, args)
         }

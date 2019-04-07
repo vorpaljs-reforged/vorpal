@@ -1,14 +1,14 @@
 import {LocalStorage as LocalStorageO} from 'node-localstorage'
-import path                            from 'path'
 import os                              from 'os'
+import path                            from 'path'
 
 const temp                 = path.normalize(path.join(os.tmpdir(), '/.local_storage_'))
 const DEFAULT_STORAGE_PATH = temp
 
 export default class LocalStorage {
-    _localStorage: LocalStorageO
+    public _localStorage: LocalStorageO
 
-    setId(id) {
+    public setId(id) {
         if (id === undefined) {
             throw new Error('vorpal.localStorage() requires a unique key to be passed in.')
         }
@@ -17,23 +17,23 @@ export default class LocalStorage {
         }
     }
 
-    validate() {
+    public validate() {
         if (this._localStorage === undefined) {
             throw new Error('Vorpal.localStorage() was not initialized before writing data.')
         }
     }
 
-    getItem(key, value) {
+    public getItem(key, value) {
         this.validate()
         return this._localStorage.getItem(key, value)
     }
 
-    setItem(key, value) {
+    public setItem(key, value) {
         this.validate()
         return this._localStorage.setItem(key, value)
     }
 
-    removeItem(key) {
+    public removeItem(key) {
         this.validate()
         return this._localStorage.removeItem(key)
     }

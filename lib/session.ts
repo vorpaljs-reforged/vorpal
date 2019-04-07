@@ -4,12 +4,12 @@
  * Module dependencies.
  */
 
-var EventEmitter = require('events').EventEmitter;
-var os = require('os');
-var _ = require('lodash');
-var util = require('./util');
-var autocomplete = require('./autocomplete');
-var CommandInstance = require('./command-instance');
+const EventEmitter = require('events').EventEmitter;
+const os = require('os');
+const _ = require('lodash');
+const util = require('./util');
+const autocomplete = require('./autocomplete');
+const CommandInstance = require('./command-instance');
 
 /**
  * Initialize a new `Session` instance.
@@ -55,7 +55,7 @@ Session.prototype = Object.create(EventEmitter.prototype);
  * Session prototype.
  */
 
-var session = Session.prototype;
+let session = Session.prototype;
 
 /**
  * Expose `Session`.
@@ -74,7 +74,7 @@ module.exports = exports = Session;
  */
 
 session.log = function () {
-  var args = util.fixArgsForApply(arguments);
+  const args = util.fixArgsForApply(arguments);
   return this._log.apply(this, args);
 };
 
@@ -88,15 +88,15 @@ session.log = function () {
  */
 
 session._log = function () {
-  var self = this;
+  const self = this;
   if (this.isLocal()) {
     this.parent.ui.log.apply(this.parent.ui, arguments);
   } else {
     // If it's an error, expose the stack. Otherwise
     // we get a helpful '{}'.
-    var args = [];
-    for (var i = 0; i < arguments.length; ++i) {
-      var str = arguments[i];
+    const args = [];
+    for (let i = 0; i < arguments.length; ++i) {
+      let str = arguments[i];
       str = (str && str.stack) ? 'Error: ' + str.message : str;
       args.push(str);
     }
@@ -141,7 +141,7 @@ session.prompt = function (options, cb) {
  */
 
 session.fullDelimiter = function () {
-  var result = this._delimiter +
+  const result = this._delimiter +
    ((this._modeDelimiter !== undefined) ? this._modeDelimiter : '');
   return result;
 };
@@ -176,7 +176,7 @@ session.delimiter = function (str) {
  */
 
 session.modeDelimiter = function (str) {
-  var self = this;
+  const self = this;
   if (str === undefined) {
     return this._modeDelimiter;
   }
@@ -205,7 +205,7 @@ session.modeDelimiter = function (str) {
 
 session.getKeypressResult = function (key, value, cb) {
   cb = cb || function () {};
-  var keyMatch = (['up', 'down', 'tab'].indexOf(key) > -1);
+  const keyMatch = (['up', 'down', 'tab'].indexOf(key) > -1);
   if (key !== 'tab') {
     this._tabCtr = 0;
   }
@@ -217,7 +217,7 @@ session.getKeypressResult = function (key, value, cb) {
       // command.autocompletion, defer to the deprecated
       // version of autocompletion. Otherwise, default
       // to the new version.
-      var fn = (this.parent._useDeprecatedAutocompletion) ?
+      const fn = (this.parent._useDeprecatedAutocompletion) ?
         'getAutocompleteDeprecated' :
         'getAutocomplete';
       this[fn](value, function (err, data) {
@@ -230,7 +230,7 @@ session.getKeypressResult = function (key, value, cb) {
 };
 
 session.history = function (str) {
-  var exceptions = [];
+  const exceptions = [];
   if (str && exceptions.indexOf(String(str).toLowerCase()) === -1) {
     this.cmdHistory.newCommand(str);
   }
@@ -261,33 +261,33 @@ session.getAutocompleteDeprecated = function (str, cb) {
   cb = cb || function () {};
 
   // Entire command string
-  var cursor = this.parent.ui._activePrompt.screen.rl.cursor;
-  var trimmed = String(str).trim();
-  var cut = String(trimmed).slice(0, cursor);
-  var remainder = String(trimmed).slice(cursor, trimmed.length).replace(/ +$/, '');
+  const cursor = this.parent.ui._activePrompt.screen.rl.cursor;
+  let trimmed = String(str).trim();
+  const cut = String(trimmed).slice(0, cursor);
+  const remainder = String(trimmed).slice(cursor, trimmed.length).replace(/ +$/, '');
   trimmed = cut;
 
   // Set "trimmed" to command string after pipe
   // Set "pre" to command string, pipe, and a space
-  var pre = '';
-  var lastPipeIndex = trimmed.lastIndexOf('|');
+  let pre = '';
+  const lastPipeIndex = trimmed.lastIndexOf('|');
   if (lastPipeIndex !== -1) {
     pre = trimmed.substr(0, lastPipeIndex + 1) + ' ';
     trimmed = trimmed.substr(lastPipeIndex + 1).trim();
   }
 
   // Complete command
-  var names = _.map(this.parent.commands, '_name');
+  let names = _.map(this.parent.commands, '_name');
   names = names.concat.apply(names, _.map(this.parent.commands, '_aliases'));
-  var result = this._autocomplete(trimmed, names);
+  const result = this._autocomplete(trimmed, names);
   if (result && trimmed.length < String(result).trim().length) {
     cb(undefined, pre + result + remainder);
     return;
   }
 
   // Find custom autocompletion
-  var match;
-  var extra;
+  let match;
+  let extra;
 
   names.forEach(function (name) {
     if (trimmed.substr(0, name.length) === name && String(name).trim() !== '') {
@@ -296,7 +296,7 @@ session.getAutocompleteDeprecated = function (str, cb) {
     }
   });
 
-  var command = (match) ?
+  let command = (match) ?
     _.find(this.parent.commands, {_name: match}) :
     undefined;
 
@@ -363,16 +363,16 @@ session.match = function (str, arr) {
  */
 
 session.execCommandSet = function (wrapper, callback) {
-  var self = this;
-  var response = {};
-  var res;
-  var cbk = callback;
+  const self = this;
+  let response = {};
+  let res;
+  const cbk = callback;
   this._registeredCommands = 1;
   this._completedCommands = 0;
 
   // Create the command instance for the first
   // command and hook it up to the pipe chain.
-  var commandInstance = new CommandInstance({
+  const commandInstance = new CommandInstance({
     downstream: wrapper.pipes[0],
     commandObject: wrapper.commandObject,
     commandWrapper: wrapper
@@ -391,7 +391,7 @@ session.execCommandSet = function (wrapper, callback) {
 
   // Called when command is cancelled
   this.cancelCommands = function () {
-    var callCancel = function (commandInstance) {
+    const callCancel = function (commandInstance) {
       if (_.isFunction(commandInstance.commandObject._cancel)) {
         commandInstance.commandObject._cancel.call(commandInstance);
       }
@@ -422,11 +422,11 @@ session.execCommandSet = function (wrapper, callback) {
 
   // Gracefully handles all instances of the command completing.
   this._commandSetCallback = function () {
-    var err = response.error;
-    var data = response.data;
-    var argus = response.args;
+    const err = response.error;
+    const data = response.data;
+    const argus = response.args;
     if (self.isLocal() && err) {
-      var stack;
+      let stack;
       if (data && data.stack) {
         stack = data.stack;
       } else if (err && err.stack) {
@@ -449,13 +449,13 @@ session.execCommandSet = function (wrapper, callback) {
   function onCompletion(wrapper, err, data, argus) {
     response = {
       error: err,
-      data: data,
+      data,
       args: argus
     };
     self.completeCommand();
   }
 
-  var valid;
+  let valid;
   if (_.isFunction(wrapper.validate)) {
     try {
       valid = wrapper.validate.call(commandInstance, wrapper.args);
@@ -477,7 +477,7 @@ session.execCommandSet = function (wrapper, callback) {
 
   // Call the root command.
   res = wrapper.fn.call(commandInstance, wrapper.args, function () {
-    var argus = util.fixArgsForApply(arguments);
+    const argus = util.fixArgsForApply(arguments);
     onCompletion(wrapper, argus[0], argus[1], argus);
   });
 
@@ -544,7 +544,7 @@ session.completeCommand = function () {
  */
 
 session.getHistory = function (direction) {
-  var history;
+  let history;
   if (direction === 'up') {
     history = this.cmdHistory.getPreviousHistory();
   } else if (direction === 'down') {

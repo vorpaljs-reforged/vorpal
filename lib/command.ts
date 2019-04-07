@@ -4,16 +4,16 @@
  * Module dependencies.
  */
 
-var EventEmitter = require('events').EventEmitter;
-var Option = require('./option');
-var VorpalUtil = require('./util');
-var _ = require('lodash');
+const EventEmitter = require('events').EventEmitter;
+const Option = require('./option');
+const VorpalUtil = require('./util');
+const _ = require('lodash');
 
 /**
  * Command prototype.
  */
 
-var command = Command.prototype;
+const command = Command.prototype;
 
 /**
  * Expose `Command`.
@@ -68,11 +68,11 @@ function Command(name, parent) {
  */
 
 command.option = function (flags, description, autocomplete) {
-  var self = this;
-  var option = new Option(flags, description, autocomplete);
-  var oname = option.name();
-  var name = _camelcase(oname);
-  var defaultValue;
+  const self = this;
+  const option = new Option(flags, description, autocomplete);
+  const oname = option.name();
+  const name = _camelcase(oname);
+  let defaultValue;
 
   // preassign default value only for --no-*, [optional], or <required>
   if (option.bool === false || option.optional || option.required) {
@@ -120,7 +120,7 @@ command.option = function (flags, description, autocomplete) {
  */
 
 command.action = function (fn) {
-  var self = this;
+  const self = this;
   self._fn = fn;
   return this;
 };
@@ -148,7 +148,7 @@ command.use = function (fn) {
  * @api public
  */
 command.validate = function (fn) {
-  var self = this;
+  const self = this;
   self._validate = fn;
   return this;
 };
@@ -223,7 +223,7 @@ command.autocompletion = function (param) {
  */
 
 command.init = function (fn) {
-  var self = this;
+  const self = this;
   if (self._mode !== true) {
     throw Error('Cannot call init from a non-mode action.');
   }
@@ -255,8 +255,8 @@ command.delimiter = function (delimiter) {
  */
 
 command.types = function (types) {
-  var supported = ['string', 'boolean'];
-  for (var item in types) {
+  const supported = ['string', 'boolean'];
+  for (const item in types) {
     if (supported.indexOf(item) === -1) {
       throw new Error('An invalid type was passed into command.types(): ' + item);
     }
@@ -275,11 +275,11 @@ command.types = function (types) {
  */
 
 command.alias = function () {
-  var self = this;
-  for (var i = 0; i < arguments.length; ++i) {
-    var alias = arguments[i];
+  const self = this;
+  for (let i = 0; i < arguments.length; ++i) {
+    const alias = arguments[i];
     if (_.isArray(alias)) {
-      for (var j = 0; j < alias.length; ++j) {
+      for (let j = 0; j < alias.length; ++j) {
         this.alias(alias[j]);
       }
       return this;
@@ -287,7 +287,7 @@ command.alias = function () {
     this._parent.commands.forEach(function (cmd) {
       if (!_.isEmpty(cmd._aliases)) {
         if (_.includes(cmd._aliases, alias)) {
-          var msg = 'Duplicate alias "' + alias + '" for command "' + self._name + '" detected. Was first reserved by command "' + cmd._name + '".';
+          const msg = 'Duplicate alias "' + alias + '" for command "' + self._name + '" detected. Was first reserved by command "' + cmd._name + '".';
           throw new Error(msg);
         }
       }
@@ -321,7 +321,7 @@ command.description = function (str) {
  */
 
 command.remove = function () {
-  var self = this;
+  const self = this;
   this._parent.commands = _.reject(this._parent.commands, function (command) {
     if (command._name === self._name) {
       return true;
@@ -350,9 +350,9 @@ command.arguments = function (desc) {
  */
 
 command.helpInformation = function () {
-  var desc = [];
-  var cmdName = this._name;
-  var alias = '';
+  let desc = [];
+  const cmdName = this._name;
+  let alias = '';
 
   if (this._description) {
     desc = [
@@ -364,23 +364,23 @@ command.helpInformation = function () {
   if (this._aliases.length > 0) {
     alias = '  Alias: ' + this._aliases.join(' | ') + '\n';
   }
-  var usage = [
+  const usage = [
     '',
     '  Usage: ' + cmdName + ' ' + this.usage(),
     ''
   ];
 
-  var cmds = [];
+  const cmds = [];
 
-  var help = String(this.optionHelp().replace(/^/gm, '    '));
-  var options = [
+  const help = String(this.optionHelp().replace(/^/gm, '    '));
+  const options = [
     '  Options:',
     '',
     help,
     ''
   ];
 
-  var res = usage
+  let res = usage
     .concat(cmds)
     .concat(alias)
     .concat(desc)
@@ -428,11 +428,11 @@ command.allowUnknownOptions = function (allowUnknownOptions = true) {
  */
 
 command.usage = function (str) {
-  var args = this._args.map(function (arg) {
+  const args = this._args.map(function (arg) {
     return VorpalUtil.humanReadableArgName(arg);
   });
 
-  var usage = '[options]' +
+  const usage = '[options]' +
     (this.commands.length ? ' [command]' : '') +
     (this._args.length ? ' ' + args.join(' ') : '');
 
@@ -453,7 +453,7 @@ command.usage = function (str) {
  */
 
 command.optionHelp = function () {
-  var width = this._largestOptionLength();
+  const width = this._largestOptionLength();
 
   // Prepend the help information
   return [VorpalUtil.pad('--help', width) + '  output usage information']
@@ -534,9 +534,9 @@ command._parseExpectedArgs = function (args) {
   if (!args.length) {
     return;
   }
-    var self = this;
+    const self = this;
   args.forEach(function (arg) {
-    var argDetails = {
+    const argDetails = {
       required: false,
       name: '',
       variadic: false

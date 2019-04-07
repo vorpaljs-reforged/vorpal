@@ -4,12 +4,12 @@
  * Module dependencies.
  */
 
-import _              from 'lodash'
-import inquirer       from 'inquirer'
-import {EventEmitter} from 'events'
 import chalk          from 'chalk'
-import util           from './util'
+import {EventEmitter} from 'events'
+import inquirer       from 'inquirer'
+import _              from 'lodash'
 import logUpdate      from 'log-update'
+import util           from './util'
 
 class UI extends EventEmitter {
     /**
@@ -151,7 +151,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    sigint(fn) {
+    public sigint(fn) {
         if (_.isFunction(fn)) {
             this._sigint = fn
         } else {
@@ -168,7 +168,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    prompt(options, cb) {
+    public prompt(options, cb) {
         let prompt
         options = options || {}
         if (!this.parent) {
@@ -219,12 +219,12 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    midPrompt() {
+    public midPrompt() {
         const mid = (this._midPrompt === true && this.parent !== undefined)
         return mid
     }
 
-    setDelimiter(str) {
+    public setDelimiter(str) {
         const self = this
         if (!this.parent) {
             return
@@ -256,7 +256,7 @@ class UI extends EventEmitter {
      * @api private
      */
 
-    _keypressHandler(e, prompt) {
+    public _keypressHandler(e, prompt) {
         // Remove tab characters from user input.
         prompt.rl.line = prompt.rl.line.replace(/\t+/, '')
 
@@ -276,11 +276,11 @@ class UI extends EventEmitter {
             chalk.cyan(prompt.answer) :
             line
         message += addition
-        prompt.screen.render(message, {cursor: cursor})
+        prompt.screen.render(message, {cursor})
 
         const key   = (e.key || {}).name
         const value = (prompt) ? String(line) : undefined
-        this.emit('vorpal_ui_keypress', {key: key, value: value, e: e})
+        this.emit('vorpal_ui_keypress', {key, value, e})
     }
 
     /**
@@ -291,7 +291,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    pause() {
+    public pause() {
         if (!this.parent) {
             return false
         }
@@ -321,7 +321,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    resume(val) {
+    public resume(val) {
         if (!this.parent) {
             return this
         }
@@ -345,7 +345,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    cancel() {
+    public cancel() {
         if (this.midPrompt()) {
             this._cancel = true
             this.submit('')
@@ -362,7 +362,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    attach(vorpal) {
+    public attach(vorpal) {
         this.parent = vorpal
         this.refresh()
         this.parent._prompt()
@@ -377,7 +377,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    detach(vorpal) {
+    public detach(vorpal) {
         if (vorpal === this.parent) {
             this.parent = undefined
         }
@@ -395,7 +395,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    log() {
+    public log() {
         let args = util.fixArgsForApply(arguments)
         args     = (_.isFunction(this._pipeFn)) ?
             this._pipeFn(args) :
@@ -426,7 +426,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    submit() {
+    public submit() {
         if (this._activePrompt) {
             // this._activePrompt.screen.onClose();
             this._activePrompt.rl.emit('line')
@@ -445,7 +445,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    delimiter(str) {
+    public delimiter(str) {
         if (!this._activePrompt) {
             return this
         }
@@ -468,7 +468,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    input(str) {
+    public input(str) {
         if (!this._activePrompt) {
             return undefined
         }
@@ -487,7 +487,7 @@ class UI extends EventEmitter {
             chalk.cyan(prompt.answer) :
             prompt.rl.line
         message += addition
-        prompt.screen.render(message, {cursor: cursor})
+        prompt.screen.render(message, {cursor})
         return this
     }
 
@@ -498,7 +498,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    imprint() {
+    public imprint() {
         if (!this.parent) {
             return this
         }
@@ -516,7 +516,7 @@ class UI extends EventEmitter {
      * @api private
      */
 
-    refresh() {
+    public refresh() {
         if (!this.parent || !this._activePrompt) {
             return this
         }
@@ -534,7 +534,7 @@ class UI extends EventEmitter {
      * @api public
      */
 
-    redraw(str) {
+    public redraw(str) {
         logUpdate(str)
         return this
     }
