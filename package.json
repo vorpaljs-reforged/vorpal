@@ -87,8 +87,7 @@
     "wrap-ansi": "^2.0.0"
   },
   "engines": {
-    "node": ">= 0.10.0",
-    "iojs": ">= 1.0.0"
+    "node": ">= 6.10.0"
   },
   "xo": {
     "space": true,
