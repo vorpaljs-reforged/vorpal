@@ -1,5 +1,5 @@
-import Vorpal from '../lib/vorpal';
-import intercept from '../lib/intercept';
+import Vorpal from '../src/vorpal';
+import intercept from '../src/intercept';
 
 let vorpal;
 

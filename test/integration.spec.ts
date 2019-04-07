@@ -1,8 +1,8 @@
-const Vorpal = require('../lib/vorpal');
+import Vorpal from '../src/vorpal';
 import commands from './util/server';
 import * as fs from 'fs';
 import * as BlueBirdPromise from 'bluebird';
-import intercept from '../lib/intercept';
+import intercept from '../src/intercept';
 
 let integrationStdoutput = '';
 let unmute;

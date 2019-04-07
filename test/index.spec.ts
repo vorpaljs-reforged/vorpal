@@ -1,4 +1,4 @@
-import Vorpal from '../lib/vorpal';
+import Vorpal from '../src/vorpal';
 
 const vorpal = new Vorpal();
 

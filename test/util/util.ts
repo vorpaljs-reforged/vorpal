@@ -1,6 +1,6 @@
 const path = require('path');
 const _ = require('lodash');
-const Vantage = require('../../lib/vorpal');
+const Vantage = require('../../src/vorpal');
 
 const utils = {
   instances: [],

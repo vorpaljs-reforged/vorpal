@@ -4,7 +4,7 @@ var ts = require('gulp-typescript');
 var tsProject = ts.createProject('tsconfig.json');
 
 const paths = {};
-paths.src = './lib/**/*.js';
+paths.src = './src/**/*.js';
 paths.dist = './dist';
 
 gulp.task('lint', () => {

@@ -1,4 +1,4 @@
-import Vorpal from '../lib/vorpal';
+import Vorpal from '../src/vorpal';
 import * as _ from 'lodash';
 
 const vorpal = new Vorpal();
