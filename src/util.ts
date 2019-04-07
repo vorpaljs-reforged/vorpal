@@ -19,18 +19,19 @@ export default {
    */
   parseArgs(str, opts) {
     const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi;
-    let arr = [];
+    let array = [];
     let match;
     do {
       match = reg.exec(str);
       if (match !== null) {
-        arr.push(match[1] || match[2] || match[3] || match[4]);
+        // TODO: check why, array is overwritten after
+        array.push(match[1] || match[2] || match[3] || match[4]);
       }
     } while (match !== null);
 
-    arr = minimist(arr, opts);
-    arr._ = arr._ || [];
-    return arr;
+    const parsedArray = minimist(array, opts);
+    parsedArray._ = parsedArray._ || [];
+    return parsedArray;
   },
 
   /**
@@ -417,9 +418,8 @@ export default {
    * @return {String}
    * @api private
    */
-  pad(str: string, width: number, delimiter: string): string {
+  pad(str: string, width: number, delimiter: string = ' '): string {
     width = Math.floor(width);
-    delimiter = delimiter || ' ';
     const len = Math.max(0, width - strip(str).length);
     return str + Array(len + 1).join(delimiter);
   },

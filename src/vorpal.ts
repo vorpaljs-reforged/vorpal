@@ -562,6 +562,10 @@ vorpal._onKeypress = function(key, value) {
   }
 };
 
+type PromptOption = {
+  sessionId?: string;
+  message?: string;
+};
 /**
  * For use in vorpal API commands, sends
  * a prompt command downstream to the local
@@ -574,7 +578,7 @@ vorpal._onKeypress = function(key, value) {
  * @api public
  */
 
-vorpal.prompt = function(options = {}, userCallback) {
+vorpal.prompt = function(options: PromptOption = {}, userCallback) {
   return new Promise(resolve => {
     // Setup callback to also resolve promise.
     const cb = response => {
@@ -716,6 +720,8 @@ vorpal.exec = function(cmd, args, cb) {
     args,
     callback: cb,
     session: ssn,
+    resolve: undefined,
+    reject: undefined,
   };
 
   if (cb !== undefined) {

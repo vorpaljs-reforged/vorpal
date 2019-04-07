@@ -35,9 +35,6 @@ export interface Arg {
  */
 
 function Command(name, parent) {
-  if (!(this instanceof Command)) {
-    return new Command();
-  }
   this.commands = [];
   this.options = [];
   this._args = [] as Arg[];
@@ -406,8 +403,6 @@ command.hidden = function() {
  */
 
 command.allowUnknownOptions = function(allowUnknownOptions = true) {
-  allowUnknownOptions = allowUnknownOptions === 'false' ? false : allowUnknownOptions;
-
   this._allowUnknownOptions = !!allowUnknownOptions;
   return this;
 };
