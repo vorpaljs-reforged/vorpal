@@ -6,7 +6,6 @@ const util = require('./util');
 const _ = require('lodash');
 
 class CommandInstance {
-
   /**
    * Initialize a new `CommandInstance` instance.
    *
@@ -15,7 +14,7 @@ class CommandInstance {
    * @api public
    */
 
-  constructor({command, commandObject, args, commandWrapper, callback, downstream} = {}) {
+  constructor({ command, commandObject, args, commandWrapper, callback, downstream } = {}) {
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
@@ -41,13 +40,16 @@ class CommandInstance {
   public log() {
     const args = util.fixArgsForApply(arguments);
     if (this.downstream) {
-      const fn = this.downstream.commandObject._fn || function () {};
+      const fn = this.downstream.commandObject._fn || function() {};
       this.session.registerCommand();
       this.downstream.args.stdin = args;
-      const onComplete = (err) => {
+      const onComplete = err => {
         if (this.session.isLocal() && err) {
           this.session.log(err.stack || err);
-          this.session.parent.emit('client_command_error', {command: this.downstream.command, error: err});
+          this.session.parent.emit('client_command_error', {
+            command: this.downstream.command,
+            error: err,
+          });
         }
         this.session.completeCommand();
       };

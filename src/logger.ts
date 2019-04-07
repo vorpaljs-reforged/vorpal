@@ -2,9 +2,9 @@
  * Module dependencies.
  */
 
-import _    from 'lodash'
-import util   from 'util'
-import util from './util'
+import _ from 'lodash';
+import util from 'util';
+import util from './util';
 
 /**
  * Initialize a new `Logger` instance.
@@ -13,125 +13,125 @@ import util from './util'
  * @api public
  */
 function viewed(str) {
-    const re = /\u001b\[\d+m/gm
-    return String(str).replace(re, '')
+  const re = /\u001b\[\d+m/gm;
+  return String(str).replace(re, '');
 }
 
 function trimTo(str, amt) {
-    let raw    = ''
-    const visual = viewed(str).slice(0, amt)
-    let result = ''
-    for (let i = 0; i < str.length; ++i) {
-        raw += str[i]
-        if (viewed(raw) === visual) {
-            result = raw
-            break
-        }
+  let raw = '';
+  const visual = viewed(str).slice(0, amt);
+  let result = '';
+  for (let i = 0; i < str.length; ++i) {
+    raw += str[i];
+    if (viewed(raw) === visual) {
+      result = raw;
+      break;
     }
+  }
 
-    if (result.length < amt - 10) {
-        return result
+  if (result.length < amt - 10) {
+    return result;
+  }
+
+  let newResult = result;
+  let found = false;
+  for (let j = result.length; j > 0; --j) {
+    if (result[j] === ' ') {
+      found = true;
+      break;
+    } else {
+      newResult = newResult.slice(0, newResult.length - 1);
     }
+  }
 
-    let newResult = result
-    let found     = false
-    for (let j = result.length; j > 0; --j) {
-        if (result[j] === ' ') {
-            found = true
-            break
-        } else {
-            newResult = newResult.slice(0, newResult.length - 1)
-        }
-    }
+  if (found === true) {
+    return newResult;
+  }
 
-    if (found === true) {
-        return newResult
-    }
-
-    return result
+  return result;
 }
 
 function Logger(cons) {
-    const logger = cons || console
-    log        = function() {
-        logger.log.apply(logger, arguments)
+  const logger = cons || console;
+  log = function() {
+    logger.log.apply(logger, arguments);
+  };
+
+  log.cols = function() {
+    const width = process.stdout.columns;
+    let pads = 0;
+    let padsWidth = 0;
+    let cols = 0;
+    let colsWidth = 0;
+    const input = arguments;
+
+    for (let h = 0; h < arguments.length; ++h) {
+      if (typeof arguments[h] === 'number') {
+        padsWidth += arguments[h];
+        pads++;
+      }
+      if (_.isArray(arguments[h]) && typeof arguments[h][0] === 'number') {
+        padsWidth += arguments[h][0];
+        pads++;
+      }
     }
 
-    log.cols = function() {
-        const width     = process.stdout.columns
-        let pads      = 0
-        let padsWidth = 0
-        let cols      = 0
-        let colsWidth = 0
-        const input     = arguments
+    cols = arguments.length - pads;
+    colsWidth = Math.floor((width - padsWidth) / cols);
 
-        for (let h = 0; h < arguments.length; ++h) {
-            if (typeof arguments[h] === 'number') {
-                padsWidth += arguments[h]
-                pads++
-            }
-            if (_.isArray(arguments[h]) && typeof arguments[h][0] === 'number') {
-                padsWidth += arguments[h][0]
-                pads++
-            }
+    const lines = [];
+
+    const go = function() {
+      let str = '';
+      let done = true;
+      for (let i = 0; i < input.length; ++i) {
+        if (typeof input[i] === 'number') {
+          str += util.pad('', input[i], ' ');
+        } else if (_.isArray(input[i]) && typeof input[i][0] === 'number') {
+          str += util.pad('', input[i][0], input[i][1]);
+        } else {
+          const chosenWidth = colsWidth + 0;
+          let trimmed = trimTo(input[i], colsWidth);
+          const trimmedLength = trimmed.length;
+          const re = /\\u001b\[\d+m/gm;
+          const matches = ut.inspect(trimmed).match(re);
+          let color = '';
+          // Ugh. We're chopping a line, so we have to look for unfinished
+          // color assignments and throw them on the next line.
+          if (matches && matches[matches.length - 1] !== '\\u001b[39m') {
+            trimmed += '\u001b[39m';
+            const number = String(matches[matches.length - 1]).slice(7, 9);
+            color = '\x1B[' + number + 'm';
+          }
+          input[i] = color + String(input[i].slice(trimmedLength, input[i].length)).trim();
+          str += util.pad(String(trimmed).trim(), chosenWidth, ' ');
+          if (viewed(input[i]).trim() !== '') {
+            done = false;
+          }
         }
-
-        cols      = arguments.length - pads
-        colsWidth = Math.floor((width - padsWidth) / cols)
-
-        const lines = []
-
-        const go = function() {
-            let str  = ''
-            let done = true
-            for (let i = 0; i < input.length; ++i) {
-                if (typeof input[i] === 'number') {
-                    str += util.pad('', input[i], ' ')
-                } else if (_.isArray(input[i]) && typeof input[i][0] === 'number') {
-                    str += util.pad('', input[i][0], input[i][1])
-                } else {
-                    const chosenWidth   = colsWidth + 0
-                    let trimmed       = trimTo(input[i], colsWidth)
-                    const trimmedLength = trimmed.length
-                    const re            = /\\u001b\[\d+m/gm
-                    const matches       = ut.inspect(trimmed).match(re)
-                    let color         = ''
-                    // Ugh. We're chopping a line, so we have to look for unfinished
-                    // color assignments and throw them on the next line.
-                    if (matches && matches[matches.length - 1] !== '\\u001b[39m') {
-                        trimmed += '\u001b[39m'
-                        const number = String(matches[matches.length - 1]).slice(7, 9)
-                        color      = '\x1B[' + number + 'm'
-                    }
-                    input[i] = color + String(input[i].slice(trimmedLength, input[i].length)).trim()
-                    str += util.pad(String(trimmed).trim(), chosenWidth, ' ')
-                    if (viewed(input[i]).trim() !== '') {
-                        done = false
-                    }
-                }
-            }
-            lines.push(str)
-            if (!done) {
-                go()
-            }
-        }
-        go()
-        for (let i = 0; i < lines.length; ++i) {
-            logger.log(lines[i])
-        }
-        return this
+      }
+      lines.push(str);
+      if (!done) {
+        go();
+      }
+    };
+    go();
+    for (let i = 0; i < lines.length; ++i) {
+      logger.log(lines[i]);
     }
+    return this;
+  };
 
-    log.br = function() {
-        logger.log(' ')
-        return this
-    }
+  log.br = function() {
+    logger.log(' ');
+    return this;
+  };
 
-    return this.log
+  return this.log;
 }
 
 /**
  * Expose `logger`.
  */
 
-export default Logger
+export default Logger;

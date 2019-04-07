@@ -71,7 +71,7 @@ module.exports = exports = Session;
  * @api public
  */
 
-session.log = function () {
+session.log = function() {
   const args = util.fixArgsForApply(arguments);
   return this._log.apply(this, args);
 };
@@ -85,7 +85,7 @@ session.log = function () {
  * @api public
  */
 
-session._log = function () {
+session._log = function() {
   const self = this;
   if (this.isLocal()) {
     this.parent.ui.log.apply(this.parent.ui, arguments);
@@ -95,10 +95,13 @@ session._log = function () {
     const args = [];
     for (let i = 0; i < arguments.length; ++i) {
       let str = arguments[i];
-      str = (str && str.stack) ? 'Error: ' + str.message : str;
+      str = str && str.stack ? 'Error: ' + str.message : str;
       args.push(str);
     }
-    self.parent._send('vantage-ssn-stdout-downstream', 'downstream', {sessionId: self.id, value: args});
+    self.parent._send('vantage-ssn-stdout-downstream', 'downstream', {
+      sessionId: self.id,
+      value: args,
+    });
   }
   return this;
 };
@@ -111,7 +114,7 @@ session._log = function () {
  * @api public
  */
 
-session.isLocal = function () {
+session.isLocal = function() {
   return this._isLocal;
 };
 
@@ -124,7 +127,7 @@ session.isLocal = function () {
  * @api public
  */
 
-session.prompt = function (options, cb) {
+session.prompt = function(options, cb) {
   options = options || {};
   options.sessionId = this.id;
   return this.parent.prompt(options, cb);
@@ -138,9 +141,8 @@ session.prompt = function (options, cb) {
  * @api public
  */
 
-session.fullDelimiter = function () {
-  const result = this._delimiter +
-   ((this._modeDelimiter !== undefined) ? this._modeDelimiter : '');
+session.fullDelimiter = function() {
+  const result = this._delimiter + (this._modeDelimiter !== undefined ? this._modeDelimiter : '');
   return result;
 };
 
@@ -152,7 +154,7 @@ session.fullDelimiter = function () {
  * @api public
  */
 
-session.delimiter = function (str) {
+session.delimiter = function(str) {
   if (str === undefined) {
     return this._delimiter;
   }
@@ -160,7 +162,10 @@ session.delimiter = function (str) {
   if (this.isLocal()) {
     this.parent.ui.refresh();
   } else {
-    this.parent._send('vantage-delimiter-downstream', 'downstream', {value: str, sessionId: this.id});
+    this.parent._send('vantage-delimiter-downstream', 'downstream', {
+      value: str,
+      sessionId: this.id,
+    });
   }
   return this;
 };
@@ -173,13 +178,16 @@ session.delimiter = function (str) {
  * @api public
  */
 
-session.modeDelimiter = function (str) {
+session.modeDelimiter = function(str) {
   const self = this;
   if (str === undefined) {
     return this._modeDelimiter;
   }
   if (!this.isLocal()) {
-    self.parent._send('vantage-mode-delimiter-downstream', 'downstream', {value: str, sessionId: self.id});
+    self.parent._send('vantage-mode-delimiter-downstream', 'downstream', {
+      value: str,
+      sessionId: self.id,
+    });
   } else {
     if (str === false || str === 'false') {
       this._modeDelimiter = undefined;
@@ -201,9 +209,9 @@ session.modeDelimiter = function (str) {
  * @api private
  */
 
-session.getKeypressResult = function (key, value, cb) {
-  cb = cb || function () {};
-  const keyMatch = (['up', 'down', 'tab'].indexOf(key) > -1);
+session.getKeypressResult = function(key, value, cb) {
+  cb = cb || function() {};
+  const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
   if (key !== 'tab') {
     this._tabCtr = 0;
   }
@@ -215,10 +223,10 @@ session.getKeypressResult = function (key, value, cb) {
       // command.autocompletion, defer to the deprecated
       // version of autocompletion. Otherwise, default
       // to the new version.
-      const fn = (this.parent._useDeprecatedAutocompletion) ?
-        'getAutocompleteDeprecated' :
-        'getAutocomplete';
-      this[fn](value, function (err, data) {
+      const fn = this.parent._useDeprecatedAutocompletion
+        ? 'getAutocompleteDeprecated'
+        : 'getAutocomplete';
+      this[fn](value, function(err, data) {
         cb(err, data);
       });
     }
@@ -227,7 +235,7 @@ session.getKeypressResult = function (key, value, cb) {
   }
 };
 
-session.history = function (str) {
+session.history = function(str) {
   const exceptions = [];
   if (str && exceptions.indexOf(String(str).toLowerCase()) === -1) {
     this.cmdHistory.newCommand(str);
@@ -242,7 +250,7 @@ session.history = function (str) {
  * @api private
  */
 
-session.getAutocomplete = function (str, cb) {
+session.getAutocomplete = function(str, cb) {
   return autocomplete.exec.call(this, str, cb);
 };
 
@@ -255,14 +263,16 @@ session.getAutocomplete = function (str, cb) {
  * @api private
  */
 
-session.getAutocompleteDeprecated = function (str, cb) {
-  cb = cb || function () {};
+session.getAutocompleteDeprecated = function(str, cb) {
+  cb = cb || function() {};
 
   // Entire command string
   const cursor = this.parent.ui._activePrompt.screen.rl.cursor;
   let trimmed = String(str).trim();
   const cut = String(trimmed).slice(0, cursor);
-  const remainder = String(trimmed).slice(cursor, trimmed.length).replace(/ +$/, '');
+  const remainder = String(trimmed)
+    .slice(cursor, trimmed.length)
+    .replace(/ +$/, '');
   trimmed = cut;
 
   // Set "trimmed" to command string after pipe
@@ -287,19 +297,17 @@ session.getAutocompleteDeprecated = function (str, cb) {
   let match;
   let extra;
 
-  names.forEach(function (name) {
+  names.forEach(function(name) {
     if (trimmed.substr(0, name.length) === name && String(name).trim() !== '') {
       match = name;
       extra = trimmed.substr(name.length).trim();
     }
   });
 
-  let command = (match) ?
-    _.find(this.parent.commands, {_name: match}) :
-    undefined;
+  let command = match ? _.find(this.parent.commands, { _name: match }) : undefined;
 
   if (!command) {
-    command = _.find(this.parent.commands, {_catch: true});
+    command = _.find(this.parent.commands, { _catch: true });
     if (command) {
       extra = trimmed;
     }
@@ -307,7 +315,7 @@ session.getAutocompleteDeprecated = function (str, cb) {
 
   if (command && _.isFunction(command._autocompletion)) {
     this._tabCtr++;
-    command._autocompletion.call(this, extra, this._tabCtr, function (err, autocomplete) {
+    command._autocompletion.call(this, extra, this._tabCtr, function(err, autocomplete) {
       if (err) {
         return cb(err);
       }
@@ -323,7 +331,7 @@ session.getAutocompleteDeprecated = function (str, cb) {
   }
 };
 
-session._autocomplete = function (str, arr) {
+session._autocomplete = function(str, arr) {
   return autocomplete.match.call(this, str, arr);
 };
 
@@ -336,7 +344,7 @@ session._autocomplete = function (str, arr) {
  * @api public
  */
 
-session.help = function (command) {
+session.help = function(command) {
   this.log(this.parent._commandHelp(command || ''));
 };
 
@@ -349,7 +357,7 @@ session.help = function (command) {
  * @api public
  */
 
-session.match = function (str, arr) {
+session.match = function(str, arr) {
   return this._autocomplete(str, arr);
 };
 
@@ -360,7 +368,7 @@ session.match = function (str, arr) {
  * @api public
  */
 
-session.execCommandSet = function (wrapper, callback) {
+session.execCommandSet = function(wrapper, callback) {
   const self = this;
   let response = {};
   let res;
@@ -373,7 +381,7 @@ session.execCommandSet = function (wrapper, callback) {
   const commandInstance = new CommandInstance({
     downstream: wrapper.pipes[0],
     commandObject: wrapper.commandObject,
-    commandWrapper: wrapper
+    commandWrapper: wrapper,
   });
 
   wrapper.commandInstance = commandInstance;
@@ -388,8 +396,8 @@ session.execCommandSet = function (wrapper, callback) {
   }
 
   // Called when command is cancelled
-  this.cancelCommands = function () {
-    const callCancel = function (commandInstance) {
+  this.cancelCommands = function() {
+    const callCancel = function(commandInstance) {
       if (_.isFunction(commandInstance.commandObject._cancel)) {
         commandInstance.commandObject._cancel.call(commandInstance);
       }
@@ -411,7 +419,7 @@ session.execCommandSet = function (wrapper, callback) {
     self._commandSetCallback = undefined;
     self._registeredCommands = 0;
     self._completedCommands = 0;
-    self.parent.emit('client_command_cancelled', {command: wrapper.command});
+    self.parent.emit('client_command_cancelled', { command: wrapper.command });
 
     cbk(wrapper);
   };
@@ -419,7 +427,7 @@ session.execCommandSet = function (wrapper, callback) {
   this.on('vorpal_command_cancel', self.cancelCommands);
 
   // Gracefully handles all instances of the command completing.
-  this._commandSetCallback = function () {
+  this._commandSetCallback = function() {
     const err = response.error;
     const data = response.data;
     const argus = response.args;
@@ -433,9 +441,9 @@ session.execCommandSet = function (wrapper, callback) {
         stack = err;
       }
       self.log(stack);
-      self.parent.emit('client_command_error', {command: wrapper.command, error: err});
+      self.parent.emit('client_command_error', { command: wrapper.command, error: err });
     } else if (self.isLocal()) {
-      self.parent.emit('client_command_executed', {command: wrapper.command});
+      self.parent.emit('client_command_executed', { command: wrapper.command });
     }
 
     self.removeListener('vorpal_command_cancel', self.cancelCommands);
@@ -448,7 +456,7 @@ session.execCommandSet = function (wrapper, callback) {
     response = {
       error: err,
       data,
-      args: argus
+      args: argus,
     };
     self.completeCommand();
   }
@@ -468,13 +476,13 @@ session.execCommandSet = function (wrapper, callback) {
     onCompletion(wrapper, valid || null);
     return this;
   }
-  
-  if(wrapper.args && typeof wrapper.args === 'object'){
+
+  if (wrapper.args && typeof wrapper.args === 'object') {
     wrapper.args.rawCommand = wrapper.command;
   }
 
   // Call the root command.
-  res = wrapper.fn.call(commandInstance, wrapper.args, function () {
+  res = wrapper.fn.call(commandInstance, wrapper.args, function() {
     const argus = util.fixArgsForApply(arguments);
     onCompletion(wrapper, argus[0], argus[1], argus);
   });
@@ -482,11 +490,13 @@ session.execCommandSet = function (wrapper, callback) {
   // If the command as declared by the user
   // returns a promise, handle accordingly.
   if (res && _.isFunction(res.then)) {
-    res.then(function (data) {
-      onCompletion(wrapper, undefined, data);
-    }).catch(function (err) {
-      onCompletion(wrapper, true, err);
-    });
+    res
+      .then(function(data) {
+        onCompletion(wrapper, undefined, data);
+      })
+      .catch(function(err) {
+        onCompletion(wrapper, true, err);
+      });
   }
 
   return this;
@@ -503,7 +513,7 @@ session.execCommandSet = function (wrapper, callback) {
  * @api public
  */
 
-session.registerCommand = function () {
+session.registerCommand = function() {
   this._registeredCommands = this._registeredCommands || 0;
   this._registeredCommands++;
   return this;
@@ -518,7 +528,7 @@ session.registerCommand = function () {
  * @api public
  */
 
-session.completeCommand = function () {
+session.completeCommand = function() {
   this._completedCommands++;
   if (this._registeredCommands <= this._completedCommands) {
     this._registeredCommands = 0;
@@ -541,7 +551,7 @@ session.completeCommand = function () {
  * @api private
  */
 
-session.getHistory = function (direction) {
+session.getHistory = function(direction) {
   let history;
   if (direction === 'up') {
     history = this.cmdHistory.getPreviousHistory();
@@ -558,12 +568,11 @@ session.getHistory = function (direction) {
  * @api private
  */
 
-session._guid = function () {
+session._guid = function() {
   function s4() {
     return Math.floor((1 + Math.random()) * 0x10000)
       .toString(16)
       .substring(1);
   }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 };

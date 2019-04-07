@@ -20,9 +20,9 @@ const command = Command.prototype;
 module.exports = exports = Command;
 
 export interface Arg {
-    required: boolean
-    name: string
-    variadic: boolean
+  required: boolean;
+  name: string;
+  variadic: boolean;
 }
 
 /**
@@ -65,7 +65,7 @@ function Command(name, parent) {
  * @api public
  */
 
-command.option = function (flags, description, autocomplete) {
+command.option = function(flags, description, autocomplete) {
   const self = this;
   const option = new Option(flags, description, autocomplete);
   const oname = option.name();
@@ -89,14 +89,12 @@ command.option = function (flags, description, autocomplete) {
 
   // when it's passed assign the value
   // and conditionally invoke the callback
-  this.on(oname, function (val) {
+  this.on(oname, function(val) {
     // unassigned or bool
     if (typeof self[name] === 'boolean' || typeof self[name] === 'undefined') {
       // if no value, bool true, and we have a default, then use it!
       if (val === null) {
-        self[name] = option.bool ?
-          defaultValue || true :
-          false;
+        self[name] = option.bool ? defaultValue || true : false;
       } else {
         self[name] = val;
       }
@@ -117,7 +115,7 @@ command.option = function (flags, description, autocomplete) {
  * @api public
  */
 
-command.action = function (fn) {
+command.action = function(fn) {
   const self = this;
   self._fn = fn;
   return this;
@@ -131,7 +129,7 @@ command.action = function (fn) {
  * @api public
  */
 
-command.use = function (fn) {
+command.use = function(fn) {
   return fn(this);
 };
 
@@ -145,7 +143,7 @@ command.use = function (fn) {
  * @returns {Command}
  * @api public
  */
-command.validate = function (fn) {
+command.validate = function(fn) {
   const self = this;
   self._validate = fn;
   return this;
@@ -159,7 +157,7 @@ command.validate = function (fn) {
  * @returns {Command}
  * @api public
  */
-command.cancel = function (fn) {
+command.cancel = function(fn) {
   this._cancel = fn;
   return this;
 };
@@ -173,7 +171,7 @@ command.cancel = function (fn) {
  * @api public
  */
 
-command.done = function (fn) {
+command.done = function(fn) {
   this._done = fn;
   return this;
 };
@@ -188,7 +186,7 @@ command.done = function (fn) {
  * @api public
  */
 
-command.autocomplete = function (obj) {
+command.autocomplete = function(obj) {
   this._autocomplete = obj;
   return this;
 };
@@ -202,10 +200,12 @@ command.autocomplete = function (obj) {
  * @api public
  */
 
-command.autocompletion = function (param) {
+command.autocompletion = function(param) {
   this._parent._useDeprecatedAutocompletion = true;
   if (!_.isFunction(param) && !_.isObject(param)) {
-    throw new Error('An invalid object type was passed into the first parameter of command.autocompletion: function expected.');
+    throw new Error(
+      'An invalid object type was passed into the first parameter of command.autocompletion: function expected.'
+    );
   }
 
   this._autocompletion = param;
@@ -220,7 +220,7 @@ command.autocompletion = function (param) {
  * @api public
  */
 
-command.init = function (fn) {
+command.init = function(fn) {
   const self = this;
   if (self._mode !== true) {
     throw Error('Cannot call init from a non-mode action.');
@@ -238,7 +238,7 @@ command.init = function (fn) {
  * @api public
  */
 
-command.delimiter = function (delimiter) {
+command.delimiter = function(delimiter) {
   this._delimiter = delimiter;
   return this;
 };
@@ -252,13 +252,13 @@ command.delimiter = function (delimiter) {
  * @api public
  */
 
-command.types = function (types) {
+command.types = function(types) {
   const supported = ['string', 'boolean'];
   for (const item in types) {
     if (supported.indexOf(item) === -1) {
       throw new Error('An invalid type was passed into command.types(): ' + item);
     }
-    types[item] = (!_.isArray(types[item])) ? [types[item]] : types[item];
+    types[item] = !_.isArray(types[item]) ? [types[item]] : types[item];
   }
   this._types = types;
   return this;
@@ -272,7 +272,7 @@ command.types = function (types) {
  * @api public
  */
 
-command.alias = function () {
+command.alias = function() {
   const self = this;
   for (let i = 0; i < arguments.length; ++i) {
     const alias = arguments[i];
@@ -282,10 +282,17 @@ command.alias = function () {
       }
       return this;
     }
-    this._parent.commands.forEach(function (cmd) {
+    this._parent.commands.forEach(function(cmd) {
       if (!_.isEmpty(cmd._aliases)) {
         if (_.includes(cmd._aliases, alias)) {
-          const msg = 'Duplicate alias "' + alias + '" for command "' + self._name + '" detected. Was first reserved by command "' + cmd._name + '".';
+          const msg =
+            'Duplicate alias "' +
+            alias +
+            '" for command "' +
+            self._name +
+            '" detected. Was first reserved by command "' +
+            cmd._name +
+            '".';
           throw new Error(msg);
         }
       }
@@ -303,7 +310,7 @@ command.alias = function () {
  * @api public
  */
 
-command.description = function (str) {
+command.description = function(str) {
   if (arguments.length === 0) {
     return this._description;
   }
@@ -318,9 +325,9 @@ command.description = function (str) {
  * @api public
  */
 
-command.remove = function () {
+command.remove = function() {
   const self = this;
-  this._parent.commands = _.reject(this._parent.commands, function (command) {
+  this._parent.commands = _.reject(this._parent.commands, function(command) {
     if (command._name === self._name) {
       return true;
     }
@@ -336,7 +343,7 @@ command.remove = function () {
  * @api public
  */
 
-command.arguments = function (desc) {
+command.arguments = function(desc) {
   return this._parseExpectedArgs(desc.split(/ +/));
 };
 
@@ -347,36 +354,24 @@ command.arguments = function (desc) {
  * @api public
  */
 
-command.helpInformation = function () {
+command.helpInformation = function() {
   let desc = [];
   const cmdName = this._name;
   let alias = '';
 
   if (this._description) {
-    desc = [
-      '  ' + this._description,
-      ''
-    ];
+    desc = ['  ' + this._description, ''];
   }
 
   if (this._aliases.length > 0) {
     alias = '  Alias: ' + this._aliases.join(' | ') + '\n';
   }
-  const usage = [
-    '',
-    '  Usage: ' + cmdName + ' ' + this.usage(),
-    ''
-  ];
+  const usage = ['', '  Usage: ' + cmdName + ' ' + this.usage(), ''];
 
   const cmds = [];
 
   const help = String(this.optionHelp().replace(/^/gm, '    '));
-  const options = [
-    '  Options:',
-    '',
-    help,
-    ''
-  ];
+  const options = ['  Options:', '', help, ''];
 
   let res = usage
     .concat(cmds)
@@ -397,7 +392,7 @@ command.helpInformation = function () {
  * @api public
  */
 
-command.hidden = function () {
+command.hidden = function() {
   this._hidden = true;
   return this;
 };
@@ -410,8 +405,8 @@ command.hidden = function () {
  * @api public
  */
 
-command.allowUnknownOptions = function (allowUnknownOptions = true) {
-  allowUnknownOptions = allowUnknownOptions === "false" ? false : allowUnknownOptions;
+command.allowUnknownOptions = function(allowUnknownOptions = true) {
+  allowUnknownOptions = allowUnknownOptions === 'false' ? false : allowUnknownOptions;
 
   this._allowUnknownOptions = !!allowUnknownOptions;
   return this;
@@ -425,17 +420,18 @@ command.allowUnknownOptions = function (allowUnknownOptions = true) {
  * @api public
  */
 
-command.usage = function (str) {
-  const args = this._args.map(function (arg) {
+command.usage = function(str) {
+  const args = this._args.map(function(arg) {
     return VorpalUtil.humanReadableArgName(arg);
   });
 
-  const usage = '[options]' +
+  const usage =
+    '[options]' +
     (this.commands.length ? ' [command]' : '') +
     (this._args.length ? ' ' + args.join(' ') : '');
 
   if (arguments.length === 0) {
-    return (this._usage || usage);
+    return this._usage || usage;
   }
 
   this._usage = str;
@@ -450,14 +446,16 @@ command.usage = function (str) {
  * @api public
  */
 
-command.optionHelp = function () {
+command.optionHelp = function() {
   const width = this._largestOptionLength();
 
   // Prepend the help information
   return [VorpalUtil.pad('--help', width) + '  output usage information']
-    .concat(this.options.map(function (option) {
-      return VorpalUtil.pad(option.flags, width) + '  ' + option.description;
-    }))
+    .concat(
+      this.options.map(function(option) {
+        return VorpalUtil.pad(option.flags, width) + '  ' + option.description;
+      })
+    )
     .join('\n');
 };
 
@@ -468,8 +466,8 @@ command.optionHelp = function () {
  * @api private
  */
 
-command._largestOptionLength = function () {
-  return this.options.reduce(function (max, option) {
+command._largestOptionLength = function() {
+  return this.options.reduce(function(max, option) {
     return Math.max(max, option.flags.length);
   }, 0);
 };
@@ -482,7 +480,7 @@ command._largestOptionLength = function () {
  * @api public
  */
 
-command.help = function (fn) {
+command.help = function(fn) {
   if (_.isFunction(fn)) {
     this._help = fn;
   }
@@ -498,7 +496,7 @@ command.help = function (fn) {
  * @api public
  */
 
-command.parse = function (fn) {
+command.parse = function(fn) {
   if (_.isFunction(fn)) {
     this._parse = fn;
   }
@@ -513,7 +511,7 @@ command.parse = function (fn) {
  * @api public
  */
 
-command.after = function (fn) {
+command.after = function(fn) {
   if (_.isFunction(fn)) {
     this._after = fn;
   }
@@ -528,16 +526,16 @@ command.after = function (fn) {
  * @api private
  */
 
-command._parseExpectedArgs = function (args) {
+command._parseExpectedArgs = function(args) {
   if (!args.length) {
     return;
   }
-    const self = this;
-  args.forEach(function (arg) {
+  const self = this;
+  args.forEach(function(arg) {
     const argDetails = {
       required: false,
       name: '',
-      variadic: false
+      variadic: false,
     };
 
     switch (arg[0]) {
@@ -564,7 +562,7 @@ command._parseExpectedArgs = function (args) {
   // If the user entered args in a weird order,
   // properly sequence them.
   if (self._args.length > 1) {
-    self._args = self._args.sort(function (argu1, argu2) {
+    self._args = self._args.sort(function(argu1, argu2) {
       if (argu1.required && !argu2.required) {
         return -1;
       } else if (argu2.required && !argu1.required) {
@@ -590,7 +588,7 @@ command._parseExpectedArgs = function (args) {
  */
 
 function _camelcase(flag) {
-  return flag.split('-').reduce(function (str, word) {
+  return flag.split('-').reduce(function(str, word) {
     return str + word[0].toUpperCase() + word.slice(1);
   });
 }
