@@ -3,25 +3,8 @@
   "version": "1.11.4",
   "description": "Node's first framework for building immersive CLI apps.",
   "main": "./dist/vorpal.js",
-  "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "lint:base": "tslint -p tsconfig.json",
-    "lint:check": "npm run lint:base",
-    "lint:fix": "npm run lint:base -- --fix",
-    "prettier:base": "prettier \"{.,{src,test}/**}/*.@(ts|js)\"",
-    "prettier:check": "npm run prettier:base -- --list-different",
-    "prettier:fix": "npm run prettier:base -- --write",
-    "check": "npm run lint:check && npm run prettier:check && npm run build:check",
-    "fix": "npm run lint:fix && npm run prettier:fix",
-    "publish-coverage": "codecov",
-    "test": "jest --coverage  --forceExit",
-    "test:watch": "npm run test -- --watch",
-    "prepublish": "in-publish && npm run compile || not-in-publish"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dthree/vorpal.git"
+  "engines": {
+    "node": ">= 6.10.0"
   },
   "keywords": [
     "api",
@@ -40,10 +23,41 @@
   ],
   "author": "dthree",
   "license": "MIT",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint:base": "tslint -p tsconfig.json",
+    "lint:check": "npm run lint:base",
+    "lint:fix": "npm run lint:base -- --fix",
+    "prettier:base": "prettier \"{.,{src,test}/**}/*.@(ts|js)\"",
+    "prettier:check": "npm run prettier:base -- --list-different",
+    "prettier:fix": "npm run prettier:base -- --write",
+    "check": "npm run lint:check && npm run prettier:check && npm run build:check",
+    "fix": "npm run lint:fix && npm run prettier:fix",
+    "publish-coverage": "codecov",
+    "test": "jest --coverage",
+    "test:watch": "npm run test -- --watch",
+    "prepublish": "in-publish && npm run compile || not-in-publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dthree/vorpal.git"
+  },
   "bugs": {
     "url": "https://github.com/dthree/vorpal/issues"
   },
   "homepage": "https://github.com/dthree/vorpal#readme",
+  "dependencies": {
+    "chalk": "^1.1.0",
+    "in-publish": "^2.0.0",
+    "inquirer": "0.11.0",
+    "lodash": "^4.5.1",
+    "log-update": "^1.0.2",
+    "minimist": "^1.2.0",
+    "node-localstorage": "^0.6.0",
+    "strip-ansi": "^3.0.0",
+    "wrap-ansi": "^2.0.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.4.3",
     "@babel/preset-env": "^7.4.3",
@@ -71,20 +85,6 @@
     "vorpal-less": "0.0.4",
     "vorpal-repl": "^1.1.8",
     "xo": "^0.9.0"
-  },
-  "dependencies": {
-    "chalk": "^1.1.0",
-    "in-publish": "^2.0.0",
-    "inquirer": "0.11.0",
-    "lodash": "^4.5.1",
-    "log-update": "^1.0.2",
-    "minimist": "^1.2.0",
-    "node-localstorage": "^0.6.0",
-    "strip-ansi": "^3.0.0",
-    "wrap-ansi": "^2.0.0"
-  },
-  "engines": {
-    "node": ">= 6.10.0"
   },
   "xo": {
     "space": true,
