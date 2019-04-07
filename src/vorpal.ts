@@ -2,21 +2,21 @@
  * Module dependencies.
  */
 
-const _ = require('lodash');
-const { EventEmitter } = require('events');
-const Command = require('./command');
-const CommandInstance = require('./command-instance');
-const VorpalUtil = require('./util');
-const ui = require('./ui');
-const Session = require('./session');
-const intercept = require('./intercept');
-const minimist = require('minimist');
-const commons = require('./vorpal-commons');
-const chalk = require('chalk');
-const os = require('os');
-const History = require('./history');
-const LocalStorage = require('./local-storage');
-const wrap = require('wrap-ansi');
+import _ from 'lodash';
+import { EventEmitter } from 'events';
+import Command from './command';
+import CommandInstance from './command-instance';
+import VorpalUtil from './util';
+import ui from './ui';
+import Session from './session';
+import intercept from './intercept';
+import minimist from 'minimist';
+import commons from './vorpal-commons';
+import chalk from 'chalk';
+import os from 'os';
+import History from './history';
+import LocalStorage from './local-storage';
+import wrap from 'wrap-ansi';
 
 /**
  * Initialize a new `Vorpal` instance.

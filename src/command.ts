@@ -2,10 +2,10 @@
  * Module dependencies.
  */
 
-const EventEmitter = require('events').EventEmitter;
-const Option = require('./option');
-const VorpalUtil = require('./util');
-const _ = require('lodash');
+import { EventEmitter } from 'events';
+import Option from './option';
+import VorpalUtil from './util';
+import _ from 'lodash';
 
 /**
  * Command prototype.
@@ -17,7 +17,7 @@ const command = Command.prototype;
  * Expose `Command`.
  */
 
-module.exports = exports = Command;
+export default Command;
 
 export interface Arg {
   required: boolean;

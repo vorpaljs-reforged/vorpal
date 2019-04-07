@@ -2,12 +2,12 @@
  * Module dependencies.
  */
 
-const EventEmitter = require('events').EventEmitter;
-const os = require('os');
-const _ = require('lodash');
-const util = require('./util');
-const autocomplete = require('./autocomplete');
-const CommandInstance = require('./command-instance');
+import { EventEmitter } from 'events';
+import os from 'os';
+import _ from 'lodash';
+import util from './util';
+import autocomplete from './autocomplete';
+import CommandInstance from './command-instance';
 
 /**
  * Initialize a new `Session` instance.
@@ -53,13 +53,13 @@ Session.prototype = Object.create(EventEmitter.prototype);
  * Session prototype.
  */
 
-let session = Session.prototype;
+const session = Session.prototype;
 
 /**
  * Expose `Session`.
  */
 
-module.exports = exports = Session;
+export default Session;
 
 /**
  * Pipes logging data through any piped

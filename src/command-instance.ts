@@ -2,8 +2,8 @@
  * Module dependencies.
  */
 
-const util = require('./util');
-const _ = require('lodash');
+import util from './util';
+import _ from 'lodash';
 
 class CommandInstance {
   /**
@@ -92,4 +92,4 @@ class CommandInstance {
   }
 }
 
-module.exports = CommandInstance;
+export default CommandInstance;

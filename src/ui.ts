@@ -598,7 +598,7 @@ global.__vorpal.ui = global.__vorpal.ui || {
 if (!global.__vorpal.ui.exists) {
   global.__vorpal.ui.exists = true;
   global.__vorpal.ui.exports = ui;
-  module.exports = exports = global.__vorpal.ui.exports;
-} else {
-  module.exports = global.__vorpal.ui.exports;
 }
+// TODO : check this is still needed in TS?
+
+export default global.__vorpal.ui.exports;

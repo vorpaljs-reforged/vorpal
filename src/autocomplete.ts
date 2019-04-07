@@ -1,5 +1,5 @@
-const _ = require('lodash');
-const strip = require('strip-ansi');
+import _ from 'lodash';
+import strip from 'strip-ansi';
 
 const autocomplete = {
   /**
@@ -454,4 +454,4 @@ function getMatchData(input, cb) {
   return;
 }
 
-module.exports = autocomplete;
+export default autocomplete;
