@@ -1,8 +1,6 @@
-const Vorpal = require('..');
+import Vorpal from '../lib/vorpal';
 
 const vorpal = new Vorpal();
-
-require('assert');
 
 describe('vorpal', function() {
   describe('constructor', function() {

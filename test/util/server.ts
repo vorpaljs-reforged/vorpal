@@ -1,4 +1,4 @@
-module.exports = function(vorpal) {
+export default function(vorpal) {
   vorpal
     .mode('repl', 'Enters REPL Mode.')
     .init(function(args, cb) {
@@ -266,4 +266,4 @@ module.exports = function(vorpal) {
         resolve();
       });
     });
-};
+}

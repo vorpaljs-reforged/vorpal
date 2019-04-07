@@ -1,14 +1,4 @@
 /**
- * Polyfill for ES6.
- */
-
-if (!global._babelPolyfill) {
-  // When the runtime transformer properly detects all shimmed methods, use instead.
-  // http://www.2ality.com/2015/12/babel6-helpersstandard-library.html#babel-plugin-transform-runtime
-  require('babel-polyfill');
-}
-
-/**
  * Module dependencies.
  */
 
@@ -36,10 +26,6 @@ const wrap = require('wrap-ansi');
  */
 
 function Vorpal() {
-  if (!(this instanceof Vorpal)) {
-    return new Vorpal();
-  }
-
   // Program version
   // Exposed through vorpal.version(str);
   this._version = '';
@@ -107,7 +93,6 @@ function Vorpal() {
   this.isCommandArgKeyPairNormalized = true;
 
   this._init();
-  return this;
 }
 
 /**
@@ -126,7 +111,7 @@ let vorpal = Vorpal.prototype;
  * Expose `Vorpal`.
  */
 
-exports = module.exports = Vorpal;
+export default Vorpal;
 
 /**
  * Extension to `constructor`.

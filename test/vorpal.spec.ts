@@ -1,16 +1,10 @@
-/**
- * This is the new testing file, as
- * the current one totally sucks.
- * eventually move all tests over to
- * this one.
- */
-
-const Vorpal = require('..');
-const intercept = require('../lib/intercept');
+import Vorpal from '../lib/vorpal';
+import intercept from '../lib/intercept';
 
 let vorpal;
 
 // Normalize inputs to objects.
+// FIXME not sure its necessary with jest....
 function obj(inp) {
   if (typeof inp === 'string') {
     return '(' + inp + ')';

@@ -1,9 +1,9 @@
 const Vorpal = require('../lib/vorpal');
-const commands = require('./util/server');
-const BlueBirdPromise = require('bluebird');
-const fs = require('fs');
+import commands from './util/server';
+import * as fs from 'fs';
+import * as BlueBirdPromise from 'bluebird';
+import intercept from '../lib/intercept';
 
-const intercept = require('../lib/intercept');
 let integrationStdoutput = '';
 let unmute;
 const mute = () => {
@@ -73,20 +73,20 @@ describe('integration tests:', () => {
           cb(undefined, 'You have found me.');
         });
 
-      const ctr = 0;
-      const arr = [
+      let counter = 0;
+      const array = [
         'donald trump',
         'sinterclaus',
         'linus torvalds',
         'nan nan nan nan nan nan nan watman!',
       ];
       function go() {
-        if (arr[ctr]) {
-          vorpal.exec(arr[ctr], function(err, data) {
+        if (array[counter]) {
+          vorpal.exec(array[counter], function(err, data) {
             expect(err).toBe(undefined);
             expect(data).toEqual('You have found me.');
-            ctr++;
-            if (!arr[ctr]) {
+            counter++;
+            if (!array[counter]) {
             } else {
               go();
             }
@@ -452,7 +452,7 @@ describe('integration tests:', () => {
     });
 
     describe('history', () => {
-      const vorpalHistory;
+      let vorpalHistory;
       const UNIT_TEST_STORAGE_PATH = './.unit_test_cmd_history';
       beforeEach(() => {
         vorpalHistory = new Vorpal();
@@ -522,7 +522,7 @@ describe('integration tests:', () => {
     });
 
     describe('cancel', () => {
-      const longRunningCommand;
+      let longRunningCommand;
       beforeEach(() => {
         longRunningCommand = vorpal
           .command('LongRunning', 'This command keeps running.')

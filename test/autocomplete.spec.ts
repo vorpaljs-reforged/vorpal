@@ -1,5 +1,6 @@
-const Vorpal = require('../lib/vorpal');
-const _ = require('lodash');
+import Vorpal from '../lib/vorpal';
+import * as _ from 'lodash';
+
 const vorpal = new Vorpal();
 
 describe('session._autocomplete', function() {
@@ -43,7 +44,12 @@ describe('session._autocomplete', function() {
   });
 
   it('should return a list of matches when supplied with a prefix but no value post prefix', function() {
-    const result = vorpal.session._autocomplete('foo/', ['dally', 'definitive', 'definitop', 'bob']);
+    const result = vorpal.session._autocomplete('foo/', [
+      'dally',
+      'definitive',
+      'definitop',
+      'bob',
+    ]);
     expect(result.length).toBe(4);
     expect(result[0]).toBe('bob');
     expect(result[1]).toBe('dally');

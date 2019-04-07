@@ -1,8 +1,8 @@
-var Vantage = require('../../lib/vorpal');
-var _ = require('lodash');
-var path = require('path');
+const path = require('path');
+const _ = require('lodash');
+const Vantage = require('../../lib/vorpal');
 
-module.exports = {
+const utils = {
   instances: [],
 
   spawn: function(options, cb) {
@@ -19,10 +19,10 @@ module.exports = {
         .delimiter(port + ':')
         .use(path.join(__dirname, '/server'))
         .listen(port);
-      module.exports.instances.push(vorpal);
+      utils.instances.push(vorpal);
     }
 
-    cb(undefined, module.exports.instances);
+    cb(undefined, utils.instances);
     return;
   },
 
@@ -30,3 +30,4 @@ module.exports = {
     cb = cb || function() {};
   },
 };
+export default utils;
