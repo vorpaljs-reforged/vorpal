@@ -5,23 +5,23 @@
 import _ from 'lodash';
 import util from './util';
 
-type CommandInstanceParams = {
+interface CommandInstanceParams {
   commandWrapper?: any;
   args?: any;
   commandObject?: any;
   command?: any;
   callback?: any;
   downstream?: any;
-};
+}
 class CommandInstance {
-  commandWrapper: any;
-  args: any;
-  commandObject: any;
-  command: any;
-  session: any;
-  parent: any;
-  callback: any;
-  downstream: any;
+  public commandWrapper: any;
+  public args: any;
+  public commandObject: any;
+  public command: any;
+  public session: any;
+  public parent: any;
+  public callback: any;
+  public downstream: any;
   /**
    * Initialize a new `CommandInstance` instance.
    *

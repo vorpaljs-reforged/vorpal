@@ -7,9 +7,9 @@ import minimist from 'minimist';
 import strip from 'strip-ansi';
 import { Arg } from './command';
 
-type Options = {
+interface Options {
   options: { [key: string]: any };
-};
+}
 
 export default {
   /**
@@ -391,8 +391,7 @@ export default {
     let col = 0;
     const lines = [];
     let line = '';
-    for (const key in arr) {
-      const arrEl = arr[key];
+    for (const elem of  arr) {
       if (col < cols) {
         col++;
       } else {
@@ -400,7 +399,7 @@ export default {
         line = '';
         col = 1;
       }
-      line += this.pad(arrEl, longest, ' ');
+      line += this.pad(elem, longest, ' ');
     }
     if (line !== '') {
       lines.push(line);

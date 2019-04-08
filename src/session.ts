@@ -11,31 +11,31 @@ import CommandInstance from './command-instance';
 import util from './util';
 import Vorpal from './vorpal';
 
-type CommandResponse = {
+interface CommandResponse {
   error?: Error;
   data?: any;
   args?: any;
-};
+}
 
 export default class Session extends EventEmitter {
-  _registeredCommands: number;
-  _completedCommands: number;
-  _commandSetCallback: any;
-  id: any;
-  vorpal;
-  parent: Vorpal;
-  authenticating: any;
-  user: any;
-  host: any;
-  address: any;
-  _isLocal: any;
-  _delimiter: any;
-  _modeDelimiter: any;
-  _tabCount: number;
-  cmdHistory: any;
-  _mode: any;
-  _histCtr: number;
-  cancelCommands: any;
+  public _registeredCommands: number;
+  public _completedCommands: number;
+  public _commandSetCallback: any;
+  public id: any;
+  public vorpal;
+  public parent: Vorpal;
+  public authenticating: any;
+  public user: any;
+  public host: any;
+  public address: any;
+  public _isLocal: any;
+  public _delimiter: any;
+  public _modeDelimiter: any;
+  public _tabCount: number;
+  public cmdHistory: any;
+  public _mode: any;
+  public _histCtr: number;
+  public cancelCommands: any;
   /**
    * Initialize a new `Session` instance.
    *

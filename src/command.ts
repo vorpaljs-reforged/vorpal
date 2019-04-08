@@ -5,8 +5,8 @@
 import { EventEmitter } from 'events';
 import _ from 'lodash';
 import Option from './option';
+import { ICommand, IVorpal } from './types';
 import util from './util';
-import { IVorpal, ICommand } from './types';
 export interface Arg {
   required: boolean;
   name: string;
@@ -40,7 +40,7 @@ export default class Command extends EventEmitter implements ICommand {
   private _fn;
   private _validate;
   private _parse;
-  parent: IVorpal;
+  public parent: IVorpal;
 
   /**
    * Initialize a new `Command` instance.

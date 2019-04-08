@@ -9,7 +9,7 @@
  */
 
 import _ from 'lodash';
-import { IVorpal, ICommand } from './types';
+import { ICommand, IVorpal } from './types';
 
 export default function(vorpal: IVorpal) {
   /**

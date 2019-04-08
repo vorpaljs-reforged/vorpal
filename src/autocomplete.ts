@@ -1,16 +1,16 @@
 import _ from 'lodash';
 import strip from 'strip-ansi';
-import { IVorpal } from './types';
 import Command from './command';
+import { IVorpal } from './types';
 
-type Input = {
+interface Input {
   raw;
   prefix;
   suffix;
   context;
   match?: Command;
   option?;
-};
+}
 
 const autocomplete = {
   /**

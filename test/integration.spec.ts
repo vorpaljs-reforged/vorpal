@@ -86,8 +86,7 @@ describe('integration tests:', () => {
             expect(err).toBe(undefined);
             expect(data).toEqual('You have found me.');
             counter++;
-            if (!array[counter]) {
-            } else {
+            if (array[counter]) {
               go();
             }
           });
@@ -124,8 +123,8 @@ describe('integration tests:', () => {
           cb();
         });
 
-      vorpal.exec('validate-me valid', function(err) {
-        expect(err).toBe(undefined);
+      vorpal.exec('validate-me valid', function(noerr) {
+        expect(noerr).toBe(undefined);
         vorpal.exec('validate-me invalid', function(err) {
           expect(err).toEqual(errorThrown);
         });
@@ -216,8 +215,6 @@ describe('integration tests:', () => {
             done();
           })
           .catch(function(err) {
-            console.log(stdout());
-            console.log('b', err.stack);
             fail(err);
             done(err);
           });

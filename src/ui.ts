@@ -26,8 +26,8 @@ class UI extends EventEmitter {
   private _cancel: boolean;
   public inquirer;
   private inquirerStdout: string[];
-  _cancelled: boolean;
-  _pipeFn: any;
+  public _cancelled: boolean;
+  public _pipeFn: any;
   // FIXME §here: more to add
 
   /**

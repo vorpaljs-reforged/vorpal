@@ -14,16 +14,16 @@ import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
+import { IVorpal } from './types';
 import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
-import { IVorpal } from './types';
 
-type PromptOption = {
+interface PromptOption {
   sessionId?: string;
   message?: string;
-};
-type DataSession = {
+}
+interface DataSession {
   sessionId?: string;
   command?: string;
   args?;
@@ -31,7 +31,7 @@ type DataSession = {
   value?: any;
   key?: string;
   completed?: boolean;
-};
+}
 
 export default class Vorpal extends EventEmitter implements IVorpal {
   public chalk;
@@ -55,8 +55,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   public session: any;
   private isCommandArgKeyPairNormalized: boolean;
   private executables: boolean;
-  _help: any;
-  _fatal: boolean;
+  public _help: any;
+  public _fatal: boolean;
 
   constructor() {
     super();
@@ -74,7 +74,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     this._banner = '';
 
     // Command line history instance
-    this.cmdHistory = new History(); //this.CmdHistoryExtension();
+    this.cmdHistory = new History(); // this.CmdHistoryExtension();
 
     // Registered `vorpal.command` commands and
     // their options.
@@ -268,8 +268,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       return this.use(require(commands), options);
     } else {
       commands = _.isArray(commands) ? commands : [commands];
-      for (let i = 0; i < commands.length; ++i) {
-        const cmd = commands[i];
+      for (const cmd of commands) {
         if (cmd.command) {
           const command = this.command(cmd.command);
           if (cmd.description) {
@@ -1105,21 +1104,21 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     const singleMatches = [];
 
     command = command ? String(command).trim() : undefined;
-    for (let i = 0; i < this.commands.length; ++i) {
-      const parts = String(this.commands[i]._name).split(' ');
+    for (const _command of this.commands) {
+      const parts = String(_command._name).split(' ');
       if (
         parts.length === 1 &&
         parts[0] === command &&
-        !this.commands[i]._hidden &&
-        !this.commands[i]._catch
+        !_command._hidden &&
+        !_command._catch
       ) {
         singleMatches.push(command);
       }
       let str = '';
-      for (let j = 0; j < parts.length; ++j) {
-        str = String(str + ' ' + parts[j]).trim();
-        if (str === command && !this.commands[i]._hidden && !this.commands[i]._catch) {
-          matches.push(this.commands[i]);
+      for (const part of parts) {
+        str = String(str + ' ' + part).trim();
+        if (str === command && !_command._hidden && !_command._catch) {
+          matches.push(_command);
           break;
         }
       }
