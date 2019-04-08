@@ -4,12 +4,12 @@ import { IVorpal } from './types';
 import Command from './command';
 
 type Input = {
-  raw,
-  prefix,
-  suffix,
-  context,
-  match?: Command,
-  option?
+  raw;
+  prefix;
+  suffix;
+  context;
+  match?: Command;
+  option?;
 };
 
 const autocomplete = {
@@ -249,7 +249,7 @@ function filterData(str, data) {
  * @api private
  */
 
-function parseInput(str, idx) : Input{
+function parseInput(str, idx): Input {
   const raw = String(str || '');
   const sliced = raw.slice(0, idx);
   const sections = sliced.split('|');
@@ -335,7 +335,7 @@ function getCommandNames(cmds) {
  * @api private
  */
 
-function getMatchObject(this:IVorpal, input, commands) {
+function getMatchObject(this: IVorpal, input, commands) {
   const len = input.context.length;
   const trimmed = String(input.context).replace(/^\s+/g, '');
   let prefix = new Array(len - trimmed.length + 1).join(' ');

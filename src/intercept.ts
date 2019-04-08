@@ -20,13 +20,12 @@ export default function(callback) {
     return function(string) {
       const args = _.toArray(arguments);
       args[0] = interceptor(string);
-      write.apply(process.stdout, args);
+      return write.apply(process.stdout, args);
     };
   })(process.stdout.write);
 
-  console.error = (function(...args) {
-    // TODO: check
-    return function() {
+  console.error = (function(fn) {
+    return function(...args) {
       args.unshift('\x1b[31m[ERROR]\x1b[0m');
       console.log.apply(console.log, args);
     };

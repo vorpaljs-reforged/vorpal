@@ -21,7 +21,8 @@ export default class Session extends EventEmitter {
   _registeredCommands: number;
   _completedCommands: number;
   _commandSetCallback: any;
-  id: any;vorpal
+  id: any;
+  vorpal;
   parent: Vorpal;
   authenticating: any;
   user: any;
@@ -78,8 +79,7 @@ export default class Session extends EventEmitter {
    * @return {Session}
    * @api public
    */
-  public log(...argz) {
-    const args = util.fixArgsForApply(arguments);
+  public log(...args: string[]) {
     return this._log.apply(this, args);
   }
 
@@ -308,12 +308,11 @@ export default class Session extends EventEmitter {
     });
 
     let command: Command;
-    if(match)
-      command = this.parent.commands.find(cmd => cmd._name === match);
-      // lodash _.find was drop since untipable
+    if (match) command = this.parent.commands.find(cmd => cmd._name === match);
+    // lodash _.find was drop since untipable
 
     if (!command) {
-      command = this.parent.commands.find(cmd => cmd._catch === true)
+      command = this.parent.commands.find(cmd => cmd._catch === true);
       if (command) {
         extra = trimmed;
       }
@@ -488,8 +487,7 @@ export default class Session extends EventEmitter {
     }
 
     // Call the root command.
-    res = wrapper.fn.call(commandInstance, wrapper.args, function() {
-      const argus = util.fixArgsForApply(arguments);
+    res = wrapper.fn.call(commandInstance, wrapper.args, function(...argus) {
       onCompletion(wrapper, argus[0], argus[1], argus);
     });
 

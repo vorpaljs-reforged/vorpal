@@ -234,11 +234,10 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public init(fn) {
-    const self = this;
-    if (self._mode !== true) {
+    if (this._mode !== true) {
       throw Error('Cannot call init from a non-mode action.');
     }
-    self._init = fn;
+    this._init = fn;
     return this;
   }
 

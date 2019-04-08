@@ -7,6 +7,10 @@ import minimist from 'minimist';
 import strip from 'strip-ansi';
 import { Arg } from './command';
 
+type Options = {
+  options: { [key: string]: any };
+};
+
 export default {
   /**
    * Parses command arguments from multiple
@@ -203,7 +207,7 @@ export default {
   },
 
   buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized: boolean) {
-    let args = { options: {} };
+    let args: Options & Object = { options: {} };
 
     if (isCommandArgKeyPairNormalized) {
       // Normalize all foo="bar" with "foo='bar'"
@@ -240,9 +244,7 @@ export default {
     // required or optional args.
     const passedArgParts = passedArgs.split(' ');
     types.boolean = booleans
-      .map(function(str) {
-        return String(str).replace(/^-*/, '');
-      })
+      .map(str => String(str).replace(/^-*/, ''))
       .filter(function(str) {
         let match = false;
         const strings = [`-${str}`, `--${str}`, `--no-${str}`];
@@ -418,7 +420,7 @@ export default {
    * @return {String}
    * @api private
    */
-  pad(str: string|string[], width: number, delimiter: string = ' '): string {
+  pad(str: string | string[], width: number, delimiter: string = ' '): string {
     width = Math.floor(width);
     const len = Math.max(0, width - strip(str).length);
     return str + Array(len + 1).join(delimiter);
@@ -433,27 +435,7 @@ export default {
   padRow(str: string): string {
     return str
       .split('\n')
-      .map(function(row) {
-        return '  ' + row + '  ';
-      })
+      .map(row => `  ${row}  `)
       .join('\n');
-  },
-
-  // When passing down applied args, we need to turn
-  // them from `{ '0': 'foo', '1': 'bar' }` into ['foo', 'bar']
-  // instead.
-  fixArgsForApply<T>(obj: { [index: string]: T }): T[] {
-    if (!_.isObject(obj)) {
-      if (!_.isArray(obj)) {
-        return [obj];
-      }
-      return obj;
-    }
-    const argArray = [];
-    for (const key in obj) {
-      const aarg = obj[key];
-      argArray.push(aarg);
-    }
-    return argArray;
   },
 };

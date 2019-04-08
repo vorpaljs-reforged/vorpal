@@ -9,7 +9,7 @@
  */
 
 import _ from 'lodash';
-import {IVorpal, ICommand}  from './types';
+import { IVorpal, ICommand } from './types';
 
 export default function(vorpal: IVorpal) {
   /**
@@ -19,7 +19,7 @@ export default function(vorpal: IVorpal) {
   vorpal
     .command('help [command...]')
     .description('Provides help for a given command.')
-    .action(function(this:IVorpal, args, cb) {
+    .action(function(this: IVorpal, args, cb) {
       const self = this;
       if (args.command) {
         args.command = args.command.join(' ');

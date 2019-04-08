@@ -22,16 +22,16 @@ import { IVorpal } from './types';
 type PromptOption = {
   sessionId?: string;
   message?: string;
-}
+};
 type DataSession = {
-  sessionId?: string,
-  command?: string,
-  args?,
-  options?: PromptOption,
-  value?: any,
-  key?: string,
-  completed?: boolean
-}
+  sessionId?: string;
+  command?: string;
+  args?;
+  options?: PromptOption;
+  value?: any;
+  key?: string;
+  completed?: boolean;
+};
 
 export default class Vorpal extends EventEmitter implements IVorpal {
   public chalk;
@@ -154,7 +154,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   public parse(argv, options) {
     options = options || {};
     const args = argv;
-    let result: Vorpal|minimist.ParsedArgs = this;
+    let result: Vorpal | minimist.ParsedArgs = this;
     const catchExists = !(_.find(this.commands, { _catch: true }) === undefined);
     args.shift();
     args.shift();
@@ -639,7 +639,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * @api private
    */
 
-  public _prompt(data:DataSession = {}) {
+  public _prompt(data: DataSession = {}) {
     const self = this;
     let prompt;
     if (!data.sessionId) {
@@ -756,7 +756,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * @api public
    */
 
-  public execSync(cmd, options) {
+  public execSync(cmd, options?) {
     const self = this;
     let ssn = self.session;
     options = options || {};
@@ -1243,13 +1243,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     const groupsString =
       groups.length < 1 ? '' : '  Command Groups:\n\n' + groups.join('\n') + '\n';
 
-    const results = String(
+    return String(
       this._helpHeader(!!invalidString) + invalidString + commandsString + '\n' + groupsString
     )
       .replace(/\n\n\n/g, '\n\n')
       .replace(/\n\n$/, '\n');
-
-    return results;
   }
 
   public _helpHeader(hideTitle) {

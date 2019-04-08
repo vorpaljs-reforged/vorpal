@@ -9,6 +9,12 @@ import _ from 'lodash';
 import logUpdate from 'log-update';
 import util from './util';
 
+interface Redraw {
+  (str: string): UI;
+  clear?: Function;
+  done?: Function;
+}
+
 class UI extends EventEmitter {
   private _activePrompt;
   private parent;
@@ -408,13 +414,11 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public log(...message) {
-    let args = util.fixArgsForApply(arguments); //FIXME
+  public log(...args) {
     args = _.isFunction(this._pipeFn) ? this._pipeFn(args) : args;
-    if (args === '') {
+    if (args.length === 0 || args[0] === '') {
       return this;
     }
-    args = util.fixArgsForApply(args);
     if (this.midPrompt()) {
       const data = this.pause();
       console.log.apply(console.log, args);
@@ -543,7 +547,7 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public redraw = function(str) {
+  public redraw: Redraw = function(str) {
     logUpdate(str);
     return this;
   };
