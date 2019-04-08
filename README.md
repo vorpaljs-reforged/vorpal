@@ -16,6 +16,9 @@
 
 > :construction_worker: You can join the effort here if you want [:link: on slack](https://join.slack.com/t/vorpal-workspace/shared_invite/enQtNTU3NTU3MTAzNzEyLTE4ODg2YjA1OTg0ZDMyY2I4M2Q3MGZhYjVlZDk1ZDY5NWJiZWFmYjJmYzk1ODdmYmU5ZjAzNGEzNDk5NDFhNWY)
 ------
+> Develop Status:
+[![Build Status](https://travis-ci.com/vorpaljs-reforged/vorpal.svg?branch=develop)](https://travis-ci.com/vorpaljs-reforged/vorpal/branch=develop)
+[![codecov](https://codecov.io/gh/vorpaljs-reforged/vorpal/branch/develop/graph/badge.svg)](https://codecov.io/gh/vorpaljs-reforged/vorpal/branch/develop)
 
 ```text
               (O)
@@ -24,12 +27,12 @@
   /| ......  /:M\------------------------------------------------,,,,,,
 (O)[ vorpal ]::@+}==========================================------------>
   \| ^^^^^^  \:W/------------------------------------------------''''''
-   o          <W              __                          _ 
+   o          <W              __                          _
               <W    _ __ ___ / _| ___  _ __ __ _  ___  __| |
               (O)  | '__/ _ \ |_ / _ \| '__/ _` |/ _ \/ _` |
                    | | |  __/  _| (_) | | | (_| |  __/ (_| |
                    |_|  \___|_|  \___/|_|  \__, |\___|\__,_|
-                                           |___/            
+                                           |___/
 ```
 
 Vorpal is Node's first framework for building interactive CLI applications. With a simple and powerful API, Vorpal opens the door to a new breed of rich, immersive CLI environments like [cash](https://github.com/dthree/cash) and [wat](https://github.com/dthree/wat).
