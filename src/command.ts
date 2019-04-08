@@ -17,7 +17,7 @@ export default class Command extends EventEmitter implements ICommand {
   public commands: ICommand[] = [];
   public options: Option[];
   private _args;
-  public _aliases: Array<string>;
+  public _aliases: string[];
   public _name;
   private _relay;
   public _hidden;
@@ -80,7 +80,6 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public option(flags, description, autocomplete?): Command {
-    const self = this;
     const option = new Option(flags, description, autocomplete);
     const oname = option.name();
     const name = _.camelCase(oname);
@@ -94,7 +93,7 @@ export default class Command extends EventEmitter implements ICommand {
       }
       // preassign only if we have a default
       if (defaultValue !== undefined) {
-        self[name] = defaultValue;
+        this[name] = defaultValue;
       }
     }
 
@@ -103,18 +102,18 @@ export default class Command extends EventEmitter implements ICommand {
 
     // when it's passed assign the value
     // and conditionally invoke the callback
-    this.on(oname, function(val) {
+    this.on(oname, val => {
       // unassigned or bool
-      if (typeof self[name] === 'boolean' || typeof self[name] === 'undefined') {
+      if (_.isBoolean(this[name]) && _.isUndefined(this[name])) {
         // if no value, bool true, and we have a default, then use it!
         if (val === null) {
-          self[name] = option.bool ? defaultValue || true : false;
+          this[name] = option.bool ? defaultValue || true : false;
         } else {
-          self[name] = val;
+          this[name] = val;
         }
       } else if (val !== null) {
         // reassign
-        self[name] = val;
+        this[name] = val;
       }
     });
 
@@ -130,8 +129,7 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public action(fn) {
-    const self = this;
-    self._fn = fn;
+    this._fn = fn;
     return this;
   }
 
@@ -285,24 +283,21 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public alias(...aliases) {
-    const self = this;
-    for (let i = 0; i < arguments.length; ++i) {
-      // tODO: to spread args
-      const alias = arguments[i];
+    for (const alias of aliases) {
       if (_.isArray(alias)) {
-        for (let j = 0; j < alias.length; ++j) {
-          this.alias(alias[j]);
+        for (const subalias of alias) {
+          this.alias(subalias);
         }
         return this;
       }
-      this._parent.commands.forEach(function(cmd) {
+      this._parent.commands.forEach(cmd => {
         if (!_.isEmpty(cmd._aliases)) {
           if (_.includes(cmd._aliases, alias)) {
             const msg =
               'Duplicate alias "' +
               alias +
               '" for command "' +
-              self._name +
+              this._name +
               '" detected. Was first reserved by command "' +
               cmd._name +
               '".';

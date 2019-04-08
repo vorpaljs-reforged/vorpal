@@ -125,9 +125,7 @@ class UI extends EventEmitter {
     // as inquirer doesn't expose it and we need it.
     const prompts = ['input', 'checkbox', 'confirm', 'expand', 'list', 'password', 'rawlist'];
 
-    for (const key in prompts) {
-      const promptType = prompts[key];
-
+    for (const promptType of prompts) {
       // Add method to Inquirer to get type of prompt.
       inquirer.prompt.prompts[promptType].prototype.getType = function() {
         return promptType;
@@ -419,6 +417,7 @@ class UI extends EventEmitter {
     if (args.length === 0 || args[0] === '') {
       return this;
     }
+    /* tslint:disable: no-console */
     if (this.midPrompt()) {
       const data = this.pause();
       console.log.apply(console.log, args);
@@ -430,6 +429,7 @@ class UI extends EventEmitter {
     } else {
       console.log.apply(console.log, args);
     }
+    /* ts:lint-enable no-console */
     return this;
   }
 

@@ -29,22 +29,21 @@ const autocomplete = {
    */
 
   exec(str, cb) {
-    const self = this;
     let input = parseInput(str, this.parent.ui._activePrompt.screen.rl.cursor);
     const commands = getCommandNames(this.parent.commands);
     const vorpalMatch = getMatch(input.context, commands, { ignoreSlashes: true });
     let freezeTabs = false;
 
-    function end(str) {
-      const res = handleTabCounts.call(self, str, freezeTabs);
+    const end = str => {
+      const res = handleTabCounts.call(this, str, freezeTabs);
       cb(undefined, res);
-    }
+    };
 
-    function evaluateTabs(input) {
+    const evaluateTabs = input => {
       if (input.context && input.context[input.context.length - 1] === '/') {
         freezeTabs = true;
       }
-    }
+    };
 
     if (vorpalMatch) {
       input.context = vorpalMatch;
@@ -56,7 +55,7 @@ const autocomplete = {
     input = getMatchObject.call(this, input, commands);
     if (input.match) {
       input = parseMatchSection.call(this, input);
-      getMatchData.call(self, input, function(data) {
+      getMatchData.call(this, input, function(data) {
         const dataMatch = getMatch(input.context, data);
         if (dataMatch) {
           input.context = dataMatch;

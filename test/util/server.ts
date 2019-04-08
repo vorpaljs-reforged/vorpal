@@ -6,6 +6,7 @@ export default function(vorpal) {
       cb();
     })
     .action(function(command, cb) {
+      // tslint:disable-next-line: no-eval
       var res = eval(command);
       this.log(res);
       cb(res);
@@ -15,9 +16,8 @@ export default function(vorpal) {
     .command('foo')
     .description("Should return 'bar'.")
     .action(function() {
-      var self = this;
-      return new Promise(function(resolve) {
-        self.log('bar');
+      return new Promise(resolve => {
+        this.log('bar');
         resolve();
       });
     });
@@ -92,9 +92,8 @@ export default function(vorpal) {
     .command('fuzzy')
     .description("Should return 'wuzzy'.")
     .action(function() {
-      var self = this;
-      return new Promise(function(resolve) {
-        self.log('wuzzy');
+      return new Promise(resolve => {
+        this.log('wuzzy');
         resolve();
       });
     });
@@ -103,9 +102,8 @@ export default function(vorpal) {
     .command('optional [arg]')
     .description('Should optionally return an arg.')
     .action(function(args) {
-      var self = this;
-      return new Promise(function(resolve) {
-        self.log(args.arg || '');
+      return new Promise(resolve => {
+        this.log(args.arg || '');
         resolve();
       });
     });
@@ -214,8 +212,8 @@ export default function(vorpal) {
     .description('Tests execution of deep command.')
     .action(function(args) {
       var self = this;
-      return new Promise(function(resolve) {
-        self.log(args.arg);
+      return new Promise(resolve => {
+        this.log(args.arg);
         resolve();
       });
     });
@@ -225,8 +223,8 @@ export default function(vorpal) {
     .description('Tests execution of three-deep command.')
     .action(function(args) {
       var self = this;
-      return new Promise(function(resolve) {
-        self.log(args.arg);
+      return new Promise(resolve => {
+        this.log(args.arg);
         resolve();
       });
     });
@@ -236,8 +234,8 @@ export default function(vorpal) {
     .description('Tests execution of three-deep command.')
     .action(function(args) {
       var self = this;
-      return new Promise(function(resolve) {
-        self.log(args.number);
+      return new Promise(resolve => {
+        this.log(args.number);
         resolve();
       });
     });
@@ -253,7 +251,7 @@ export default function(vorpal) {
     .description('Tests execution of three-deep command.')
     .action(function(args) {
       var self = this;
-      return new Promise(function(resolve) {
+      return new Promise(resolve => {
         var str = '';
         str = args.options.r === true ? str + 'r' : str;
         str = args.options.a === true ? str + 'a' : str;
@@ -262,7 +260,7 @@ export default function(vorpal) {
         str = args.options.i === 'j' ? str + args.options.i : str;
         str = args.options.sleep === 'well' ? str + args.options.sleep : str;
         str += args.arg || '';
-        self.log(str);
+        this.log(str);
         resolve();
       });
     });

@@ -80,7 +80,13 @@
       {
         "severity": "warning"
       }
-    ]
+    ],
+    // temporary disabled
+    "only-arrow-functions": false,
+    "no-function-expression": false,
+    "variable-name": false,
+    "function-name": false,
+    "no-unnecessary-field-initialisation": false
   },
   "linterOptions": {
     "exclude": ["dist"]

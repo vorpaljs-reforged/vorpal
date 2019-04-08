@@ -135,14 +135,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public _init() {
-    const self = this;
-
-    ui.on('vorpal_ui_keypress', function(data) {
-      self.emit('keypress', data);
-      self._onKeypress(data.key, data.value);
+    ui.on('vorpal_ui_keypress', data => {
+      this.emit('keypress', data);
+      this._onKeypress(data.key, data.value);
     });
 
-    self.use(commons);
+    this.use(commons);
   }
 
   /**
@@ -713,16 +711,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * @api public
    */
 
-  public exec(cmd, args, cb?) {
-    const self = this;
-    let ssn = self.session;
-
+  public exec(cmd, args?, cb?) {
     cb = _.isFunction(args) ? args : cb;
     args = args || {};
 
-    if (args.sessionId) {
-      ssn = self.getSessionById(args.sessionId);
-    }
+    const ssn = args.sessionId ? this.getSessionById(args.sessionId) : this.session;
 
     const command = {
       command: cmd,
@@ -734,16 +727,16 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     };
 
     if (cb !== undefined) {
-      self._queue.push(command);
-      self._queueHandler();
-      return self;
+      this._queue.push(command);
+      this._queueHandler();
+      return this;
     }
 
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
       command.resolve = resolve;
       command.reject = reject;
-      self._queue.push(command);
-      self._queueHandler();
+      this._queue.push(command);
+      this._queueHandler();
     });
   }
 

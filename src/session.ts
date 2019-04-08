@@ -147,8 +147,7 @@ export default class Session extends EventEmitter {
    */
 
   public fullDelimiter() {
-    const result = this._delimiter + (this._modeDelimiter !== undefined ? this._modeDelimiter : '');
-    return result;
+    return this._delimiter + (this._modeDelimiter !== undefined ? this._modeDelimiter : '');
   }
 
   /**
@@ -184,14 +183,13 @@ export default class Session extends EventEmitter {
    */
 
   public modeDelimiter(str) {
-    const self = this;
     if (str === undefined) {
       return this._modeDelimiter;
     }
     if (!this.isLocal()) {
-      self.parent._send('vantage-mode-delimiter-downstream', 'downstream', {
+      this.parent._send('vantage-mode-delimiter-downstream', 'downstream', {
         value: str,
-        sessionId: self.id,
+        sessionId: this.id,
       });
     } else {
       if (str === false || str === 'false') {
@@ -267,7 +265,7 @@ export default class Session extends EventEmitter {
    * @api private
    */
   private getAutocompleteDeprecated(str, cb) {
-    cb = cb || function() {};
+    cb = cb || _.noop;
 
     // Entire command string
     const cursor = this.parent.ui._activePrompt.screen.rl.cursor;
@@ -288,8 +286,9 @@ export default class Session extends EventEmitter {
     }
 
     // Complete command
-    let names = _.map(this.parent.commands, '_name');
-    names = names.concat.apply(names, _.map(this.parent.commands, '_aliases'));
+    const names = _.map(this.parent.commands, '_name').concat(
+      _.map(this.parent.commands, '_aliases')
+    );
     const result = this._autocomplete(trimmed, names);
     if (result && trimmed.length < String(result).trim().length) {
       cb(undefined, pre + result + remainder);
@@ -308,7 +307,9 @@ export default class Session extends EventEmitter {
     });
 
     let command: Command;
-    if (match) command = this.parent.commands.find(cmd => cmd._name === match);
+    if (match) {
+      command = this.parent.commands.find(cmd => cmd._name === match);
+    }
     // lodash _.find was drop since untipable
 
     if (!command) {
@@ -320,16 +321,16 @@ export default class Session extends EventEmitter {
 
     if (command && _.isFunction(command._autocompletion)) {
       this._tabCount++;
-      command._autocompletion.call(this, extra, this._tabCount, function(err, autocomplete) {
+      command._autocompletion.call(this, extra, this._tabCount, function(err, autocompleteValues) {
         if (err) {
           return cb(err);
         }
-        if (_.isArray(autocomplete)) {
-          return cb(undefined, autocomplete);
-        } else if (autocomplete === undefined) {
+        if (_.isArray(autocompleteValues)) {
+          return cb(undefined, autocompleteValues);
+        } else if (autocompleteValues === undefined) {
           return cb(undefined, undefined);
         }
-        return cb(undefined, pre + autocomplete + remainder);
+        return cb(undefined, pre + autocompleteValues + remainder);
       });
     } else {
       cb(undefined, undefined);

@@ -83,8 +83,7 @@ export default {
         commandPart += possiblePipe;
 
         // Loop through each individual character in the possible pipe tracking the opening and closing of quotes.
-        for (let i = 0; i < possiblePipe.length; i++) {
-          const char = possiblePipe[i];
+        for (const char of possiblePipe) {
           if (quoteChars.indexOf(char) !== -1) {
             quoteTracker[char] = !quoteTracker[char];
           }

@@ -24,7 +24,7 @@ export interface ICommand extends EventEmitter {
   _catch: Function;
   _hidden: boolean;
   _help: Function;
-  _aliases: Array<string>;
+  _aliases: string[];
   option(flags, description, autocomplete?): ICommand;
   action(fn): ICommand;
   use(fn): ICommand;

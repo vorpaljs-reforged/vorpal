@@ -4,6 +4,7 @@
 
 import _ from 'lodash';
 
+/* tslint:disable: no-console */
 /**
  * Intercepts stdout, passes thru callback
  * also pass console.error thru stdout so it goes to callback too

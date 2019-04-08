@@ -1,6 +1,7 @@
 import Vorpal from '../src/vorpal';
 import commands from './util/server';
 import * as fs from 'fs';
+import * as _ from 'lodash';
 import intercept from '../src/intercept';
 
 let integrationStdoutput = '';
@@ -466,7 +467,7 @@ describe('integration tests:', () => {
         vorpalHistory.cmdHistory.clear();
 
         // Clean up directory created to store history
-        fs.rmdir(UNIT_TEST_STORAGE_PATH, () => {});
+        fs.rmdir(UNIT_TEST_STORAGE_PATH, _.noop);
       });
 
       it('should be able to get history', () => {
@@ -526,21 +527,20 @@ describe('integration tests:', () => {
         longRunningCommand = vorpal
           .command('LongRunning', 'This command keeps running.')
           .action(function() {
-            const self = this;
-            self._cancelled = false;
+            this._cancelled = false;
             const cancelInt = setInterval(() => {
-              if (self._cancelled) {
+              if (this._cancelled) {
                 // break off
                 clearInterval(cancelInt);
               }
             }, 1000);
-            return new Promise(() => {});
+            return new Promise(_.noop);
           });
       });
       it('should cancel promise', () => {
         vorpal
           .exec('LongRunning')
-          .then(() => {})
+          .then(_.noop)
           .catch(function(instance) {
             instance._cancelled = true;
           });
@@ -559,12 +559,12 @@ describe('integration tests:', () => {
           .action(function() {
             this.cancel();
           })
-          .cancel(() => {});
+          .cancel(_.noop);
 
         vorpal.exec('SelfCancel');
       });
       it('should handle event client_command_cancelled', () => {
-        vorpal.on('client_command_cancelled', () => {});
+        vorpal.on('client_command_cancelled', _.noop);
         longRunningCommand.cancel(function() {
           this._cancelled = true;
         });
@@ -575,7 +575,7 @@ describe('integration tests:', () => {
 
     describe('events', () => {
       it('should handle event command_registered', () => {
-        vorpal.on('command_registered', () => {}).command('newMethod');
+        vorpal.on('command_registered', _.noop).command('newMethod');
       });
       it('should handle event client_keypress', () => {
         vorpal
@@ -597,17 +597,17 @@ describe('integration tests:', () => {
           .ui.submit('');
       });
       it('should handle event client_command_executed', () => {
-        vorpal.on('client_command_executed', () => {});
+        vorpal.on('client_command_executed', _.noop);
         vorpal.exec('help');
       });
       it('should handle event client_command_error', () => {
-        vorpal.on('client_command_error', () => {});
+        vorpal.on('client_command_error', _.noop);
         vorpal.exec('fail me plzz');
       });
       it('should handle piped event client_command_error', () => {
         const vorpal2 = new Vorpal();
         vorpal2
-          .on('client_command_error', () => {})
+          .on('client_command_error', _.noop)
           .command('fail')
           .action(function(args, cb) {
             cb('failed');

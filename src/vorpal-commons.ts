@@ -20,16 +20,15 @@ export default function(vorpal: IVorpal) {
     .command('help [command...]')
     .description('Provides help for a given command.')
     .action(function(this: IVorpal, args, cb) {
-      const self = this;
       if (args.command) {
         args.command = args.command.join(' ');
-        const commandWithName = _.find(self.parent.commands, {
+        const commandWithName = _.find(this.parent.commands, {
           _name: String(args.command).trim(),
         });
         if (commandWithName && !commandWithName._hidden) {
           if (_.isFunction(commandWithName._help)) {
-            commandWithName._help(args.command, function(str) {
-              self.log(str);
+            commandWithName._help(args.command, str => {
+              this.log(str);
               cb();
             });
             return;
