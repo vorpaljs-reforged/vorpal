@@ -37,7 +37,7 @@ const exec = function(cmd, cb) {
       cb(undefined, data);
     })
     .catch(function(err) {
-      console.log(err);
+      cb(err);
     });
 };
 
@@ -599,7 +599,7 @@ describe('integration tests:', () => {
       });
       it('should handle event client_command_error', () => {
         vorpal.on('client_command_error', _.noop);
-        vorpal.exec('fail me plzz');
+        vorpal.exec('fail me plzz').catch(_.noop); // was causing PromiseNotHAndled
       });
       it('should handle piped event client_command_error', () => {
         const vorpal2 = new Vorpal();

@@ -156,8 +156,7 @@ export default class Command extends EventEmitter implements ICommand {
    * @api public
    */
   public validate(fn) {
-    const self = this;
-    self._validate = fn;
+    this._validate = fn;
     return this;
   }
 

@@ -28,6 +28,7 @@ class UI extends EventEmitter {
   private inquirerStdout: string[];
   public _cancelled: boolean;
   public _pipeFn: any;
+  private _log: (...args) => void
   // FIXME §here: more to add
 
   /**
@@ -66,6 +67,9 @@ class UI extends EventEmitter {
 
     // Middleware for piping stdout through.
     this._pipeFn = undefined;
+
+    // custom logger disabled for test
+    this._log = process.env.NODE_ENV === 'test' ? _.noop : console.log.bind(console);
 
     // Custom function on sigint event.
     this._sigintCalled = false;
@@ -202,7 +206,7 @@ class UI extends EventEmitter {
       this.setDelimiter(options.message);
     }
     if (this._midPrompt) {
-      console.log('Prompt called when mid prompt...');
+      this._log('Prompt called when mid prompt...');
       throw new Error('UI Prompt called when already mid prompt.');
     }
     this._midPrompt = true;
@@ -227,7 +231,7 @@ class UI extends EventEmitter {
         // this._activePrompt = prompt._activePrompt;
       }, 100);
     } catch (e) {
-      console.log('Vorpal Prompt error:', e);
+      this._log('Vorpal Prompt error:', e);
     }
     return prompt;
   }
@@ -417,17 +421,16 @@ class UI extends EventEmitter {
     if (args.length === 0 || args[0] === '') {
       return this;
     }
-    /* tslint:disable: no-console */
     if (this.midPrompt()) {
       const data = this.pause();
-      console.log.apply(console.log, args);
+      this._log(...args);
       if (typeof data !== 'undefined' && data !== false) {
         this.resume(data);
       } else {
-        console.log("Log got back 'false' as data. This shouldn't happen.", data);
+        this._log("Log got back 'false' as data. This shouldn't happen.", data);
       }
     } else {
-      console.log.apply(console.log, args);
+      this._log(...args);
     }
     /* ts:lint-enable no-console */
     return this;
