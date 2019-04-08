@@ -4,44 +4,47 @@ import * as fs from 'fs';
 import * as _ from 'lodash';
 import intercept from '../src/intercept';
 
-let integrationStdoutput = '';
-let unmute;
-const mute = () => {
-  unmute = intercept(function(str) {
-    integrationStdoutput += str;
-    return '';
-  });
-};
-
-const vorpal = new Vorpal();
-let _all = '';
-let _stdout = '';
-let _excess = '';
-
-const onStdout = function(str) {
-  _stdout += str;
-  _all += str;
-  return '';
-};
-
-const stdout = () => {
-  const out = _stdout;
-  _stdout = '';
-  return String(out || '');
-};
-
-const exec = function(cmd, cb) {
-  vorpal
-    .exec(cmd)
-    .then(function(data) {
-      cb(undefined, data);
-    })
-    .catch(function(err) {
-      cb(err);
-    });
-};
-
 describe('integration tests:', () => {
+  let vorpal;
+  let exec;
+
+  let _all = '';
+  let _stdout = '';
+  let _excess = '';
+  let integrationStdoutput = '';
+  let unmute;
+  const mute = () => {
+    unmute = intercept(function(str) {
+      integrationStdoutput += str;
+      return '';
+    });
+  };
+
+  const onStdout = function(str) {
+    _stdout += str;
+    _all += str;
+    return '';
+  };
+
+  const stdout = () => {
+    const out = _stdout;
+    _stdout = '';
+    return String(out || '');
+  };
+  beforeAll(function() {
+    vorpal = new Vorpal();
+    exec = function(cmd, cb) {
+      vorpal
+        .exec(cmd)
+        .then(function(data) {
+          cb(undefined, data);
+        })
+        .catch(function(err) {
+          cb(err);
+        });
+    };
+  });
+
   describe('vorpal', () => {
     it('should overwrite duplicate commands', () => {
       const arr = ['a', 'b', 'c'];
@@ -464,10 +467,14 @@ describe('integration tests:', () => {
         vorpalHistory.cmdHistory.clear();
 
         // Clean up directory created to store history
-        await new Promise((resolve, reject) => fs.rmdir(UNIT_TEST_STORAGE_PATH, err => {
-          if (err) { return reject(err) }
-          resolve();
-        });
+        await new Promise((resolve, reject) =>
+          fs.rmdir(UNIT_TEST_STORAGE_PATH, err => {
+            if (err) {
+              return reject(err);
+            }
+            resolve();
+          })
+        );
       });
 
       it('should be able to get history', () => {

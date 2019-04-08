@@ -1,9 +1,11 @@
 import Vorpal from '../src/vorpal';
 import * as _ from 'lodash';
 
-const vorpal = new Vorpal();
-
 describe('session._autocomplete', function() {
+  let vorpal;
+  beforeAll(function() {
+    vorpal = new Vorpal();
+  });
   it('should return longest possible match', function() {
     const result = vorpal.session._autocomplete('c', ['cmd', 'cme', 'def']);
     expect(result).toBe('cm');

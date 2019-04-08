@@ -391,7 +391,7 @@ export default {
     let col = 0;
     const lines = [];
     let line = '';
-    for (const elem of  arr) {
+    for (const elem of arr) {
       if (col < cols) {
         col++;
       } else {

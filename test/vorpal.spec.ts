@@ -1,6 +1,7 @@
 import Vorpal from '../src/vorpal';
 import intercept from '../src/intercept';
 
+// FIXME: need to put vorpal in it
 let vorpal;
 
 // Normalize inputs to objects.

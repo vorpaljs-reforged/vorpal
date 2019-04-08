@@ -1106,12 +1106,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     command = command ? String(command).trim() : undefined;
     for (const _command of this.commands) {
       const parts = String(_command._name).split(' ');
-      if (
-        parts.length === 1 &&
-        parts[0] === command &&
-        !_command._hidden &&
-        !_command._catch
-      ) {
+      if (parts.length === 1 && parts[0] === command && !_command._hidden && !_command._catch) {
         singleMatches.push(command);
       }
       let str = '';

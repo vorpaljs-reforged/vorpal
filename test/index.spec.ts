@@ -1,8 +1,10 @@
 import Vorpal from '../src/vorpal';
 
-const vorpal = new Vorpal();
-
 describe('vorpal', function() {
+  let vorpal;
+  beforeAll(function() {
+    vorpal = new Vorpal();
+  });
   describe('constructor', function() {
     it('should exist and be a function', function() {
       expect(Vorpal).toBeDefined();
