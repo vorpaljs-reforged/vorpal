@@ -35,7 +35,7 @@
     "check": "npm run lint:check && npm run prettier:check && npm run build:check",
     "fix": "npm run lint:fix && npm run prettier:fix",
     "publish-coverage": "codecov",
-    "test": "jest --coverage",
+    "test": "jest --coverage --detectOpenHandles --forceExit",
     "test:watch": "npm run test -- --watch",
     "prepublish": "in-publish && npm run compile || not-in-publish"
   },
