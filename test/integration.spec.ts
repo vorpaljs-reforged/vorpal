@@ -459,12 +459,15 @@ describe('integration tests:', () => {
         vorpalHistory.exec('command2');
       });
 
-      afterEach(() => {
+      afterEach(async () => {
         // Clean up history
         vorpalHistory.cmdHistory.clear();
 
         // Clean up directory created to store history
-        fs.rmdir(UNIT_TEST_STORAGE_PATH, _.noop);
+        await new Promise((resolve, reject) => fs.rmdir(UNIT_TEST_STORAGE_PATH, err => {
+          if (err) { return reject(err) }
+          resolve();
+        });
       });
 
       it('should be able to get history', () => {

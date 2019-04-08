@@ -424,7 +424,7 @@ class UI extends EventEmitter {
     if (this.midPrompt()) {
       const data = this.pause();
       this._log(...args);
-      if (typeof data !== 'undefined' && data !== false) {
+      if (!_.isUndefined(data) && data !== false) {
         this.resume(data);
       } else {
         this._log("Log got back 'false' as data. This shouldn't happen.", data);
@@ -432,7 +432,6 @@ class UI extends EventEmitter {
     } else {
       this._log(...args);
     }
-    /* ts:lint-enable no-console */
     return this;
   }
 
