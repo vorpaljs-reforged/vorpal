@@ -1,10 +1,18 @@
-'use strict';
+import _ from 'lodash';
+import strip from 'strip-ansi';
+import Command from './command';
+import { IVorpal } from './types';
 
-var _ = require('lodash');
-var strip = require('strip-ansi');
+interface Input {
+  raw;
+  prefix;
+  suffix;
+  context;
+  match?: Command;
+  option?;
+}
 
-var autocomplete = {
-
+const autocomplete = {
   /**
    * Handles tabbed autocompletion.
    *
@@ -20,23 +28,22 @@ var autocomplete = {
    * @api public
    */
 
-  exec: function exec(str, cb) {
-    var self = this;
-    var input = parseInput(str, this.parent.ui._activePrompt.screen.rl.cursor);
-    var commands = getCommandNames(this.parent.commands);
-    var vorpalMatch = getMatch(input.context, commands, { ignoreSlashes: true });
-    var freezeTabs = false;
+  exec(str, cb) {
+    let input = parseInput(str, this.parent.ui._activePrompt.screen.rl.cursor);
+    const commands = getCommandNames(this.parent.commands);
+    const vorpalMatch = getMatch(input.context, commands, { ignoreSlashes: true });
+    let freezeTabs = false;
 
-    function end(str) {
-      var res = handleTabCounts.call(self, str, freezeTabs);
+    const end = str => {
+      const res = handleTabCounts.call(this, str, freezeTabs);
       cb(undefined, res);
-    }
+    };
 
-    function evaluateTabs(input) {
+    const evaluateTabs = input => {
       if (input.context && input.context[input.context.length - 1] === '/') {
         freezeTabs = true;
       }
-    }
+    };
 
     if (vorpalMatch) {
       input.context = vorpalMatch;
@@ -48,8 +55,8 @@ var autocomplete = {
     input = getMatchObject.call(this, input, commands);
     if (input.match) {
       input = parseMatchSection.call(this, input);
-      getMatchData.call(self, input, function (data) {
-        var dataMatch = getMatch(input.context, data);
+      getMatchData.call(this, input, function(data) {
+        const dataMatch = getMatch(input.context, data);
         if (dataMatch) {
           input.context = dataMatch;
           evaluateTabs(input);
@@ -73,31 +80,32 @@ var autocomplete = {
    * @api private
    */
 
-  match: function match(str, arr, options) {
+  match(str, arr, options) {
     arr = arr || [];
     options = options || {};
     arr.sort();
-    var arrX = _.clone(arr);
-    var strX = String(str);
+    const arrX = _.clone(arr);
+    let strX = String(str);
 
-    var prefix = '';
+    let prefix = '';
 
     if (options.ignoreSlashes !== true) {
-      var parts = strX.split('/');
+      const parts = strX.split('/');
       strX = parts.pop();
       prefix = parts.join('/');
       prefix = parts.length > 0 ? prefix + '/' : prefix;
     }
 
-    var matches = [];
-    for (var i = 0; i < arrX.length; i++) {
+    const matches = [];
+    for (let i = 0; i < arrX.length; i++) {
       if (strip(arrX[i]).slice(0, strX.length) === strX) {
         matches.push(arrX[i]);
       }
     }
     if (matches.length === 1) {
       // If we have a slash, don't add a space after match.
-      var space = String(strip(matches[0])).slice(strip(matches[0]).length - 1) === '/' ? '' : ' ';
+      const space =
+        String(strip(matches[0])).slice(strip(matches[0]).length - 1) === '/' ? '' : ' ';
       return prefix + matches[0] + space;
     } else if (matches.length === 0) {
       return undefined;
@@ -105,8 +113,8 @@ var autocomplete = {
       return matches;
     }
 
-    var longestMatchLength = matches.reduce(function (previous, current) {
-      for (var i = 0; i < current.length; i++) {
+    const longestMatchLength = matches.reduce(function(previous, current) {
+      for (let i = 0; i < current.length; i++) {
         if (previous[i] && current[i] !== previous[i]) {
           return current.substr(0, i);
         }
@@ -121,7 +129,7 @@ var autocomplete = {
 
     // return the longest matching portion along with the prefix
     return prefix + matches[0].substr(0, longestMatchLength);
-  }
+  },
 };
 
 /**
@@ -134,14 +142,14 @@ var autocomplete = {
  */
 
 function handleTabCounts(str, freezeTabs) {
-  var result;
+  let result;
   if (_.isArray(str)) {
-    this._tabCtr += 1;
-    if (this._tabCtr > 1) {
+    this._tabCount += 1;
+    if (this._tabCount > 1) {
       result = str.length === 0 ? undefined : str;
     }
   } else {
-    this._tabCtr = freezeTabs === true ? this._tabCtr + 1 : 0;
+    this._tabCount = freezeTabs === true ? this._tabCount + 1 : 0;
     result = str;
   }
   return result;
@@ -157,16 +165,16 @@ function handleTabCounts(str, freezeTabs) {
  * @api private
  */
 
-function getMatch(ctx, data, options) {
+function getMatch(ctx, data, options?) {
   // Look for a command match, eliminating and then
   // re-introducing leading spaces.
-  var len = ctx.length;
-  var trimmed = ctx.replace(/^\s+/g, '');
-  var match = autocomplete.match(trimmed, data.slice(), options);
+  const len = ctx.length;
+  const trimmed = ctx.replace(/^\s+/g, '');
+  let match = autocomplete.match(trimmed, data.slice(), options);
   if (_.isArray(match)) {
     return match;
   }
-  var prefix = new Array(len - trimmed.length + 1).join(' ');
+  const prefix = new Array(len - trimmed.length + 1).join(' ');
   // If we get an autocomplete match on a command, finish it.
   if (match) {
     // Put the leading spaces back in.
@@ -189,7 +197,7 @@ function assembleInput(input) {
   if (_.isArray(input.context)) {
     return input.context;
   }
-  var result = (input.prefix || '') + (input.context || '') + (input.suffix || '');
+  const result = (input.prefix || '') + (input.context || '') + (input.suffix || '');
   return strip(result);
 }
 
@@ -206,15 +214,19 @@ function assembleInput(input) {
 
 function filterData(str, data) {
   data = data || [];
-  var ctx = String(str || '').trim();
-  var slashParts = ctx.split('/');
+  let ctx = String(str || '').trim();
+  const slashParts = ctx.split('/');
   ctx = slashParts.pop();
-  var wordParts = String(ctx).trim().split(' ');
-  var res = data.filter(function (item) {
+  const wordParts = String(ctx)
+    .trim()
+    .split(' ');
+  let res = data.filter(function(item) {
     return strip(item).slice(0, ctx.length) === ctx;
   });
-  res = res.map(function (item) {
-    var parts = String(item).trim().split(' ');
+  res = res.map(function(item) {
+    let parts = String(item)
+      .trim()
+      .split(' ');
     if (parts.length > 1) {
       parts = parts.slice(wordParts.length);
       return parts.join(' ');
@@ -236,20 +248,20 @@ function filterData(str, data) {
  * @api private
  */
 
-function parseInput(str, idx) {
-  var raw = String(str || '');
-  var sliced = raw.slice(0, idx);
-  var sections = sliced.split('|');
-  var prefix = sections.slice(0, sections.length - 1) || [];
-  prefix.push('');
-  prefix = prefix.join('|');
-  var suffix = getSuffix(raw.slice(idx));
-  var context = sections[sections.length - 1];
+function parseInput(str, idx): Input {
+  const raw = String(str || '');
+  const sliced = raw.slice(0, idx);
+  const sections = sliced.split('|');
+  const prefixParts = sections.slice(0, sections.length - 1) || [];
+  prefixParts.push('');
+  const prefix = prefixParts.join('|');
+  const suffix = getSuffix(raw.slice(idx));
+  const context = sections[sections.length - 1];
   return {
-    raw: raw,
-    prefix: prefix,
-    suffix: suffix,
-    context: context
+    raw,
+    prefix,
+    suffix,
+    context,
   };
 }
 
@@ -267,9 +279,9 @@ function parseInput(str, idx) {
  */
 
 function parseMatchSection(input) {
-  var parts = (input.context || '').split(' ');
-  var last = parts.pop();
-  var beforeLast = strip(parts[parts.length - 1] || '').trim();
+  const parts = (input.context || '').split(' ');
+  const last = parts.pop();
+  const beforeLast = strip(parts[parts.length - 1] || '').trim();
   if (beforeLast.slice(0, 1) === '-') {
     input.option = beforeLast;
   }
@@ -303,7 +315,7 @@ function getSuffix(suffix) {
  */
 
 function getCommandNames(cmds) {
-  var commands = _.map(cmds, '_name');
+  let commands = _.map(cmds, '_name');
   commands = commands.concat.apply(commands, _.map(cmds, '_aliases'));
   commands.sort();
   return commands;
@@ -322,14 +334,14 @@ function getCommandNames(cmds) {
  * @api private
  */
 
-function getMatchObject(input, commands) {
-  var len = input.context.length;
-  var trimmed = String(input.context).replace(/^\s+/g, '');
-  var prefix = new Array(len - trimmed.length + 1).join(' ');
-  var match;
-  var suffix;
-  commands.forEach(function (cmd) {
-    var nextChar = trimmed.substr(cmd.length, 1);
+function getMatchObject(this: IVorpal, input, commands) {
+  const len = input.context.length;
+  const trimmed = String(input.context).replace(/^\s+/g, '');
+  let prefix = new Array(len - trimmed.length + 1).join(' ');
+  let match;
+  let suffix;
+  commands.forEach(function(cmd) {
+    const nextChar = trimmed.substr(cmd.length, 1);
     if (trimmed.substr(0, cmd.length) === cmd && String(cmd).trim() !== '' && nextChar === ' ') {
       match = cmd;
       suffix = trimmed.substr(cmd.length);
@@ -337,10 +349,12 @@ function getMatchObject(input, commands) {
     }
   });
 
-  var matchObject = match ? _.find(this.parent.commands, { _name: String(match).trim() }) : undefined;
+  let matchObject = match
+    ? _.find(this.parent.commands, { _name: String(match).trim() })
+    : undefined;
 
   if (!matchObject) {
-    this.parent.commands.forEach(function (cmd) {
+    this.parent.commands.forEach(function(cmd) {
       if ((cmd._aliases || []).indexOf(String(match).trim()) > -1) {
         matchObject = cmd;
       }
@@ -349,7 +363,7 @@ function getMatchObject(input, commands) {
   }
 
   if (!matchObject) {
-    matchObject = _.find(this.parent.commands, { _catch: true });
+    matchObject = this.parent.commands.find(cmd => !_.isNil(cmd._catch));
     if (matchObject) {
       suffix = input.context;
     }
@@ -380,16 +394,19 @@ function getMatchObject(input, commands) {
  * @api private
  */
 
-function getMatchData(input, cb) {
-  var string = input.context;
-  var cmd = input.match;
-  var midOption = String(string).trim().slice(0, 1) === '-';
-  var afterOption = input.option !== undefined;
+function getMatchData(input: Input, cb) {
+  const string = input.context;
+  const cmd = input.match;
+  const midOption =
+    String(string)
+      .trim()
+      .slice(0, 1) === '-';
+  const afterOption = input.option !== undefined;
   if (midOption === true && !cmd._allowUnknownOptions) {
-    var results = [];
-    for (var i = 0; i < cmd.options.length; ++i) {
-      var long = cmd.options[i].long;
-      var short = cmd.options[i].short;
+    const results = [];
+    for (let i = 0; i < cmd.options.length; ++i) {
+      const long = cmd.options[i].long;
+      const short = cmd.options[i].short;
       if (!long && short) {
         results.push(short);
       } else if (long) {
@@ -401,20 +418,25 @@ function getMatchData(input, cb) {
   }
 
   function handleDataFormat(str, config, callback) {
-    var data = [];
+    let data = [];
     if (_.isArray(config)) {
       data = config;
     } else if (_.isFunction(config)) {
-      var cbk = config.length < 2 ? function () {} : function (res) {
-        callback(res || []);
-      };
-      var res = config(str, cbk);
+      const cbk =
+        config.length < 2
+          ? function() {}
+          : function(res) {
+              callback(res || []);
+            };
+      const res = config(str, cbk);
       if (res && _.isFunction(res.then)) {
-        res.then(function (resp) {
-          callback(resp);
-        }).catch(function (err) {
-          callback(err);
-        });
+        res
+          .then(function(resp) {
+            callback(resp);
+          })
+          .catch(function(err) {
+            callback(err);
+          });
       } else if (config.length < 2) {
         callback(res);
       }
@@ -425,21 +447,19 @@ function getMatchData(input, cb) {
   }
 
   if (afterOption === true) {
-    var opt = strip(input.option).trim();
-    var shortMatch = _.find(cmd.options, { short: opt });
-    var longMatch = _.find(cmd.options, { long: opt });
-    var match = longMatch || shortMatch;
+    const opt = strip(input.option).trim();
+    const match = cmd.options.find(o => o.short === opt || o.long === opt);
     if (match) {
-      var config = match.autocomplete;
+      const config = match.autocomplete;
       handleDataFormat(string, config, cb);
       return;
     }
   }
 
-  var conf = cmd._autocomplete;
+  let conf = cmd._autocomplete;
   conf = conf && conf.data ? conf.data : conf;
   handleDataFormat(string, conf, cb);
   return;
 }
 
-module.exports = autocomplete;
+export default autocomplete;

@@ -1,11 +1,10 @@
-'use strict';
-
 /**
  * Module dependencies.
  */
 
-var _ = require('lodash');
+import _ from 'lodash';
 
+/* tslint:disable: no-console */
 /**
  * Intercepts stdout, passes thru callback
  * also pass console.error thru stdout so it goes to callback too
@@ -15,37 +14,36 @@ var _ = require('lodash');
  * @param {Function} callback
  * @return {Function}
  */
-
-module.exports = function (callback) {
-  var oldStdoutWrite = process.stdout.write;
-  var oldConsoleError = console.error;
-  process.stdout.write = function (write) {
-    return function (string) {
-      var args = _.toArray(arguments);
+export default function(callback) {
+  const oldStdoutWrite = process.stdout.write;
+  const oldConsoleError = console.error;
+  process.stdout.write = (function(write) {
+    return function(string) {
+      const args = _.toArray(arguments);
       args[0] = interceptor(string);
-      write.apply(process.stdout, args);
+      return write.apply(process.stdout, args);
     };
-  }(process.stdout.write);
+  })(process.stdout.write);
 
-  console.error = function () {
-    return function () {
-      var args = _.toArray(arguments);
+  console.error = (function(fn) {
+    return function(...args) {
       args.unshift('\x1b[31m[ERROR]\x1b[0m');
       console.log.apply(console.log, args);
     };
-  }(console.error);
+  })(console.error);
 
   function interceptor(string) {
     // only intercept the string
-    var result = callback(string);
+    const result = callback(string);
     if (typeof result === 'string') {
       string = result.replace(/\n$/, '') + (result && /\n$/.test(string) ? '\n' : '');
     }
     return string;
   }
+
   // puts back to original
   return function unhook() {
     process.stdout.write = oldStdoutWrite;
     console.error = oldConsoleError;
   };
-};
+}

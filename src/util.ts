@@ -1,16 +1,17 @@
-'use strict';
-
 /**
  * Module dependencies.
  */
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+import _ from 'lodash';
+import minimist from 'minimist';
+import strip from 'strip-ansi';
+import { Arg } from './command';
 
-var _ = require('lodash');
-var minimist = require('minimist');
-var strip = require('strip-ansi');
+interface Options {
+  options: { [key: string]: any };
+}
 
-var util = {
+export default {
   /**
    * Parses command arguments from multiple
    * sources.
@@ -20,21 +21,21 @@ var util = {
    * @return {Array}
    * @api private
    */
-
-  parseArgs: function parseArgs(str, opts) {
-    var reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi;
-    var arr = [];
-    var match = void 0;
+  parseArgs(str, opts) {
+    const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi;
+    const array = [];
+    let match;
     do {
       match = reg.exec(str);
       if (match !== null) {
-        arr.push(match[1] || match[2] || match[3] || match[4]);
+        // TODO: check why, array is overwritten after
+        array.push(match[1] || match[2] || match[3] || match[4]);
       }
     } while (match !== null);
 
-    arr = minimist(arr, opts);
-    arr._ = arr._ || [];
-    return arr;
+    const parsedArray = minimist(array, opts);
+    parsedArray._ = parsedArray._ || [];
+    return parsedArray;
   },
 
   /**
@@ -45,53 +46,51 @@ var util = {
    * @return {Object}
    * @api public
    */
-
-  parseCommand: function parseCommand(command, commands) {
-    var self = this;
-    var pipes = [];
-    var match = void 0;
-    var matchArgs = void 0;
-    var matchParts = void 0;
+  parseCommand(command, commands) {
+    const self = this;
+    let pipes = [];
+    let match;
+    let matchArgs;
+    let matchParts;
 
     function parsePipes() {
       // First, split the command by pipes naively.
       // This will split command arguments in half when the argument contains a pipe character.
       // For example, say "(Vorpal|vorpal)" will be split into ['say "(Vorpal', 'vorpal)'] which isn't good.
-      var naivePipes = String(command).trim().split('|');
+      const naivePipes = String(command)
+        .trim()
+        .split('|');
 
       // Contruct empty array to place correctly split commands into.
-      var newPipes = [];
+      const newPipes = [];
 
       // We will look for pipe characters within these quotes to rejoin together.
-      var quoteChars = ['"', '\'', '`'];
+      const quoteChars = ['"', "'", '`'];
 
       // This will expand to contain one boolean key for each type of quote.
       // The value keyed by the quote is toggled off and on as quote type is opened and closed.
       // Example { "`": true, "'": false } would mean that there is an open angle quote.
-      var quoteTracker = {};
+      const quoteTracker = {};
 
       // The current command piece before being rejoined with it's over half.
       // Since it's not common for pipes to occur in commands, this is usually the entire command pipe.
-      var commandPart = '';
+      let commandPart = '';
 
       // Loop through each naive pipe.
-      for (var key in naivePipes) {
+      _.forEach(_.range(0, naivePipes.length), key => {
         // It's possible/likely that this naive pipe is the whole pipe if it doesn't contain an unfinished quote.
-        var possiblePipe = naivePipes[key];
+        const possiblePipe = naivePipes[key];
         commandPart += possiblePipe;
 
         // Loop through each individual character in the possible pipe tracking the opening and closing of quotes.
-        for (var i = 0; i < possiblePipe.length; i++) {
-          var char = possiblePipe[i];
+        for (const char of possiblePipe) {
           if (quoteChars.indexOf(char) !== -1) {
             quoteTracker[char] = !quoteTracker[char];
           }
         }
 
         // Does the pipe end on an unfinished quote?
-        var inQuote = _.some(quoteChars, function (quoteChar) {
-          return quoteTracker[quoteChar];
-        });
+        const inQuote = _.some(quoteChars, quoteChar => quoteTracker[quoteChar]);
 
         // If the quotes have all been closed or this is the last possible pipe in the array, add as pipe.
         if (!inQuote || key * 1 === naivePipes.length - 1) {
@@ -101,7 +100,7 @@ var util = {
           // Quote was left open. The pipe character was previously removed when the array was split.
           commandPart += '|';
         }
-      }
+      });
 
       // Set the first pipe to command and the rest to pipes.
       command = newPipes.shift();
@@ -124,10 +123,10 @@ var util = {
     }
 
     return {
-      command: command,
-      match: match,
-      matchArgs: matchArgs,
-      pipes: pipes
+      command,
+      match,
+      matchArgs,
+      pipes,
     };
   },
 
@@ -142,20 +141,21 @@ var util = {
    * @return {Object}
    * @api public
    */
+  matchCommand(cmd: string, cmds) {
+    const parts = String(cmd)
+      .trim()
+      .split(' ');
 
-  matchCommand: function matchCommand(cmd, cmds) {
-    var parts = String(cmd).trim().split(' ');
-
-    var match = void 0;
-    var matchArgs = void 0;
-    for (var i = 0; i < parts.length; ++i) {
-      var subcommand = String(parts.slice(0, parts.length - i).join(' ')).trim();
+    let match;
+    let matchArgs;
+    for (let i = 0; i < parts.length; ++i) {
+      const subcommand = String(parts.slice(0, parts.length - i).join(' ')).trim();
       match = _.find(cmds, { _name: subcommand }) || match;
       if (!match) {
-        for (var key in cmds) {
-          var _cmd = cmds[key];
-          var idx = _cmd._aliases.indexOf(subcommand);
-          match = idx > -1 ? _cmd : match;
+        for (const key in cmds) {
+          const cmd = cmds[key];
+          const idx = cmd._aliases.indexOf(subcommand);
+          match = idx > -1 ? cmd : match;
         }
       }
       if (match) {
@@ -173,14 +173,14 @@ var util = {
       // there is a command `do things well`. If we match partially,
       // we still want to show the help menu for that command group.
       if (match) {
-        var allCommands = _.map(cmds, '_name');
-        var wordMatch = false;
-        for (var _key in allCommands) {
-          var _cmd2 = allCommands[_key];
-          var parts2 = String(_cmd2).split(' ');
-          var cmdParts = String(match.command).split(' ');
-          var matchAll = true;
-          for (var k = 0; k < cmdParts.length; ++k) {
+        const allCommands = _.map(cmds, '_name');
+        let wordMatch = false;
+        for (const key in allCommands) {
+          const cmd = allCommands[key];
+          const parts2 = String(cmd).split(' ');
+          const cmdParts = String(match.command).split(' ');
+          let matchAll = true;
+          for (let k = 0; k < cmdParts.length; ++k) {
             if (parts2[k] !== cmdParts[k]) {
               matchAll = false;
               break;
@@ -201,30 +201,30 @@ var util = {
 
     return {
       command: match,
-      args: matchArgs
+      args: matchArgs,
     };
   },
 
-  buildCommandArgs: function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized) {
-    var args = { options: {} };
+  buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized: boolean) {
+    let args: Options & Object = { options: {} };
 
     if (isCommandArgKeyPairNormalized) {
       // Normalize all foo="bar" with "foo='bar'"
       // This helps implement unix-like key value pairs.
-      var reg = /(['"]?)(\w+)=(?:(['"])((?:(?!\3).)*)\3|(\S+))\1/g;
-      passedArgs = passedArgs.replace(reg, '"$2=\'$4$5\'"');
+      const reg = /(['"]?)(\w+)=(?:(['"])((?:(?!\3).)*)\3|(\S+))\1/g;
+      passedArgs = passedArgs.replace(reg, `"$2='$4$5'"`);
     }
 
     // Types are custom arg types passed
     // into `minimist` as per its docs.
-    var types = cmd._types || {};
+    const types = cmd._types || {};
 
     // Make a list of all boolean options
     // registered for this command. These are
     // simply commands that don't have required
     // or optional args.
-    var booleans = [];
-    cmd.options.forEach(function (opt) {
+    const booleans = [];
+    cmd.options.forEach(function(opt) {
       if (opt.required === 0 && opt.optional === 0) {
         if (opt.short) {
           booleans.push(opt.short);
@@ -241,34 +241,34 @@ var util = {
     // This returns a boolean list of all options
     // passed in by the caller, which don't have
     // required or optional args.
-    var passedArgParts = passedArgs.split(' ');
-    types.boolean = booleans.map(function (str) {
-      return String(str).replace(/^-*/, '');
-    }).filter(function (str) {
-      var match = false;
-      var strings = ['-' + str, '--' + str, '--no-' + str];
-      for (var i = 0; i < passedArgParts.length; ++i) {
-        if (strings.indexOf(passedArgParts[i]) > -1) {
-          match = true;
-          break;
+    const passedArgParts = passedArgs.split(' ');
+    types.boolean = booleans
+      .map(str => String(str).replace(/^-*/, ''))
+      .filter(function(str) {
+        let match = false;
+        const strings = [`-${str}`, `--${str}`, `--no-${str}`];
+        for (let i = 0; i < passedArgParts.length; ++i) {
+          if (strings.indexOf(passedArgParts[i]) > -1) {
+            match = true;
+            break;
+          }
         }
-      }
-      return match;
-    });
+        return match;
+      });
 
     // Use minimist to parse the args.
-    var parsedArgs = this.parseArgs(passedArgs, types);
+    const parsedArgs = this.parseArgs(passedArgs, types);
 
     function validateArg(arg, cmdArg) {
       return !(arg === undefined && cmdArg.required === true);
     }
 
     // Builds varidiac args and options.
-    var valid = true;
-    var remainingArgs = _.clone(parsedArgs._);
-    for (var l = 0; l < 10; ++l) {
-      var matchArg = cmd._args[l];
-      var passedArg = parsedArgs._[l];
+    let valid = true;
+    const remainingArgs = _.clone(parsedArgs._);
+    for (let l = 0; l < 10; ++l) {
+      const matchArg = cmd._args[l];
+      const passedArg = parsedArgs._[l];
       if (matchArg !== undefined) {
         valid = !valid ? false : validateArg(parsedArgs._[l], matchArg);
         if (!valid) {
@@ -290,15 +290,17 @@ var util = {
     }
 
     // Looks for ommitted required options and throws help.
-    for (var m = 0; m < cmd.options.length; ++m) {
-      var o = cmd.options[m];
-      var short = String(o.short || '').replace(/-/g, '');
-      var long = String(o.long || '').replace(/--no-/g, '').replace(/^-*/g, '');
-      var exist = parsedArgs[short] !== undefined ? parsedArgs[short] : undefined;
+    for (let m = 0; m < cmd.options.length; ++m) {
+      const o = cmd.options[m];
+      const short = String(o.short || '').replace(/-/g, '');
+      const long = String(o.long || '')
+        .replace(/--no-/g, '')
+        .replace(/^-*/g, '');
+      let exist = parsedArgs[short] !== undefined ? parsedArgs[short] : undefined;
       exist = exist === undefined && parsedArgs[long] !== undefined ? parsedArgs[long] : exist;
-      var existsNotSet = exist === true || exist === false;
+      const existsNotSet = exist === true || exist === false;
       if (existsNotSet && o.required !== 0) {
-        return '\n  Missing required value for option ' + (o.long || o.short) + '. Showing Help:';
+        return `\n  Missing required value for option ${o.long || o.short}. Showing Help:`;
       }
       if (exist !== undefined) {
         args.options[long || short] = exist;
@@ -309,12 +311,19 @@ var util = {
     // exist in the options list.
     // If the command allows unknown options,
     // adds it, otherwise throws help.
-    var passedOpts = _.chain(parsedArgs).keys().pull('_').pull('help').value();
-
-    var _loop = function _loop(key) {
-      var opt = passedOpts[key];
-      var optionFound = _.find(cmd.options, function (expected) {
-        if ('--' + opt === expected.long || '--no-' + opt === expected.long || '-' + opt === expected.short) {
+    const passedOpts = _.chain(parsedArgs)
+      .keys()
+      .pull('_')
+      .pull('help')
+      .value();
+    for (const key in passedOpts) {
+      const opt = passedOpts[key];
+      const optionFound = _.find(cmd.options, function(expected) {
+        if (
+          '--' + opt === expected.long ||
+          '--no-' + opt === expected.long ||
+          '-' + opt === expected.short
+        ) {
           return true;
         }
         return false;
@@ -323,17 +332,9 @@ var util = {
         if (cmd._allowUnknownOptions) {
           args.options[opt] = parsedArgs[opt];
         } else {
-          return {
-            v: '\n  Invalid option: \'' + opt + '\'. Showing Help:'
-          };
+          return `\n  Invalid option: '${opt}'. Showing Help:`;
         }
       }
-    };
-
-    for (var key in passedOpts) {
-      var _ret = _loop(key);
-
-      if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
     }
 
     // If args were passed into the programmatic
@@ -358,10 +359,9 @@ var util = {
    * @return {String}
    * @api private
    */
-
-  humanReadableArgName: function humanReadableArgName(arg) {
-    var nameOutput = arg.name + (arg.variadic === true ? '...' : '');
-    return arg.required ? '<' + nameOutput + '>' : '[' + nameOutput + ']';
+  humanReadableArgName(arg: Arg): string {
+    const nameOutput = arg.name + (arg.variadic === true ? '...' : '');
+    return arg.required ? `<${nameOutput}>` : `[${nameOutput}]`;
   },
 
   /**
@@ -372,26 +372,26 @@ var util = {
    * @return {String}
    * @api public
    */
-
-  prettifyArray: function prettifyArray(arr) {
-    arr = arr || [];
-    var arrClone = _.clone(arr);
-    var width = process.stdout.columns;
-    var longest = strip(arrClone.sort(function (a, b) {
-      return strip(b).length - strip(a).length;
-    })[0] || '').length + 2;
-    var fullWidth = strip(String(arr.join(''))).length;
-    var fitsOneLine = fullWidth + arr.length * 2 <= width;
-    var cols = Math.floor(width / longest);
+  prettifyArray(arr: string[] = []): string {
+    const arrClone = _.clone(arr);
+    const width = process.stdout.columns;
+    const longest =
+      strip(
+        arrClone.sort(function(a, b) {
+          return strip(b).length - strip(a).length;
+        })[0] || ''
+      ).length + 2;
+    const fullWidth = strip(String(arr.join(''))).length;
+    const fitsOneLine = fullWidth + arr.length * 2 <= width;
+    let cols = Math.floor(width / longest);
     cols = cols < 1 ? 1 : cols;
     if (fitsOneLine) {
       return arr.join('  ');
     }
-    var col = 0;
-    var lines = [];
-    var line = '';
-    for (var key in arr) {
-      var arrEl = arr[key];
+    let col = 0;
+    const lines = [];
+    let line = '';
+    for (const elem of arr) {
       if (col < cols) {
         col++;
       } else {
@@ -399,7 +399,7 @@ var util = {
         line = '';
         col = 1;
       }
-      line += this.pad(arrEl, longest, ' ');
+      line += this.pad(elem, longest, ' ');
     }
     if (line !== '') {
       lines.push(line);
@@ -418,11 +418,9 @@ var util = {
    * @return {String}
    * @api private
    */
-
-  pad: function pad(str, width, delimiter) {
+  pad(str: string | string[], width: number, delimiter: string = ' '): string {
     width = Math.floor(width);
-    delimiter = delimiter || ' ';
-    var len = Math.max(0, width - strip(str).length);
+    const len = Math.max(0, width - strip(str).length);
     return str + Array(len + 1).join(delimiter);
   },
 
@@ -432,33 +430,10 @@ var util = {
    * @param {String} str
    * @return {String}
    */
-  padRow: function padRow(str) {
-    return str.split('\n').map(function (row) {
-      return '  ' + row + '  ';
-    }).join('\n');
+  padRow(str: string): string {
+    return str
+      .split('\n')
+      .map(row => `  ${row}  `)
+      .join('\n');
   },
-
-  // When passing down applied args, we need to turn
-  // them from `{ '0': 'foo', '1': 'bar' }` into ['foo', 'bar']
-  // instead.
-  fixArgsForApply: function fixArgsForApply(obj) {
-    if (!_.isObject(obj)) {
-      if (!_.isArray(obj)) {
-        return [obj];
-      }
-      return obj;
-    }
-    var argArray = [];
-    for (var key in obj) {
-      var aarg = obj[key];
-      argArray.push(aarg);
-    }
-    return argArray;
-  }
 };
-
-/**
- * Expose `util`.
- */
-
-module.exports = exports = util;

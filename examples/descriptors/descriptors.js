@@ -1,5 +1,3 @@
-'use strict';
-
 var vorpal = require('./../../')();
 var chalk = vorpal.chalk;
 

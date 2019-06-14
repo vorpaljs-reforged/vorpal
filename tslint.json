@@ -1,9 +1,11 @@
 {
-  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "extends": ["tslint:recommended", "tslint-config-prettier", "tslint-microsoft-contrib/recommended"],
   "rules": {
     "ban-comma-operator": [true],
     "cyclomatic-complexity": [true, 8],
     "deprecation": true,
+    "no-relative-imports": [true, "allow-siblings"],
+    "import-name": [false],
     "max-classes-per-file": [true, 1],
     "member-ordering": [
       false,
@@ -78,7 +80,13 @@
       {
         "severity": "warning"
       }
-    ]
+    ],
+    // temporary disabled
+    "only-arrow-functions": false,
+    "no-function-expression": false,
+    "variable-name": false,
+    "function-name": false,
+    "no-unnecessary-field-initialisation": false
   },
   "linterOptions": {
     "exclude": ["dist"]

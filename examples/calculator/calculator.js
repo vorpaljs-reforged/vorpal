@@ -1,5 +1,3 @@
-'use strict';
-
 var vorpal = require('./../../')();
 var less = require('vorpal-less');
 var repl = require('vorpal-repl');
