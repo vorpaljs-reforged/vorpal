@@ -1,4 +1,5 @@
-var vorpal = require('./../../')();
+var Vorpal = require('../../dist/vorpal').default;
+var vorpal = new Vorpal()
 var chalk = vorpal.chalk;
 
 vorpal

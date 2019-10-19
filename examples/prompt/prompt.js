@@ -1,4 +1,5 @@
-var vorpal = require('./../../')();
+var Vorpal = require('../../dist/vorpal').default;
+var vorpal = new Vorpal()
 
 vorpal.command('login', 'Login (u: root p: vorpal)')
   .action(function (args, cb) {
