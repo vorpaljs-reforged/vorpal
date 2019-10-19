@@ -6,12 +6,12 @@ import _ from 'lodash';
 import { inspect } from 'util';
 import util from './util';
 
-function viewed(str) {
+function viewed(str: string) {
   const re = /\u001b\[\d+m/gm;
   return String(str).replace(re, '');
 }
 
-function trimTo(str, amt) {
+function trimTo(str: string, amt: number) {
   let raw = '';
   const visual = viewed(str).slice(0, amt);
   let result = '';

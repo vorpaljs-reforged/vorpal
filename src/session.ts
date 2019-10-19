@@ -403,13 +403,13 @@ export default class Session extends EventEmitter {
 
     // Called when command is cancelled
     this.cancelCommands = function() {
-      const callCancel = function(commandInstance) {
-        if (_.isFunction(commandInstance.commandObject._cancel)) {
-          commandInstance.commandObject._cancel.call(commandInstance);
+      const callCancel = function(commandInstanceInner) {
+        if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
+          commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
         }
 
-        if (commandInstance.downstream) {
-          callCancel(commandInstance.downstream);
+        if (commandInstanceInner.downstream) {
+          callCancel(commandInstanceInner.downstream);
         }
       };
 
@@ -458,7 +458,7 @@ export default class Session extends EventEmitter {
       sendDones(commandInstance);
     };
 
-    function onCompletion(wrapper, err, data?, argus?) {
+    function onCompletion(wrapperInner, err, data?, argus?) {
       response = {
         error: err,
         data,
