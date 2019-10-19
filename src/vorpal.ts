@@ -14,7 +14,7 @@ import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import { IVorpal } from './types';
+import { IVorpal } from './types/types';
 import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
@@ -49,7 +49,6 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   private _delimiter: string;
   private server: { sessions: any[] };
   private _hooked: boolean;
-  public _useDeprecatedAutocompletion: boolean;
   public util: any;
   public Session: typeof Session;
   public session: any;
@@ -107,8 +106,6 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
     // Whether all stdout is being hooked through a function.
     this._hooked = false;
-
-    this._useDeprecatedAutocompletion = false;
 
     // Expose common utilities, like padding.
     this.util = VorpalUtil;
@@ -1331,12 +1328,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Returns session by id.
    *
-   * @param {Integer} id
+   * @param {String} id
    * @return {Session}
    * @api public
    */
 
-  public getSessionById(id) {
+  public getSessionById(id: string) {
     if (_.isObject(id)) {
       throw new Error(
         'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'

@@ -18,18 +18,16 @@ vorpal.command('add [numbers...]', 'Adds numbers together')
   });
 
 vorpal.command('double [values...]', 'Doubles a value on each tab press')
-  .autocompletion(function (text, iteration, cb) {
-    if (iteration > 1000000) {
-      cb(undefined, ['cows', 'hogs', 'horses']);
-    } else {
-      var number = String(text).trim();
-      if (!isNaN(number)) {
-        number = (number < 1) ? 1 : number;
-        cb(undefined, 'double ' + number * 2);
-      } else {
-        cb(undefined, 'double 2');
+  .autocomplete({
+      data: function (text, cb) {
+          var number = String(text).trim();
+          if (!isNaN(number)) {
+              number = (number < 1) ? 1 : number;
+              cb(undefined, 'double ' + number * 2);
+          } else {
+              cb(undefined, 'double 2');
+          }
       }
-    }
   })
   .action(function (args, cb) {
       cb();
