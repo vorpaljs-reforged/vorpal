@@ -7,7 +7,7 @@ import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
 import Command from './command';
-import CommandInstance from './command-instance';
+import {CommandInstance} from './command-instance';
 import util from './util';
 import Vorpal from './vorpal';
 
@@ -376,7 +376,7 @@ export default class Session extends EventEmitter {
   public execCommandSet(wrapper, callback) {
     const self = this;
     let response: CommandResponse = {};
-    let res;
+    var res; /* eslint-disable-line no-var */
     const cbk = callback;
     this._registeredCommands = 1;
     this._completedCommands = 0;
