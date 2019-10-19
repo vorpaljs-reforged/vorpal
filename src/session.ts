@@ -44,7 +44,6 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  // tslint:disable-next-line: cyclomatic-complexity
   constructor(options) {
     super();
     options = options || {};
