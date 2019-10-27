@@ -1,9 +1,5 @@
-/**
- * Module dependencies.
- */
-
 import _ from 'lodash';
-import util from './util';
+import { Command } from '.';
 
 interface CommandInstanceParams {
   commandWrapper?: any;
@@ -13,11 +9,19 @@ interface CommandInstanceParams {
   callback?: any;
   downstream?: any;
 }
+
+interface CommandArgs {
+  [key: string]: string | string[] | object | undefined;
+  options: {
+    [key: string]: string | string[] | boolean | undefined;
+  };
+}
+
 export class CommandInstance {
-  public commandWrapper: any;
-  public args: any;
-  public commandObject: any;
-  public command: any;
+  public commandWrapper: CommandInstance;
+  public args: CommandArgs;
+  public commandObject: Command;
+  public command: undefined;
   public session: any;
   public parent: any;
   public callback: any;

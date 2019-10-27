@@ -5,42 +5,45 @@
 import { EventEmitter } from 'events';
 import _ from 'lodash';
 import Option from './option';
-import {IAutocompleteConfig} from './types/autocomplete'
+import { IAutocompleteConfig } from './types/autocomplete'
 import { ICommand, IVorpal } from './types/types';
 import util from './util';
+import Vorpal, { Option } from '.';
+
 export interface Arg {
   required: boolean;
   name: string;
   variadic: boolean;
 }
 
-export default class Command extends EventEmitter implements ICommand {
-  public commands: ICommand[] = [];
+export default class Command extends EventEmitter {
+  public commands: Command[] = [];
   public options: Option[];
+  public parent: Vorpal;
+
+  private _aliases: string[];
   private _args;
-  public _aliases: string[];
-  public _name;
+  private _name: string;
   private _relay;
-  public _hidden;
+  private _hidden;
   private _parent;
-  public _description;
-  public _delimiter;
-  public _mode;
-  public _catch;
-  public _help;
-  public _noHelp;
+  private _description;
+  private _delimiter;
+  private _mode;
+  private _catch;
+  private _help;
+  private _noHelp;
   private _types;
   private _init;
   private _after;
-  public _allowUnknownOptions;
-  public _autocomplete;
-  public _done;
-  public _cancel;
+  private _allowUnknownOptions;
+  private _autocomplete;
+  private _done;
+  private _cancel;
   private _usage;
   private _fn;
   private _validate;
   private _parse;
-  public parent: IVorpal;
 
   /**
    * Initialize a new `Command` instance.

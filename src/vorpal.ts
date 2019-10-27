@@ -789,7 +789,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * @api private
    */
 
-  public _execQueueItem(cmd) {
+  public _execQueueItem(cmd: CommandInstance) {
     const self = this;
     self._command = cmd;
     if (cmd.session.isLocal() && !cmd.session.client) {
@@ -811,7 +811,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * @api private
    */
 
-  public _exec(item) {
+  public _exec(item: CommandInstance) {
     const self = this;
     item = item || {};
     item.command = item.command || '';
