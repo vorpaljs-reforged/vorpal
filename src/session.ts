@@ -7,7 +7,7 @@ import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
 import Command from './command';
-import {CommandInstance} from './command-instance';
+import { CommandInstance } from './command-instance';
 import util from './util';
 import Vorpal from './vorpal';
 

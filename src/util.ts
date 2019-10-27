@@ -2,11 +2,11 @@
  * Module dependencies.
  */
 
-import _          from 'lodash';
-import minimist   from 'minimist';
-import strip      from 'strip-ansi';
-import { Arg }    from './command';
-import {ICommand} from './types/types'
+import _ from 'lodash';
+import minimist from 'minimist';
+import strip from 'strip-ansi';
+import { Arg } from './command';
+import { ICommand } from './types/types';
 
 interface Options {
   options: { [key: string]: any };
@@ -418,7 +418,7 @@ export default {
    */
   pad(str: string | string[], width: number, delimiter: string = ' '): string {
     width = Math.floor(width);
-    str = Array.isArray(str) ? str.join() : str
+    str = Array.isArray(str) ? str.join() : str;
     const len = Math.max(0, width - strip(str).length);
     return str + Array(len + 1).join(delimiter);
   },

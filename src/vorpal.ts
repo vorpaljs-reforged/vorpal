@@ -9,7 +9,7 @@ import minimist from 'minimist';
 import os from 'os';
 import wrap from 'wrap-ansi';
 import Command from './command';
-import {CommandInstance} from './command-instance';
+import { CommandInstance } from './command-instance';
 import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
