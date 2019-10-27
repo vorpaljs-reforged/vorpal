@@ -3,6 +3,7 @@ pids
 *.pid
 *.seed
 *sublime*
+.vscode
 lib-cov
 coverage
 .grunt

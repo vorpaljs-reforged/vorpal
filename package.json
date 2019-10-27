@@ -37,7 +37,7 @@
     "publish-coverage": "codecov",
     "test": "jest --coverage --forceExit",
     "test:watch": "npm run test -- --watch",
-    "prepublish": "in-publish && npm run compile || not-in-publish"
+    "prepublishOnly": "npm run compile"
   },
   "repository": {
     "type": "git",
