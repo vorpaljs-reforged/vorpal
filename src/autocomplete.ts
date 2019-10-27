@@ -1,20 +1,23 @@
-import {clone} from 'lodash';
+import { clone } from 'lodash';
 import strip from 'strip-ansi';
 import {
-  assembleInput, filterData,
+  assembleInput,
+  filterData,
   getCommandNames,
-  getMatch, getMatchData,
+  getMatch,
+  getMatchData,
   getMatchObject,
   handleTabCounts,
-  parseInput, parseMatchSection,
-} from './autocomplete-utils'
+  parseInput,
+  parseMatchSection,
+} from './autocomplete-utils';
 import {
   AutocompleteConfigCallback,
   AutocompleteMatch,
   AutocompleteOptions,
   IAutocomplete,
   Input,
-} from './types/autocomplete'
+} from './types/autocomplete';
 
 const autocomplete: IAutocomplete = {
   /**
