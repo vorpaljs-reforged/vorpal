@@ -211,7 +211,7 @@ class UI extends EventEmitter {
     }
     this._midPrompt = true;
     try {
-      prompt = inquirer.prompt(options, result => {
+      prompt = inquirer.prompt(options).then(result => {
         this.inquirerStdout = [];
         this._midPrompt = false;
         if (this._cancel === true) {
@@ -293,11 +293,10 @@ class UI extends EventEmitter {
     const newWidth = prompt.rl.line.length;
     const diff = newWidth - width;
     prompt.rl.cursor += diff;
-    const cursor = 0;
     let message = prompt.getQuestion();
     const addition = prompt.status === 'answered' ? chalk.cyan(prompt.answer) : line;
     message += addition;
-    prompt.screen.render(message, { cursor });
+    prompt.screen.render(message);
 
     const key = (e.key || {}).name;
     const value = prompt ? String(line) : undefined;
@@ -498,11 +497,10 @@ class UI extends EventEmitter {
     const newWidth = prompt.rl.line.length;
     const diff = newWidth - width;
     prompt.rl.cursor += diff;
-    const cursor = 0;
     let message = prompt.getQuestion();
     const addition = prompt.status === 'answered' ? chalk.cyan(prompt.answer) : prompt.rl.line;
     message += addition;
-    prompt.screen.render(message, { cursor });
+    prompt.screen.render(message);
     return this;
   }
 
