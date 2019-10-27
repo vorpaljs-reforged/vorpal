@@ -6,7 +6,7 @@ import _          from 'lodash';
 import minimist   from 'minimist';
 import strip      from 'strip-ansi';
 import { Arg }    from './command';
-import {ICommand} from './types'
+import {ICommand} from './types/types'
 
 interface Options {
   options: { [key: string]: any };
@@ -411,7 +411,7 @@ export default {
    * given width.
    *
    * @param {String} str
-   * @param {Integer} width
+   * @param {Number} width
    * @param {String} delimiter
    * @return {String}
    * @api private
