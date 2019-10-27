@@ -19,9 +19,9 @@ export default class Option {
    * @api public
    */
   constructor(_flags: string, public description: string = '', public autocomplete) {
-    this.required = ~_flags.indexOf('<');
-    this.optional = ~_flags.indexOf('[');
-    this.bool = !~_flags.indexOf('-no-');
+    this.required = _flags.includes('<') ? _flags.indexOf('<') : 0;
+    this.optional = _flags.includes('[') ? _flags.indexOf('[') : 0;
+    this.bool = !_flags.includes('-no-');
     this.autocomplete = autocomplete;
 
     this.flags = _flags.split(/[ ,|]+/);

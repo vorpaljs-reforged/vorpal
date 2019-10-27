@@ -263,7 +263,7 @@ export default class Command extends EventEmitter implements ICommand {
 
   public types(types) {
     const supported = ['string', 'boolean'];
-    for (const item in types) {
+    for (const item of Object.keys(types)) {
       if (supported.indexOf(item) === -1) {
         throw new Error('An invalid type was passed into command.types(): ' + item);
       }
