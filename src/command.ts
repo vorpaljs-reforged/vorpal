@@ -5,7 +5,7 @@
 import { EventEmitter } from 'events';
 import _ from 'lodash';
 import Option from './option';
-import {IAutocompleteConfig} from './types/autocomplete'
+import { IAutocompleteConfig } from './types/autocomplete';
 import { ICommand, IVorpal } from './types/types';
 import util from './util';
 export interface Arg {
