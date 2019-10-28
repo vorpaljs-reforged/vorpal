@@ -1,4 +1,5 @@
-var vorpal = require('./../../')();
+var Vorpal = require('../../dist/vorpal').default;
+var vorpal = new Vorpal()
 var less = require('vorpal-less');
 var repl = require('vorpal-repl');
 vorpal.use(less).use(repl);
@@ -31,7 +32,7 @@ vorpal.command('double [values...]', 'Doubles a value on each tab press')
     }
   })
   .action(function (args, cb) {
-    cb();
+      cb();
   });
 
 vorpal.command('args [items...]', 'Shows args.')
