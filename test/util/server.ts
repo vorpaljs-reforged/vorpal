@@ -6,7 +6,6 @@ export default function(vorpal) {
       cb();
     })
     .action(function(command, cb) {
-      // tslint:disable-next-line: no-eval
       var res = eval(command);
       this.log(res);
       cb(res);

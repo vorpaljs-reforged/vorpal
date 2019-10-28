@@ -5,7 +5,8 @@
 import { EventEmitter } from 'events';
 import _ from 'lodash';
 import Option from './option';
-import { ICommand, IVorpal } from './types';
+import {IAutocompleteConfig} from './types/autocomplete'
+import { ICommand, IVorpal } from './types/types';
 import util from './util';
 export interface Arg {
   required: boolean;
@@ -33,7 +34,6 @@ export default class Command extends EventEmitter implements ICommand {
   private _after;
   public _allowUnknownOptions;
   public _autocomplete;
-  public _autocompletion;
   public _done;
   public _cancel;
   private _usage;
@@ -191,34 +191,13 @@ export default class Command extends EventEmitter implements ICommand {
    * for the given command. Favored over
    * deprecated command.autocompletion.
    *
-   * @param {Function} fn
+   * @param {IAutocompleteConfig} conf
    * @return {Command}
    * @api public
    */
 
-  public autocomplete(obj) {
-    this._autocomplete = obj;
-    return this;
-  }
-
-  /**
-   * Defines tabbed auto-completion rules
-   * for the given command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
-   */
-
-  public autocompletion(param) {
-    this._parent._useDeprecatedAutocompletion = true;
-    if (!_.isFunction(param) && !_.isObject(param)) {
-      throw new Error(
-        'An invalid object type was passed into the first parameter of command.autocompletion: function expected.'
-      );
-    }
-
-    this._autocompletion = param;
+  public autocomplete(conf: IAutocompleteConfig) {
+    this._autocomplete = conf;
     return this;
   }
 
@@ -263,7 +242,7 @@ export default class Command extends EventEmitter implements ICommand {
 
   public types(types) {
     const supported = ['string', 'boolean'];
-    for (const item in types) {
+    for (const item of Object.keys(types)) {
       if (supported.indexOf(item) === -1) {
         throw new Error('An invalid type was passed into command.types(): ' + item);
       }
@@ -465,7 +444,7 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Returns the length of the longest option.
    *
-   * @return {Integer}
+   * @return {Number}
    * @api private
    */
 

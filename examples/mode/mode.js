@@ -15,7 +15,8 @@
  * Module dependencies.
  */
 
-var Vorpal = require('./../../');
+var Vorpal = require('../../dist/vorpal').default;
+var vorpal = new Vorpal()
 var _ = require('lodash');
 
 /**

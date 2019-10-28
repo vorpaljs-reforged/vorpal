@@ -2,10 +2,11 @@
  * Module dependencies.
  */
 
-import _ from 'lodash';
-import minimist from 'minimist';
-import strip from 'strip-ansi';
-import { Arg } from './command';
+import _          from 'lodash';
+import minimist   from 'minimist';
+import strip      from 'strip-ansi';
+import { Arg }    from './command';
+import {ICommand} from './types/types'
 
 interface Options {
   options: { [key: string]: any };
@@ -141,7 +142,7 @@ export default {
    * @return {Object}
    * @api public
    */
-  matchCommand(cmd: string, cmds) {
+  matchCommand(cmd: string, cmds: ICommand[]) {
     const parts = String(cmd)
       .trim()
       .split(' ');
@@ -152,10 +153,9 @@ export default {
       const subcommand = String(parts.slice(0, parts.length - i).join(' ')).trim();
       match = _.find(cmds, { _name: subcommand }) || match;
       if (!match) {
-        for (const key in cmds) {
-          const cmd = cmds[key];
-          const idx = cmd._aliases.indexOf(subcommand);
-          match = idx > -1 ? cmd : match;
+        for (const command of Object.values(cmds)) {
+          const idx = command._aliases.indexOf(subcommand);
+          match = idx > -1 ? command : match;
         }
       }
       if (match) {
@@ -167,7 +167,7 @@ export default {
     // there's a `catch` command, which catches all
     // missed commands.
     if (!match) {
-      match = _.find(cmds, { _catch: true });
+      match = _.find(cmds, '_catch');
       // If there is one, we still need to make sure we aren't
       // partially matching command groups, such as `do things` when
       // there is a command `do things well`. If we match partially,
@@ -175,9 +175,8 @@ export default {
       if (match) {
         const allCommands = _.map(cmds, '_name');
         let wordMatch = false;
-        for (const key in allCommands) {
-          const cmd = allCommands[key];
-          const parts2 = String(cmd).split(' ');
+        for (const command of Object.values(allCommands)) {
+          const parts2 = String(command).split(' ');
           const cmdParts = String(match.command).split(' ');
           let matchAll = true;
           for (let k = 0; k < cmdParts.length; ++k) {
@@ -206,7 +205,7 @@ export default {
   },
 
   buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized: boolean) {
-    let args: Options & Object = { options: {} };
+    let args: Options = { options: {} };
 
     if (isCommandArgKeyPairNormalized) {
       // Normalize all foo="bar" with "foo='bar'"
@@ -225,7 +224,7 @@ export default {
     // or optional args.
     const booleans = [];
     cmd.options.forEach(function(opt) {
-      if (opt.required === 0 && opt.optional === 0) {
+      if (!opt.required && !opt.optional) {
         if (opt.short) {
           booleans.push(opt.short);
         }
@@ -316,8 +315,7 @@ export default {
       .pull('_')
       .pull('help')
       .value();
-    for (const key in passedOpts) {
-      const opt = passedOpts[key];
+    for (const opt of Object.values(passedOpts)) {
       const optionFound = _.find(cmd.options, function(expected) {
         if (
           '--' + opt === expected.long ||
@@ -413,13 +411,14 @@ export default {
    * given width.
    *
    * @param {String} str
-   * @param {Integer} width
+   * @param {Number} width
    * @param {String} delimiter
    * @return {String}
    * @api private
    */
   pad(str: string | string[], width: number, delimiter: string = ' '): string {
     width = Math.floor(width);
+    str = Array.isArray(str) ? str.join() : str
     const len = Math.max(0, width - strip(str).length);
     return str + Array(len + 1).join(delimiter);
   },

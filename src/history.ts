@@ -3,12 +3,12 @@
 import _ from 'lodash';
 import { LocalStorage } from 'node-localstorage';
 import os from 'os';
-import path from 'path';
+import {normalize, join} from 'path';
 
 // Number of command histories kept in persistent storage
 const HISTORY_SIZE = 500;
 
-const temp = path.normalize(path.join(os.tmpdir(), '/.local_storage'));
+const temp = normalize(join(os.tmpdir(), '/.local_storage'));
 const DEFAULT_STORAGE_PATH = temp;
 
 export default class History {
