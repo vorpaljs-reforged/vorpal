@@ -4,15 +4,9 @@ node_js:
   - "8"
   - "10"
   - "12"
+cache: npm
 
-script:
-  - npm run compile
-  - npm run test
+before_script: npm run compile
+script: npm run test
 
-after_success:
-  - npm run publish-coverage
-
-
-cache:
-  directories:
-    - "node_modules"
+after_success: npm run publish-coverage
