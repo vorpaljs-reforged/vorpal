@@ -15,3 +15,4 @@ test/util/playground.js
 electron*
 test-reports/
 dist
+.eslintcache
