@@ -16,6 +16,10 @@ export interface Arg {
   variadic: boolean;
 }
 
+export interface HasOptions {
+  [option: string]: string;
+}
+
 export default class Command extends EventEmitter {
   public commands: Command[] = [];
   public options: Option[];
@@ -24,20 +28,20 @@ export default class Command extends EventEmitter {
   private _aliases: string[];
   private _args;
   private _name: string;
-  private _relay;
-  private _hidden;
-  private _parent;
-  private _description;
+  private _relay: boolean;
+  private _hidden: boolean;
+  private _parent: Vorpal;
+  private _description: string;
   private _delimiter;
   private _mode;
-  private _catch;
+  private _catch: boolean;
   private _help;
-  private _noHelp;
+  private _noHelp: boolean;
   private _types;
   private _init;
   private _after;
-  private _allowUnknownOptions;
-  private _autocomplete;
+  private _allowUnknownOptions: boolean;
+  private _autocomplete: IAutocompleteConfig;
   private _done;
   private _cancel;
   private _usage;
@@ -47,13 +51,8 @@ export default class Command extends EventEmitter {
 
   /**
    * Initialize a new `Command` instance.
-   *
-   * @param {String} name
-   * @param {Vorpal} parent
-   * @return {Command}
-   * @api public
    */
-  constructor(name, parent) {
+  constructor(name: string, parent: Vorpal) {
     super();
     this.commands = [];
     this.options = [];
@@ -73,20 +72,16 @@ export default class Command extends EventEmitter {
 
   /**
    * Registers an option for given command.
-   *
-   * @param {String} flags
-   * @param {String} description
-   * @param {Function} fn
-   * @param {String} defaultValue
-   * @return {Command}
-   * @api public
    */
-
-  public option(flags, description, autocomplete?): Command {
+  public option(
+    flags: string,
+    description: string,
+    autocomplete?: IAutocompleteConfig,
+    defaultValue?: string | boolean
+  ): Command {
     const option = new Option(flags, description, autocomplete);
     const oname = option.name();
     const name = _.camelCase(oname);
-    let defaultValue;
 
     // preassign default value only for --no-*, [optional], or <required>
     if (option.bool === false || option.optional || option.required) {
