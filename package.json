@@ -83,24 +83,7 @@
     "ts-jest": "^24.1.0",
     "typescript": "^3.6.4",
     "vorpal-less": "0.0.13",
-    "vorpal-repl": "^1.1.8",
-    "xo": "^0.25.3"
-  },
-  "xo": {
-    "space": true,
-    "rules": {
-      "no-eval": 0,
-      "no-unused-expressions": 0,
-      "max-nested-callbacks": 0,
-      "no-proto": 0,
-      "wrap-iife": 0,
-      "global-require": 0,
-      "no-negated-condition": 0,
-      "no-loop-func": 0,
-      "no-implicit-coercion": 0,
-      "no-use-extend-native/no-use-extend-native": 0,
-      "no-undef": 0
-    }
+    "vorpal-repl": "^1.1.8"
   },
   "files": [
     "dist"
