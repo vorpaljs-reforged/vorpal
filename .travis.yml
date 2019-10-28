@@ -8,7 +8,6 @@ node_js:
 script:
   - npm run compile
   - npm run test
-  - npm run lint:check
 
 after_success:
   - npm run publish-coverage

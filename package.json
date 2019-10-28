@@ -26,17 +26,12 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint:base": "eslint --ext .ts src/**",
-    "lint:check": "npm run lint:base",
-    "lint:fix": "npm run lint:base -- --fix",
-    "prettier:base": "prettier \"{.,{src,test}/**}/*.@(ts|js)\"",
-    "prettier:check": "npm run prettier:base -- --list-different",
-    "prettier:fix": "npm run prettier:base -- --write",
-    "check": "npm run lint:check && npm run prettier:check",
-    "fix": "npm run lint:fix && npm run prettier:fix",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "npm run lint -- --fix",
     "publish-coverage": "codecov",
-    "test": "jest --coverage --forceExit",
-    "test:watch": "npm run test -- --watch",
+    "test": "npm run lint && npm run test:unit",
+    "test:unit": "jest --coverage --forceExit",
+    "test:watch": "npm run test:unit -- --watch",
     "prepublishOnly": "npm run compile"
   },
   "repository": {
