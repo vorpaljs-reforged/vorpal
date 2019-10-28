@@ -1,5 +1,5 @@
 declare namespace NodeJS {
-  interface Global {
-    __vorpal: any;
-  }
+    interface Global {
+        __vorpal: any;
+    }
 }

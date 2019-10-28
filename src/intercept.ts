@@ -14,35 +14,35 @@ import _ from 'lodash';
  * @return {Function}
  */
 export default function(callback) {
-  const oldStdoutWrite = process.stdout.write;
-  const oldConsoleError = console.error;
-  process.stdout.write = (function(write) {
-    return function(string) {
-      const args = _.toArray(arguments);
-      args[0] = interceptor(string);
-      return write.apply(process.stdout, args);
-    };
-  })(process.stdout.write);
+    const oldStdoutWrite = process.stdout.write;
+    const oldConsoleError = console.error;
 
-  console.error = (function(fn) {
-    return function(...args) {
-      args.unshift('\x1b[31m[ERROR]\x1b[0m');
-      console.log.apply(console.log, args);
-    };
-  })(console.error);
-
-  function interceptor(string) {
-    // only intercept the string
-    const result = callback(string);
-    if (typeof result === 'string') {
-      string = result.replace(/\n$/, '') + (result && /\n$/.test(string) ? '\n' : '');
+    function interceptor(string) {
+        // only intercept the string
+        const result = callback(string);
+        if (typeof result === 'string') {
+            string = result.replace(/\n$/, '') + (result && /\n$/.test(string) ? '\n' : '');
+        }
+        return string;
     }
-    return string;
-  }
 
-  // puts back to original
-  return function unhook() {
-    process.stdout.write = oldStdoutWrite;
-    console.error = oldConsoleError;
-  };
+    process.stdout.write = (function(write) {
+        return function(...args) {
+            args[0] = interceptor(args[0]);
+            return write.apply(process.stdout, args);
+        };
+    })(process.stdout.write);
+
+    console.error = (function(fn) {
+        return function(...args) {
+            args.unshift('\x1b[31m[ERROR]\x1b[0m');
+            console.log(...args);
+        };
+    })(console.error);
+
+    // puts back to original
+    return function unhook() {
+        process.stdout.write = oldStdoutWrite;
+        console.error = oldConsoleError;
+    };
 }

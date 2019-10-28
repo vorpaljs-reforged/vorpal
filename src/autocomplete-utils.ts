@@ -1,6 +1,6 @@
-import _                   from 'lodash'
-import strip               from 'strip-ansi'
-import autocomplete from './autocomplete'
+import _ from 'lodash';
+import strip from 'strip-ansi';
+import autocomplete from './autocomplete';
 import {
     AutocompleteCallback,
     AutocompleteConfigFn,
@@ -8,8 +8,8 @@ import {
     AutocompleteOptions,
     IAutocompleteConfig,
     Input,
-} from './types/autocomplete'
-import {ICommand, IVorpal} from './types/types'
+} from './types/autocomplete';
+import {ICommand, IVorpal} from './types/types';
 
 /**
  * Tracks how many times tab was pressed
@@ -44,7 +44,11 @@ export function handleTabCounts(match: AutocompleteMatch, freezeTabs: boolean): 
  * @return {String}
  * @api private
  */
-export function getMatch(ctx: string, data: string[], options?: AutocompleteOptions): AutocompleteMatch {
+export function getMatch(
+    ctx: string,
+    data: string[],
+    options?: AutocompleteOptions
+): AutocompleteMatch {
     // Look for a command match, eliminating and then
     // re-introducing leading spaces.
     const len = ctx.length;
@@ -56,7 +60,7 @@ export function getMatch(ctx: string, data: string[], options?: AutocompleteOpti
     const prefix = new Array(len - trimmed.length + 1).join(' ');
 
     // If we get an autocomplete match on a command, put the leading spaces back in and finish it.
-    return match ? prefix + match : undefined
+    return match ? prefix + match : undefined;
 }
 
 /**
@@ -85,7 +89,7 @@ export function assembleInput(input: Input): AutocompleteMatch {
  * @return {Array}
  * @api private
  */
-export function filterData(str: string = '', data: string[]) {
+export function filterData(str = '', data: string[]) {
     data = data || [];
     let ctx = String(str).trim();
     const slashParts = ctx.split('/');
@@ -94,18 +98,34 @@ export function filterData(str: string = '', data: string[]) {
         .trim()
         .split(' ');
 
-    return data.filter(function(item) {
-        return strip(item).slice(0, ctx.length) === ctx;
-    }).map(function(item) {
-        let parts = String(item)
-            .trim()
-            .split(' ');
-        if (parts.length > 1) {
-            parts = parts.slice(wordParts.length);
-            return parts.join(' ');
-        }
-        return item;
-    });
+    return data
+        .filter(function(item) {
+            return strip(item).slice(0, ctx.length) === ctx;
+        })
+        .map(function(item) {
+            let parts = String(item)
+                .trim()
+                .split(' ');
+            if (parts.length > 1) {
+                parts = parts.slice(wordParts.length);
+                return parts.join(' ');
+            }
+            return item;
+        });
+}
+
+/**
+ * Returns a cleaned up version of the
+ * remaining text to the right of the cursor.
+ *
+ * @param {String} suffix
+ * @return {String}
+ * @api private
+ */
+export function getSuffix(suffix: string) {
+    suffix = suffix.slice(0, 1) === ' ' ? suffix : suffix.replace(/.+?(?=\s)/, '');
+    suffix = suffix.slice(1, suffix.length);
+    return suffix;
 }
 
 /**
@@ -119,7 +139,7 @@ export function filterData(str: string = '', data: string[]) {
  * @return {Object}
  * @api private
  */
-export function parseInput(str: string = '', idx: number): Input {
+export function parseInput(str = '', idx: number): Input {
     const raw = String(str);
     const sliced = raw.slice(0, idx);
     const sections = sliced.split('|');
@@ -161,20 +181,6 @@ export function parseMatchSection(input: Input<string>) {
 }
 
 /**
- * Returns a cleaned up version of the
- * remaining text to the right of the cursor.
- *
- * @param {String} suffix
- * @return {String}
- * @api private
- */
-export function getSuffix(suffix: string) {
-    suffix = suffix.slice(0, 1) === ' ' ? suffix : suffix.replace(/.+?(?=\s)/, '');
-    suffix = suffix.slice(1, suffix.length);
-    return suffix;
-}
-
-/**
  * Compile all available commands and aliases
  * in alphabetical order.
  *
@@ -183,8 +189,7 @@ export function getSuffix(suffix: string) {
  * @api private
  */
 export function getCommandNames(cmds: ICommand[]): string[] {
-    let commands = _.map(cmds, '_name');
-    commands = commands.concat.apply(commands, _.map(cmds, '_aliases'));
+    const commands = _.map(cmds, '_name').concat(..._.map(cmds, '_aliases'));
     commands.sort();
     return commands;
 }
@@ -210,7 +215,11 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
 
     commandNames.forEach(function(cmd) {
         const nextChar = trimmed.substr(cmd.length, 1);
-        if (trimmed.substr(0, cmd.length) === cmd && String(cmd).trim() !== '' && nextChar === ' ') {
+        if (
+            trimmed.substr(0, cmd.length) === cmd &&
+            String(cmd).trim() !== '' &&
+            nextChar === ' '
+        ) {
             match = cmd;
             suffix = trimmed.substr(cmd.length);
             prefix += trimmed.substr(0, cmd.length);
@@ -218,7 +227,7 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
     });
 
     let matchObject: ICommand = match
-        ? _.find(this.parent.commands, { _name: String(match).trim() })
+        ? _.find(this.parent.commands, {_name: String(match).trim()})
         : undefined;
 
     if (!matchObject) {
@@ -251,6 +260,38 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
     return input;
 }
 
+function handleDataFormat(
+    str: AutocompleteMatch,
+    config: IAutocompleteConfig | AutocompleteConfigFn,
+    cb: AutocompleteCallback
+) {
+    let data: string[] = [];
+    if (_.isArray(config)) {
+        data = config;
+    } else if (_.isFunction(config)) {
+        const cbk =
+            config.length < 2
+                ? // eslint-disable-next-line @typescript-eslint/no-empty-function
+                  function() {}
+                : function(err, resp: string[]) {
+                      cb(resp || []);
+                  };
+        const res = config(str, cbk);
+
+        if (res instanceof Promise) {
+            res.then(function(resp) {
+                cb(resp);
+            }).catch(function(err) {
+                cb(err);
+            });
+        } else if (config.length < 2) {
+            cb(res);
+        }
+    } else {
+        cb(data);
+    }
+}
+
 /**
  * Takes a known matched command, and reads
  * the applicable data by calling its autocompletion
@@ -265,7 +306,10 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
 export function getMatchData(input: Input<string>, cb: AutocompleteCallback) {
     const string = input.context;
     const cmd = input.match;
-    const midOption = String(string).trim().slice(0, 1) === '-';
+    const midOption =
+        String(string)
+            .trim()
+            .slice(0, 1) === '-';
     const afterOption = input.option !== undefined;
 
     if (midOption === true && !cmd._allowUnknownOptions) {
@@ -296,31 +340,4 @@ export function getMatchData(input: Input<string>, cb: AutocompleteCallback) {
     const conf = cmd._autocomplete;
     const confFn = conf && !_.isArray(conf) && conf.data ? conf.data : conf;
     handleDataFormat(string, confFn, cb);
-}
-
-function handleDataFormat(str: AutocompleteMatch, config: IAutocompleteConfig | AutocompleteConfigFn, cb: AutocompleteCallback) {
-    let data: string[] = [];
-    if (_.isArray(config)) {
-        data = config;
-    } else if (_.isFunction(config)) {
-        const cbk = config.length < 2
-            ? function() {}
-            : function(err, resp: string[]) {
-                cb(resp || []);
-            };
-        const res = config(str, cbk);
-
-        if (res instanceof Promise) {
-            res.then(function(resp) {
-                    cb(resp);
-                })
-                .catch(function(err) {
-                    cb(err);
-                });
-        } else if (config.length < 2) {
-            cb(res);
-        }
-    } else {
-        cb(data);
-    }
 }

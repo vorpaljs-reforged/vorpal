@@ -17,5 +17,9 @@ module.exports = {
         "plugin:@typescript-eslint/recommended",
         "plugin:prettier/recommended",
         "prettier/@typescript-eslint"
-    ]
+    ],
+    'rules': {
+        '@typescript-eslint/no-this-alias': 'warn',
+        '@typescript-eslint/interface-name-prefix': 'warn'
+    }
 };
