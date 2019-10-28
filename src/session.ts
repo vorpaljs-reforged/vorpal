@@ -210,7 +210,7 @@ export default class Session extends EventEmitter {
    * @return {Function}
    * @api private
    */
-  private getKeypressResult(key, value, cb = _.noop) {
+  private getKeypressResult(key: string, value, cb = _.noop) {
     const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
     if (key !== 'tab') {
       this._tabCount = 0;
@@ -219,16 +219,7 @@ export default class Session extends EventEmitter {
       if (['up', 'down'].indexOf(key) > -1) {
         cb(undefined, this.getHistory(key));
       } else if (key === 'tab') {
-        // If the Vorpal user has any commands that use
-        // command.autocompletion, defer to the deprecated
-        // version of autocompletion. Otherwise, default
-        // to the new version.
-        const fn = this.parent._useDeprecatedAutocompletion
-          ? 'getAutocompleteDeprecated'
-          : 'getAutocomplete';
-        this[fn](value, function(err, data) {
-          cb(err, data);
-        });
+        this.getAutocomplete(value, cb);
       }
     } else {
       this._histCtr = 0;
@@ -252,88 +243,6 @@ export default class Session extends EventEmitter {
 
   private getAutocomplete(str, cb) {
     return autocomplete.exec.call(this, str, cb);
-  }
-
-  // FIXME TO kill
-  /**
-   * Deprecated autocomplete - being deleted
-   * in Vorpal 2.0.
-   *
-   * @param {String} str
-   * @param {Function} cb
-   * @api private
-   */
-  private getAutocompleteDeprecated(str, cb) {
-    cb = cb || _.noop;
-
-    // Entire command string
-    const cursor = this.parent.ui._activePrompt.screen.rl.cursor;
-    let trimmed = String(str).trim();
-    const cut = String(trimmed).slice(0, cursor);
-    const remainder = String(trimmed)
-      .slice(cursor, trimmed.length)
-      .replace(/ +$/, '');
-    trimmed = cut;
-
-    // Set "trimmed" to command string after pipe
-    // Set "pre" to command string, pipe, and a space
-    let pre = '';
-    const lastPipeIndex = trimmed.lastIndexOf('|');
-    if (lastPipeIndex !== -1) {
-      pre = trimmed.substr(0, lastPipeIndex + 1) + ' ';
-      trimmed = trimmed.substr(lastPipeIndex + 1).trim();
-    }
-
-    // Complete command
-    const names = _.map(this.parent.commands, '_name').concat(
-      _.map(this.parent.commands, '_aliases')
-    );
-    const result = this._autocomplete(trimmed, names);
-    if (result && trimmed.length < String(result).trim().length) {
-      cb(undefined, pre + result + remainder);
-      return;
-    }
-
-    // Find custom autocompletion
-    let match: string;
-    let extra: string;
-
-    names.forEach(function(name) {
-      if (trimmed.substr(0, name.length) === name && String(name).trim() !== '') {
-        match = name;
-        extra = trimmed.substr(name.length).trim();
-      }
-    });
-
-    let command: Command;
-    if (match) {
-      command = this.parent.commands.find(cmd => cmd._name === match);
-    }
-    // lodash _.find was drop since untipable
-
-    if (!command) {
-      command = this.parent.commands.find(cmd => cmd._catch === true);
-      if (command) {
-        extra = trimmed;
-      }
-    }
-
-    if (command && _.isFunction(command._autocompletion)) {
-      this._tabCount++;
-      command._autocompletion.call(this, extra, this._tabCount, function(err, autocompleteValues) {
-        if (err) {
-          return cb(err);
-        }
-        if (_.isArray(autocompleteValues)) {
-          return cb(undefined, autocompleteValues);
-        } else if (autocompleteValues === undefined) {
-          return cb(undefined, undefined);
-        }
-        return cb(undefined, pre + autocompleteValues + remainder);
-      });
-    } else {
-      cb(undefined, undefined);
-    }
   }
 
   public _autocomplete(str, arr) {
