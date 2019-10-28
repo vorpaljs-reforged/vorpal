@@ -9,7 +9,7 @@ import minimist from 'minimist';
 import os from 'os';
 import wrap from 'wrap-ansi';
 import Command from './command';
-import CommandInstance from './command-instance';
+import {CommandInstance} from './command-instance';
 import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
@@ -265,6 +265,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     if (_.isFunction(commands)) {
       commands.call(this, this, options);
     } else if (_.isString(commands)) {
+      /* eslint-disable-next-line @typescript-eslint/no-var-requires */
       return this.use(require(commands), options);
     } else {
       commands = _.isArray(commands) ? commands : [commands];
@@ -638,7 +639,6 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   public _prompt(data: DataSession = {}) {
     const self = this;
-    let prompt;
     if (!data.sessionId) {
       data.sessionId = self.session.id;
     }
@@ -655,7 +655,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       return self;
     }
 
-    prompt = ui.prompt(
+    const prompt = ui.prompt(
       {
         type: 'input',
         name: 'command',
@@ -1215,13 +1215,13 @@ export default class Vorpal extends EventEmitter implements IVorpal {
           commands
             .map(function(cmd) {
               const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
-              let suffix = wrap(cmd[1], descriptionWidth - 8).split('\n');
-              for (let i = 0; i < suffix.length; ++i) {
+              const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
+              for (let i = 0; i < suffixArr.length; ++i) {
                 if (i !== 0) {
-                  suffix[i] = VorpalUtil.pad('', width + 6) + suffix[i];
+                  suffixArr[i] = VorpalUtil.pad('', width + 6) + suffixArr[i];
                 }
               }
-              suffix = suffix.join('\n');
+              const suffix = suffixArr.join('\n');
               return prefix + suffix;
             })
             .join('\n') +
@@ -1382,7 +1382,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     }
   }
 
-  get activeCommand() {
+  public get activeCommand() {
     const result = this._command ? this._command.commandInstance : undefined;
     return result;
   }

@@ -7,7 +7,7 @@ import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
 import Command from './command';
-import CommandInstance from './command-instance';
+import {CommandInstance} from './command-instance';
 import util from './util';
 import Vorpal from './vorpal';
 
@@ -44,7 +44,6 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  // tslint:disable-next-line: cyclomatic-complexity
   constructor(options) {
     super();
     options = options || {};
@@ -377,7 +376,7 @@ export default class Session extends EventEmitter {
   public execCommandSet(wrapper, callback) {
     const self = this;
     let response: CommandResponse = {};
-    let res;
+    var res; /* eslint-disable-line no-var */
     const cbk = callback;
     this._registeredCommands = 1;
     this._completedCommands = 0;
@@ -403,13 +402,13 @@ export default class Session extends EventEmitter {
 
     // Called when command is cancelled
     this.cancelCommands = function() {
-      const callCancel = function(commandInstance) {
-        if (_.isFunction(commandInstance.commandObject._cancel)) {
-          commandInstance.commandObject._cancel.call(commandInstance);
+      const callCancel = function(commandInstanceInner) {
+        if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
+          commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
         }
 
-        if (commandInstance.downstream) {
-          callCancel(commandInstance.downstream);
+        if (commandInstanceInner.downstream) {
+          callCancel(commandInstanceInner.downstream);
         }
       };
 
@@ -458,7 +457,7 @@ export default class Session extends EventEmitter {
       sendDones(commandInstance);
     };
 
-    function onCompletion(wrapper, err, data?, argus?) {
+    function onCompletion(wrapperInner, err, data?, argus?) {
       response = {
         error: err,
         data,

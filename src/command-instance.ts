@@ -13,7 +13,7 @@ interface CommandInstanceParams {
   callback?: any;
   downstream?: any;
 }
-class CommandInstance {
+export class CommandInstance {
   public commandWrapper: any;
   public args: any;
   public commandObject: any;
@@ -107,5 +107,3 @@ class CommandInstance {
     return this.session.match(a, b, c);
   }
 }
-
-export default CommandInstance;

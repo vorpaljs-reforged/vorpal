@@ -34,13 +34,13 @@ const autocomplete = {
     const vorpalMatch = getMatch(input.context, commands, { ignoreSlashes: true });
     let freezeTabs = false;
 
-    const end = str => {
-      const res = handleTabCounts.call(this, str, freezeTabs);
+    const end = innerStr => {
+      const res = handleTabCounts.call(this, innerStr, freezeTabs);
       cb(undefined, res);
     };
 
-    const evaluateTabs = input => {
-      if (input.context && input.context[input.context.length - 1] === '/') {
+    const evaluateTabs = innerInput => {
+      if (innerInput.context && innerInput.context[innerInput.context.length - 1] === '/') {
         freezeTabs = true;
       }
     };
@@ -425,8 +425,8 @@ function getMatchData(input: Input, cb) {
       const cbk =
         config.length < 2
           ? function() {}
-          : function(res) {
-              callback(res || []);
+          : function(resp) {
+              callback(resp || []);
             };
       const res = config(str, cbk);
       if (res && _.isFunction(res.then)) {
