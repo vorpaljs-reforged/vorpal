@@ -4,23 +4,12 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  collectCoverageFrom: ['src/**/*.ts'],
   testMatch: ['**/*.spec.ts'],
   globals: {
     'ts-jest': {
-      diagnostics: false, // tMP
+      diagnostics: false, // TMP: disable compilation verification
       tsConfig: 'tsconfig.json',
     },
-  },
-  reporters: [
-    'default',
-    [
-      'jest-junit',
-      {
-        outputDirectory: './test-reports',
-        suiteNameTemplate: '{filename}',
-        classNameTemplate: '{classname}',
-        titleTemplate: '{title}',
-      },
-    ],
-  ],
+  }
 };
