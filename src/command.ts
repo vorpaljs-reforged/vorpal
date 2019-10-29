@@ -324,13 +324,13 @@ export default class Command extends EventEmitter implements ICommand {
     /**
      * Returns the commands arguments as string.
      *
-     * @param {String} desc
+     * @param {String} description
      * @return {String}
      * @api public
      */
 
-    public arguments(desc) {
-        return this._parseExpectedArgs(desc.split(/ +/));
+    public arguments(description) {
+        return this._parseExpectedArgs(description.split(/ +/));
     }
 
     /**
@@ -341,34 +341,31 @@ export default class Command extends EventEmitter implements ICommand {
      */
 
     public helpInformation() {
-        let desc = [];
+        let description = [];
         const cmdName = this._name;
         let alias = '';
 
         if (this._description) {
-            desc = ['  ' + this._description, ''];
+            description = [`  ${this._description}`, ''];
         }
 
         if (this._aliases.length > 0) {
-            alias = '  Alias: ' + this._aliases.join(' | ') + '\n';
+            alias = `  Alias: ${this._aliases.join(' | ')}\n`;
         }
-        const usage = ['', '  Usage: ' + cmdName + ' ' + this.usage(), ''];
+        const usage = ['', `  Usage:  ${cmdName} ${this.usage()}`, ''];
 
         const cmds = [];
 
         const help = String(this.optionHelp().replace(/^/gm, '    '));
         const options = ['  Options:', '', help, ''];
 
-        let res = usage
+        return usage
             .concat(cmds)
             .concat(alias)
-            .concat(desc)
+            .concat(description)
             .concat(options)
-            .join('\n');
-
-        res = res.replace(/\n\n\n/g, '\n\n');
-
-        return res;
+            .join('\n')
+            .replace(/\n\n\n/g, '\n\n');
     }
 
     /**
@@ -410,7 +407,7 @@ export default class Command extends EventEmitter implements ICommand {
         const usage =
             '[options]' +
             (this.commands.length ? ' [command]' : '') +
-            (this._args.length ? ' ' + args.join(' ') : '');
+            (this._args.length ? ` ${args.join(' ')}` : '');
 
         if (_.isNil(str)) {
             return this._usage || usage;
@@ -434,9 +431,9 @@ export default class Command extends EventEmitter implements ICommand {
         // Prepend the help information
         return [util.pad('--help', width) + '  output usage information']
             .concat(
-                this.options.map(function(option) {
-                    return util.pad(option.flags, width) + '  ' + option.description;
-                })
+                this.options.map(
+                    option => `${util.pad(option.flags, width)}  ${option.description}`
+                )
             )
             .join('\n');
     }
@@ -449,9 +446,7 @@ export default class Command extends EventEmitter implements ICommand {
      */
 
     private _largestOptionLength() {
-        return this.options.reduce(function(max, option) {
-            return Math.max(max, option.flags.length);
-        }, 0);
+        return this.options.reduce((max, option) => Math.max(max, option.flags.length), 0);
     }
 
     /**
@@ -513,23 +508,18 @@ export default class Command extends EventEmitter implements ICommand {
             return;
         }
         const self = this;
-        args.forEach(function(arg) {
+        args.forEach(arg => {
             const argDetails = {
                 required: false,
                 name: '',
                 variadic: false,
             };
 
-            switch (arg[0]) {
-                case '<':
-                    argDetails.required = true;
-                    argDetails.name = arg.slice(1, -1);
-                    break;
-                case '[':
-                    argDetails.name = arg.slice(1, -1);
-                    break;
-                default:
-                    break;
+            if (arg.startsWith('<')) {
+                argDetails.required = true;
+                argDetails.name = arg.slice(1, -1);
+            } else if (arg.startsWith('[')) {
+                argDetails.name = arg.slice(1, -1);
             }
 
             if (argDetails.name.length > 3 && argDetails.name.slice(-3) === '...') {

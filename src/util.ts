@@ -23,7 +23,7 @@ export default {
      * @api private
      */
     parseArgs(str, opts) {
-        const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi;
+        const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi; // !FIXME: wtf this regex is supposed to do?
         const array = [];
         let match;
         do {
@@ -223,14 +223,10 @@ export default {
         // simply commands that don't have required
         // or optional args.
         const booleans = [];
-        cmd.options.forEach(function(opt) {
+        cmd.options.forEach(opt => {
             if (!opt.required && !opt.optional) {
-                if (opt.short) {
-                    booleans.push(opt.short);
-                }
-                if (opt.long) {
-                    booleans.push(opt.long);
-                }
+                if (opt.short) booleans.push(opt.short);
+                if (opt.long) booleans.push(opt.long);
             }
         });
 
@@ -246,8 +242,8 @@ export default {
             .filter(function(str) {
                 let match = false;
                 const strings = [`-${str}`, `--${str}`, `--no-${str}`];
-                for (let i = 0; i < passedArgParts.length; ++i) {
-                    if (strings.indexOf(passedArgParts[i]) > -1) {
+                for (const passedArg of passedArgParts) {
+                    if (strings.includes(passedArg)) {
                         match = true;
                         break;
                     }
@@ -266,6 +262,7 @@ export default {
         let valid = true;
         const remainingArgs = _.clone(parsedArgs._);
         for (let l = 0; l < 10; ++l) {
+            // !FIXME : why 10 limit?
             const matchArg = cmd._args[l];
             const passedArg = parsedArgs._[l];
             if (matchArg !== undefined) {
@@ -311,28 +308,18 @@ export default {
         // exist in the options list.
         // If the command allows unknown options,
         // adds it, otherwise throws help.
-        const passedOpts = _.chain(parsedArgs)
-            .keys()
-            .pull('_')
-            .pull('help')
-            .value();
-        for (const opt of Object.values(passedOpts)) {
-            const optionFound = _.find(cmd.options, function(expected) {
-                if (
-                    '--' + opt === expected.long ||
-                    '--no-' + opt === expected.long ||
-                    '-' + opt === expected.short
-                ) {
-                    return true;
-                }
-                return false;
-            });
+        const passedOpts = _.difference(_.keys(parsedArgs), ['_', 'help']);
+        for (const opt of passedOpts) {
+            const optionFound = _.find(
+                cmd.options,
+                expected =>
+                    `--${opt}` === expected.long ||
+                    `--no-${opt}` === expected.long ||
+                    `-${opt}` === expected.short
+            );
             if (optionFound === undefined) {
-                if (cmd._allowUnknownOptions) {
-                    args.options[opt] = parsedArgs[opt];
-                } else {
-                    return `\n  Invalid option: '${opt}'. Showing Help:`;
-                }
+                if (!cmd._allowUnknownOptions) return `\n  Invalid option: '${opt}'. Showing Help:`;
+                args.options[opt] = parsedArgs[opt];
             }
         }
 
@@ -347,7 +334,6 @@ export default {
         if (parsedArgs.help || parsedArgs._.indexOf('/?') > -1) {
             args.options.help = true;
         }
-
         return args;
     },
 

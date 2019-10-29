@@ -153,7 +153,7 @@ class UI extends EventEmitter {
             const render = inquirer.prompt.prompts[promptType].prototype.render;
             inquirer.prompt.prompts[promptType].prototype.render = function(...args) {
                 self._activePrompt = this;
-                return render(...args);
+                return render.apply(this, args);
             };
         }
 

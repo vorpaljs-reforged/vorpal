@@ -301,13 +301,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         opts = opts || {};
         name = String(name);
 
-        const argsRegExp = /(\[[^]]*\]|<[^>]*>)/g;
-        const args = [];
-        let arg;
-
-        while ((arg = argsRegExp.exec(name)) !== null) {
-            args.push(arg[1]);
-        }
+        const args = name.match(/(\[[^\]]*\]|<[^>]*>)/g) || [];
 
         const cmdNameRegExp = /^([^[<]*)/;
         const cmdName = cmdNameRegExp.exec(name)[0].trim();
@@ -1161,12 +1155,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
                         .split(' ').length <= commandMatchLength
                 );
             })
-            .map(function(cmd) {
-                const args = cmd._args
-                    .map(function(arg) {
-                        return VorpalUtil.humanReadableArgName(arg);
-                    })
-                    .join(' ');
+            .map(cmd => {
+                const args = cmd._args.map(arg => VorpalUtil.humanReadableArgName(arg)).join(' ');
 
                 return [
                     cmd._name +
