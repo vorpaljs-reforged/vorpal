@@ -1,4 +1,4 @@
-module.exports = {
+{
     "env": {
         "browser": false,
         "es6": true,
@@ -10,7 +10,7 @@ module.exports = {
         "sourceType": "module"
     },
     "plugins": [
-        "@typescript-eslint",
+        "@typescript-eslint"
     ],
     "extends": [
         "eslint:recommended",
@@ -18,8 +18,15 @@ module.exports = {
         "plugin:prettier/recommended",
         "prettier/@typescript-eslint"
     ],
-    'rules': {
-        '@typescript-eslint/no-this-alias': 'warn',
-        '@typescript-eslint/interface-name-prefix': 'warn'
+    "rules": {
+        "prettier/prettier": ["error", {
+            "singleQuote": true,
+            "printWidth": 100,
+            "tabWidth": 2,
+            "semi": true,
+            "bracketSpacing": false
+        }],
+        "@typescript-eslint/no-this-alias": "warn",
+        "@typescript-eslint/interface-name-prefix": "warn"
     }
-};
+}
