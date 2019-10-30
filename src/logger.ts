@@ -3,10 +3,11 @@
  */
 
 import _ from 'lodash';
-import { inspect } from 'util';
+import {inspect} from 'util';
 import util from './util';
 
 function viewed(str: string) {
+  // eslint-disable-next-line no-control-regex
   const re = /\u001b\[\d+m/gm;
   return String(str).replace(re, '');
 }
@@ -53,30 +54,30 @@ function trimTo(str: string, amt: number) {
  */
 function Logger(cons) {
   const logger = cons || console;
-  const log = function() {
-    logger.log.apply(logger, arguments);
+  const log = function(...args) {
+    logger.log(...args);
   };
 
-  log.cols = function() {
+  log.cols = function(...args) {
     const width = process.stdout.columns;
     let pads = 0;
     let padsWidth = 0;
     let cols = 0;
     let colsWidth = 0;
-    const input = arguments;
+    const input = args;
 
-    for (let h = 0; h < arguments.length; ++h) {
-      if (typeof arguments[h] === 'number') {
-        padsWidth += arguments[h];
+    for (const arg of args) {
+      if (typeof arg === 'number') {
+        padsWidth += arg;
         pads++;
       }
-      if (_.isArray(arguments[h]) && typeof arguments[h][0] === 'number') {
-        padsWidth += arguments[h][0];
+      if (_.isArray(arg) && typeof arg[0] === 'number') {
+        padsWidth += arg[0];
         pads++;
       }
     }
 
-    cols = arguments.length - pads;
+    cols = args.length - pads;
     colsWidth = Math.floor((width - padsWidth) / cols);
 
     const lines = [];

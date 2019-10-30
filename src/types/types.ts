@@ -1,7 +1,7 @@
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import History from '../history';
-import Option from '../option'
-import {IAutocompleteConfig} from './autocomplete'
+import Option from '../option';
+import {IAutocompleteConfig} from './autocomplete';
 
 export interface IVorpal extends EventEmitter {
   parent: IVorpal;
@@ -26,8 +26,8 @@ export interface ICommand extends EventEmitter {
   _hidden: boolean;
   _help: Function;
   _aliases: string[];
-  _allowUnknownOptions: boolean
-  _autocomplete: IAutocompleteConfig
+  _allowUnknownOptions: boolean;
+  _autocomplete: IAutocompleteConfig;
   option(flags, description, autocomplete?): ICommand;
   action(fn): ICommand;
   use(fn): ICommand;

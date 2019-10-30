@@ -31,7 +31,7 @@ export class CommandInstance {
    */
 
   constructor(params: CommandInstanceParams = {}) {
-    const { command, commandObject, args, commandWrapper, callback, downstream } = params;
+    const {command, commandObject, args, commandWrapper, callback, downstream} = params;
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
@@ -64,7 +64,7 @@ export class CommandInstance {
           this.session.log(err.stack || err);
           this.session.parent.emit('client_command_error', {
             command: this.downstream.command,
-            error: err,
+            error: err
           });
         }
         this.session.completeCommand();
@@ -87,7 +87,7 @@ export class CommandInstance {
         res.then(onComplete, onComplete);
       }
     } else {
-      this.session.log.apply(this.session, args);
+      this.session.log(...args);
     }
   }
 

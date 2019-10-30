@@ -9,7 +9,7 @@
  */
 
 import _ from 'lodash';
-import { IVorpal } from './types/types';
+import {IVorpal} from './types/types';
 
 export default function(vorpal: IVorpal) {
   /**
@@ -23,7 +23,7 @@ export default function(vorpal: IVorpal) {
       if (args.command) {
         args.command = args.command.join(' ');
         const commandWithName = _.find(this.parent.commands, {
-          _name: String(args.command).trim(),
+          _name: String(args.command).trim()
         });
         if (commandWithName && !commandWithName._hidden) {
           if (_.isFunction(commandWithName._help)) {

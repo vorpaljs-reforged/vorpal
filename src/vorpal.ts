@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import _ from 'lodash';
 import minimist from 'minimist';
 import os from 'os';
@@ -14,7 +14,7 @@ import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import { IVorpal } from './types/types';
+import {IVorpal} from './types/types';
 import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
@@ -47,7 +47,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   private _command: any;
   public ui: any;
   private _delimiter: string;
-  private server: { sessions: any[] };
+  private server: {sessions: any[]};
   private _hooked: boolean;
   public util: any;
   public Session: typeof Session;
@@ -101,7 +101,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     // Placeholder for vantage server. If vantage
     // is used, this will be over-written.
     this.server = {
-      sessions: [],
+      sessions: []
     };
 
     // Whether all stdout is being hooked through a function.
@@ -117,7 +117,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       local: true,
       user: 'local',
       parent: this,
-      delimiter: this._delimiter,
+      delimiter: this._delimiter
     });
 
     // Allow unix-like key value pair normalization to be turned off by toggling this switch on.
@@ -150,7 +150,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     options = options || {};
     const args = argv;
     let result: Vorpal | minimist.ParsedArgs = this;
-    const catchExists = !(_.find(this.commands, { _catch: true }) === undefined);
+    const catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
@@ -301,15 +301,9 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     opts = opts || {};
     name = String(name);
 
-    const argsRegExp = /(\[[^\]]*\]|\<[^\>]*\>)/g;
-    const args = [];
-    let arg;
+    const args = name.match(/(\[[^\]]*\]|<[^>]*>)/g) || [];
 
-    while ((arg = argsRegExp.exec(name)) !== null) {
-      args.push(arg[1]);
-    }
-
-    const cmdNameRegExp = /^([^\[\<]*)/;
+    const cmdNameRegExp = /^([^[<]*)/;
     const cmdName = cmdNameRegExp.exec(name)[0].trim();
 
     const cmd = new Command(cmdName, this);
@@ -346,7 +340,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       );*/
     }
 
-    this.emit('command_registered', { command: cmd, name });
+    this.emit('command_registered', {command: cmd, name});
 
     return cmd;
   }
@@ -362,7 +356,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public mode(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, { mode: true }));
+    return this.command(name, desc, _.extend(opts || {}, {mode: true}));
   }
 
   /**
@@ -377,7 +371,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public catch(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, { catch: true }));
+    return this.command(name, desc, _.extend(opts || {}, {catch: true}));
   }
 
   /**
@@ -391,7 +385,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public default(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, { catch: true }));
+    return this.command(name, desc, _.extend(opts || {}, {catch: true}));
   }
 
   /**
@@ -403,7 +397,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public log(...args) {
-    this.ui.log.apply(this.ui, arguments);
+    this.ui.log(...args);
     return this;
   }
 
@@ -567,7 +561,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       this._send('vantage-keypress-upstream', 'upstream', {
         key,
         value,
-        sessionId: this.session.id,
+        sessionId: this.session.id
       });
     }
   }
@@ -618,7 +612,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         this._send('vantage-prompt-downstream', 'downstream', {
           options,
           value: undefined,
-          sessionId: ssn.id,
+          sessionId: ssn.id
         });
       }
       return prompt;
@@ -644,7 +638,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     // If we somehow got to _prompt and aren't the
     // local client, send the command downstream.
     if (!ssn.isLocal()) {
-      this._send('vantage-resume-downstream', 'downstream', { sessionId: data.sessionId });
+      this._send('vantage-resume-downstream', 'downstream', {sessionId: data.sessionId});
       return self;
     }
 
@@ -656,7 +650,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       {
         type: 'input',
         name: 'command',
-        message: ssn.fullDelimiter(),
+        message: ssn.fullDelimiter()
       },
       function(result) {
         if (self.ui._cancelled === true) {
@@ -719,7 +713,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       callback: cb,
       session: ssn,
       resolve: undefined,
-      reject: undefined,
+      reject: undefined
     };
 
     if (cb !== undefined) {
@@ -758,7 +752,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       args: options,
       session: ssn,
       sync: true,
-      options,
+      options
     };
 
     return self._execQueueItem(command);
@@ -799,7 +793,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       command: cmd.command,
       args: cmd.args,
       completed: false,
-      sessionId: cmd.session.id,
+      sessionId: cmd.session.id
     });
   }
 
@@ -959,7 +953,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         item.session.modeDelimiter(delimiter);
       } else if (item.session._mode) {
         if (String(modeCommand).trim() === 'exit') {
-          self._exitMode({ sessionId: item.session.id });
+          self._exitMode({sessionId: item.session.id});
           return callback(item);
         }
         // This executes when actually in a 'mode'
@@ -980,7 +974,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
               downstream: undefined,
               commandWrapper: item,
               commandObject: item.commandObject,
-              args: item.args,
+              args: item.args
             }),
             item.args
           );
@@ -1000,7 +994,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
           commandWrapper: item,
           command: pipe.command._name,
           commandObject: pipe.command,
-          args: pipe.args,
+          args: pipe.args
         });
       });
 
@@ -1066,7 +1060,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public find(name) {
-    return _.find(this.commands, { _name: name });
+    return _.find(this.commands, {_name: name});
   }
 
   /**
@@ -1151,12 +1145,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
             .split(' ').length <= commandMatchLength
         );
       })
-      .map(function(cmd) {
-        const args = cmd._args
-          .map(function(arg) {
-            return VorpalUtil.humanReadableArgName(arg);
-          })
-          .join(' ');
+      .map(cmd => {
+        const args = cmd._args.map(arg => VorpalUtil.humanReadableArgName(arg)).join(' ');
 
         return [
           cmd._name +
@@ -1164,7 +1154,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
             (cmd.options.length ? ' [options]' : '') +
             ' ' +
             args,
-          cmd.description() || '',
+          cmd.description() || ''
         ];
       });
 
@@ -1339,7 +1329,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'
       );
     }
-    let ssn = _.find(this.server.sessions, { id });
+    let ssn = _.find(this.server.sessions, {id});
     ssn = this.session.id === id ? this.session : ssn;
     if (!id) {
       throw new Error('vorpal.getSessionById was called with no ID passed.');
@@ -1347,7 +1337,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     if (!ssn) {
       const sessions = {
         local: this.session.id,
-        server: _.map(this.server.sessions, 'id'),
+        server: _.map(this.server.sessions, 'id')
       };
       throw new Error(
         'No session found for id ' +
@@ -1375,7 +1365,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     if (ssn.isLocal()) {
       process.exit(0);
     } else {
-      ssn.server.emit('vantage-close-downstream', { sessionId: ssn.id });
+      ssn.server.emit('vantage-close-downstream', {sessionId: ssn.id});
     }
   }
 

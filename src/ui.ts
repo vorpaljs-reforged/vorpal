@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import inquirer from 'inquirer';
 import _ from 'lodash';
 import logUpdate from 'log-update';
@@ -151,9 +151,9 @@ class UI extends EventEmitter {
 
       // Add hook to render method.
       const render = inquirer.prompt.prompts[promptType].prototype.render;
-      inquirer.prompt.prompts[promptType].prototype.render = function() {
+      inquirer.prompt.prompts[promptType].prototype.render = function(...args) {
         self._activePrompt = this;
-        return render.apply(this, arguments);
+        return render.apply(this, args);
       };
     }
 
@@ -300,7 +300,7 @@ class UI extends EventEmitter {
 
     const key = (e.key || {}).name;
     const value = prompt ? String(line) : undefined;
-    this.emit('vorpal_ui_keypress', { key, value, e });
+    this.emit('vorpal_ui_keypress', {key, value, e});
   }
 
   /**
@@ -608,7 +608,7 @@ ui.redraw.done = function() {
 global.__vorpal = global.__vorpal || {};
 global.__vorpal.ui = global.__vorpal.ui || {
   exists: false,
-  exports: undefined,
+  exports: undefined
 };
 
 if (!global.__vorpal.ui.exists) {

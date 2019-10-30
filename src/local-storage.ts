@@ -1,4 +1,4 @@
-import { LocalStorage as LocalStorageO } from 'node-localstorage';
+import {LocalStorage as LocalStorageO} from 'node-localstorage';
 import os from 'os';
 import path from 'path';
 
