@@ -16,3 +16,5 @@ electron*
 test-reports/
 dist
 .eslintcache
+private
+tmp
