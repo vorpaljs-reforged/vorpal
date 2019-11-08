@@ -3,7 +3,6 @@
  */
 
 import _ from 'lodash';
-import util from './util';
 
 interface CommandInstanceParams {
   commandWrapper?: any;

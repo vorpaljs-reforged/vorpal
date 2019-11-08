@@ -85,9 +85,7 @@ export default {
 
         // Loop through each individual character in the possible pipe tracking the opening and closing of quotes.
         for (const char of possiblePipe) {
-          if (quoteChars.indexOf(char) !== -1) {
-            quoteTracker[char] = !quoteTracker[char];
-          }
+          if (quoteChars.indexOf(char) !== -1) quoteTracker[char] = !quoteTracker[char];
         }
 
         // Does the pipe end on an unfinished quote?
@@ -123,12 +121,7 @@ export default {
       parseMatch();
     }
 
-    return {
-      command,
-      match,
-      matchArgs,
-      pipes
-    };
+    return {command, match, matchArgs, pipes};
   },
 
   /**
@@ -198,10 +191,7 @@ export default {
       }
     }
 
-    return {
-      command: match,
-      args: matchArgs
-    };
+    return {command: match, args: matchArgs};
   },
 
   buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized: boolean) {
@@ -240,15 +230,11 @@ export default {
     types.boolean = booleans
       .map(str => String(str).replace(/^-*/, ''))
       .filter(function(str) {
-        let match = false;
         const strings = [`-${str}`, `--${str}`, `--no-${str}`];
         for (const passedArg of passedArgParts) {
-          if (strings.includes(passedArg)) {
-            match = true;
-            break;
-          }
+          if (strings.includes(passedArg)) return true;
         }
-        return match;
+        return false;
       });
 
     // Use minimist to parse the args.
@@ -267,9 +253,8 @@ export default {
       const passedArg = parsedArgs._[l];
       if (matchArg !== undefined) {
         valid = !valid ? false : validateArg(parsedArgs._[l], matchArg);
-        if (!valid) {
-          break;
-        }
+        if (!valid) break;
+
         if (passedArg !== undefined) {
           if (matchArg.variadic === true) {
             args[matchArg.name] = remainingArgs;
@@ -281,26 +266,23 @@ export default {
       }
     }
 
-    if (!valid) {
-      return '\n  Missing required argument. Showing Help:';
-    }
+    if (!valid) return '\n  Missing required argument. Showing Help:';
 
     // Looks for ommitted required options and throws help.
-    for (let m = 0; m < cmd.options.length; ++m) {
-      const o = cmd.options[m];
-      const short = String(o.short || '').replace(/-/g, '');
-      const long = String(o.long || '')
+    for (const option of cmd.options) {
+      const short = String(option.short || '').replace(/-/g, '');
+      const long = String(option.long || '')
         .replace(/--no-/g, '')
         .replace(/^-*/g, '');
       let exist = parsedArgs[short] !== undefined ? parsedArgs[short] : undefined;
       exist = exist === undefined && parsedArgs[long] !== undefined ? parsedArgs[long] : exist;
+
       const existsNotSet = exist === true || exist === false;
-      if (existsNotSet && o.required !== 0) {
-        return `\n  Missing required value for option ${o.long || o.short}. Showing Help:`;
-      }
-      if (exist !== undefined) {
-        args.options[long || short] = exist;
-      }
+      if (existsNotSet && option.required !== 0)
+        return `\n  Missing required value for option ${option.long ||
+          option.short}. Showing Help:`;
+
+      if (exist !== undefined) args.options[long || short] = exist;
     }
 
     // Looks for supplied options that don't
@@ -359,19 +341,13 @@ export default {
   prettifyArray(arr: string[] = []): string {
     const arrClone = _.clone(arr);
     const width = process.stdout.columns;
-    const longest =
-      strip(
-        arrClone.sort(function(a, b) {
-          return strip(b).length - strip(a).length;
-        })[0] || ''
-      ).length + 2;
+    const longest = strip(_.sortBy([...arr], item => strip(item).length)[0] || '').length + 2;
     const fullWidth = strip(String(arr.join(''))).length;
     const fitsOneLine = fullWidth + arr.length * 2 <= width;
     let cols = Math.floor(width / longest);
     cols = cols < 1 ? 1 : cols;
-    if (fitsOneLine) {
-      return arr.join('  ');
-    }
+    if (fitsOneLine) return arr.join('  ');
+
     let col = 0;
     const lines = [];
     let line = '';
@@ -385,9 +361,8 @@ export default {
       }
       line += this.pad(elem, longest, ' ');
     }
-    if (line !== '') {
-      lines.push(line);
-    }
+    if (line !== '') lines.push(line);
+
     return lines.join('\n');
   },
 
@@ -403,10 +378,9 @@ export default {
    * @api private
    */
   pad(str: string | string[], width: number, delimiter = ' '): string {
-    width = Math.floor(width);
-    str = Array.isArray(str) ? str.join() : str;
-    const len = Math.max(0, width - strip(str).length);
-    return str + Array(len + 1).join(delimiter);
+    const string = Array.isArray(str) ? str.join() : str;
+    const len = Math.max(0, Math.floor(width) - strip(string).length);
+    return string + Array(len + 1).join(delimiter);
   },
 
   /**

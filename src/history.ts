@@ -36,14 +36,12 @@ export default class History {
    * Called from setId when history id is set
    */
   public _init() {
-    if (!this._storageKey) {
-      return;
-    }
+    if (!this._storageKey) return;
 
     // Load history from local storage
     const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey));
     if (_.isArray(persistedHistory)) {
-      Array.prototype.push.apply(this._hist, persistedHistory);
+      this._hist.push(...persistedHistory);
     }
   }
 
@@ -58,7 +56,7 @@ export default class History {
     if (!this._localStorage) {
       this._localStorage = new LocalStorage(DEFAULT_STORAGE_PATH);
     }
-    this._storageKey = 'cmd_history_' + id;
+    this._storageKey = `cmd_history_${id}`;
     this._init();
   }
 
@@ -69,9 +67,7 @@ export default class History {
    * @param path
    */
   public setStoragePath(path) {
-    if (!this._localStorage) {
-      this._localStorage = new LocalStorage(path);
-    }
+    if (!this._localStorage) this._localStorage = new LocalStorage(path);
   }
 
   /**
@@ -121,9 +117,7 @@ export default class History {
     this._histCtr = 0;
 
     // Don't store command in history if it's a duplicate.
-    if (this._hist[this._hist.length - 1] === cmd) {
-      return;
-    }
+    if (this._hist[this._hist.length - 1] === cmd) return;
 
     // Push into history.
     this._hist.push(cmd);

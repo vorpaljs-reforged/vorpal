@@ -6,9 +6,7 @@ import {EventEmitter} from 'events';
 import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
-import Command from './command';
 import {CommandInstance} from './command-instance';
-import util from './util';
 import Vorpal from './vorpal';
 
 interface CommandResponse {
@@ -155,10 +153,9 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  public delimiter(str) {
-    if (str === undefined) {
-      return this._delimiter;
-    }
+  public delimiter(str?) {
+    if (_.isUndefined(str)) return this._delimiter;
+
     this._delimiter = String(str).trim() + ' ';
     if (this.isLocal()) {
       this.parent.ui.refresh();
@@ -179,21 +176,16 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  public modeDelimiter(str) {
-    if (str === undefined) {
-      return this._modeDelimiter;
-    }
+  public modeDelimiter(str?) {
+    if (_.isUndefined(str)) return this._modeDelimiter;
     if (!this.isLocal()) {
       this.parent._send('vantage-mode-delimiter-downstream', 'downstream', {
         value: str,
         sessionId: this.id
       });
     } else {
-      if (str === false || str === 'false') {
-        this._modeDelimiter = undefined;
-      } else {
-        this._modeDelimiter = String(str).trim() + ' ';
-      }
+      this._modeDelimiter = str === false || str === 'false' ? undefined : String(str).trim() + ' ';
+
       this.parent.ui.refresh();
     }
     return this;
@@ -209,12 +201,12 @@ export default class Session extends EventEmitter {
    * @api private
    */
   private getKeypressResult(key: string, value, cb = _.noop) {
-    const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
+    const keyMatch = ['up', 'down', 'tab'].includes(key);
     if (key !== 'tab') {
       this._tabCount = 0;
     }
     if (keyMatch) {
-      if (['up', 'down'].indexOf(key) > -1) {
+      if (['up', 'down'].includes(key)) {
         cb(undefined, this.getHistory(key));
       } else if (key === 'tab') {
         this.getAutocomplete(value, cb);
@@ -225,8 +217,8 @@ export default class Session extends EventEmitter {
   }
 
   public history(str) {
-    const exceptions = [];
-    if (str && exceptions.indexOf(String(str).toLowerCase()) === -1) {
+    const exceptions = []; // FIXME!
+    if (str && !exceptions.includes(String(str).toLowerCase())) {
       this.cmdHistory.newCommand(str);
     }
   }
@@ -283,8 +275,8 @@ export default class Session extends EventEmitter {
   public execCommandSet(wrapper, callback) {
     const self = this;
     let response: CommandResponse = {};
-    var res; /* eslint-disable-line no-var */
-    const cbk = callback;
+    var res; /* eslint-disable-line no-var */ // FIXME! not assigned!
+    const cb = callback;
     this._registeredCommands = 1;
     this._completedCommands = 0;
 
@@ -298,12 +290,12 @@ export default class Session extends EventEmitter {
 
     wrapper.commandInstance = commandInstance;
 
-    function sendDones(itm) {
-      if (itm.commandObject && itm.commandObject._done) {
-        itm.commandObject._done.call(itm);
+    function sendDones(item) {
+      if (item.commandObject && item.commandObject._done) {
+        item.commandObject._done.call(item);
       }
-      if (itm.downstream) {
-        sendDones(itm.downstream);
+      if (item.downstream) {
+        sendDones(item.downstream);
       }
     }
 
@@ -333,7 +325,7 @@ export default class Session extends EventEmitter {
       self._completedCommands = 0;
       self.parent.emit('client_command_cancelled', {command: wrapper.command});
 
-      cbk(wrapper);
+      cb(wrapper);
     };
 
     this.on('vorpal_command_cancel', self.cancelCommands);
@@ -360,7 +352,7 @@ export default class Session extends EventEmitter {
 
       self.removeListener('vorpal_command_cancel', self.cancelCommands);
       self.cancelCommands = undefined;
-      cbk(wrapper, err, data, argus);
+      cb(wrapper, err, data, argus);
       sendDones(commandInstance);
     };
 
@@ -389,12 +381,12 @@ export default class Session extends EventEmitter {
       return this;
     }
 
-    if (wrapper.args && typeof wrapper.args === 'object') {
+    if (_.isObject(wrapper.arg)) {
       wrapper.args.rawCommand = wrapper.command;
     }
 
     // Call the root command.
-    res = wrapper.fn.call(commandInstance, wrapper.args, function(...argus) {
+    res = wrapper.fn.call(commandInstance, wrapper.args, (...argus) => {
       onCompletion(wrapper, argus[0], argus[1], argus);
     });
 
@@ -402,10 +394,10 @@ export default class Session extends EventEmitter {
     // returns a promise, handle accordingly.
     if (res && _.isFunction(res.then)) {
       res
-        .then(function(data) {
+        .then(data => {
           onCompletion(wrapper, undefined, data);
         })
-        .catch(function(err) {
+        .catch(err => {
           onCompletion(wrapper, true, err);
         });
     }
@@ -460,14 +452,12 @@ export default class Session extends EventEmitter {
    * @api private
    */
 
-  private getHistory(direction) {
-    let history;
+  private getHistory(direction: string): string {
     if (direction === 'up') {
-      history = this.cmdHistory.getPreviousHistory();
+      return this.cmdHistory.getPreviousHistory();
     } else if (direction === 'down') {
-      history = this.cmdHistory.getNextHistory();
+      return this.cmdHistory.getNextHistory();
     }
-    return history;
   }
 
   /**
@@ -478,6 +468,7 @@ export default class Session extends EventEmitter {
    */
 
   public _guid() {
+    // FIXME;: to some lib
     function s4() {
       return Math.floor((1 + Math.random()) * 0x10000)
         .toString(16)

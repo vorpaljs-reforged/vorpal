@@ -291,16 +291,15 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Defines description for given command.
    *
-   * @param {String} str
+   * @param {String} description
    * @return {Command}
    * @api public
    */
 
-  public description(str) {
-    if (arguments.length === 0) {
-      return this._description;
-    }
-    this._description = str;
+  public description(desc?) {
+    if (_.isNil(desc)) return this._description;
+
+    this._description = desc;
     return this;
   }
 
@@ -312,11 +311,8 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public remove() {
-    const self = this;
-    this._parent.commands = _.reject(this._parent.commands, function(command) {
-      if (command._name === self._name) {
-        return true;
-      }
+    this._parent.commands = _.reject(this._parent.commands, command => {
+      if (command._name === this._name) return true;
     });
     return this;
   }
@@ -341,26 +337,17 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public helpInformation() {
-    let description = [];
     const cmdName = this._name;
-    let alias = '';
+    const description = this._description ? [`  ${this._description}`, ''] : [];
 
-    if (this._description) {
-      description = [`  ${this._description}`, ''];
-    }
+    const alias = !_.isEmpty(this._aliases) ? `  Alias: ${this._aliases.join(' | ')}\n` : '';
 
-    if (this._aliases.length > 0) {
-      alias = `  Alias: ${this._aliases.join(' | ')}\n`;
-    }
     const usage = ['', `  Usage:  ${cmdName} ${this.usage()}`, ''];
-
-    const cmds = [];
 
     const help = String(this.optionHelp().replace(/^/gm, '    '));
     const options = ['  Options:', '', help, ''];
 
     return usage
-      .concat(cmds)
       .concat(alias)
       .concat(description)
       .concat(options)
@@ -406,12 +393,10 @@ export default class Command extends EventEmitter implements ICommand {
 
     const usage =
       '[options]' +
-      (this.commands.length ? ' [command]' : '') +
-      (this._args.length ? ` ${args.join(' ')}` : '');
+      (_.isEmpty(this.commands) ? ' [command]' : '') +
+      (_.isEmpty(this._args) ? ` ${args.join(' ')}` : '');
 
-    if (_.isNil(str)) {
-      return this._usage || usage;
-    }
+    if (_.isNil(str)) return this._usage || usage;
 
     this._usage = str;
 
@@ -500,16 +485,11 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public _parseExpectedArgs(args) {
-    if (!args.length) {
-      return;
-    }
+    if (_.isEmpty(args)) return;
+
     const self = this;
     args.forEach(arg => {
-      const argDetails = {
-        required: false,
-        name: '',
-        variadic: false
-      };
+      const argDetails = {required: false, name: '', variadic: false};
 
       if (arg.startsWith('<')) {
         argDetails.required = true;
@@ -531,15 +511,11 @@ export default class Command extends EventEmitter implements ICommand {
     // properly sequence them.
     if (self._args.length > 1) {
       self._args = self._args.sort(function(argu1, argu2) {
-        if (argu1.required && !argu2.required) {
-          return -1;
-        } else if (argu2.required && !argu1.required) {
-          return 1;
-        } else if (argu1.variadic && !argu2.variadic) {
-          return 1;
-        } else if (argu2.variadic && !argu1.variadic) {
-          return -1;
-        }
+        if (argu1.required && !argu2.required) return -1;
+        if (argu2.required && !argu1.required) return 1;
+        if (argu1.variadic && !argu2.variadic) return 1;
+        if (argu2.variadic && !argu1.variadic) return -1;
+
         return 0;
       });
     }

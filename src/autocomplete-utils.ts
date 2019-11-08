@@ -21,17 +21,15 @@ import {ICommand, IVorpal} from './types/types';
  * @api private
  */
 export function handleTabCounts(match: AutocompleteMatch, freezeTabs: boolean): AutocompleteMatch {
-  let result;
   if (_.isArray(match)) {
     this._tabCount += 1;
     if (this._tabCount > 1) {
-      result = match.length === 0 ? undefined : match;
+      return _.isEmpty(match) ? undefined : match;
     }
   } else {
     this._tabCount = freezeTabs === true ? this._tabCount + 1 : 0;
-    result = match;
+    return match;
   }
-  return result;
 }
 
 /**
@@ -54,9 +52,8 @@ export function getMatch(
   const len = ctx.length;
   const trimmed = ctx.trimLeft();
   const match = autocomplete.match(trimmed, data.slice(), options);
-  if (_.isArray(match)) {
-    return match;
-  }
+  if (_.isArray(match)) return match;
+
   const prefix = new Array(len - trimmed.length + 1).join(' ');
 
   // If we get an autocomplete match on a command, put the leading spaces back in and finish it.
@@ -91,17 +88,15 @@ export function assembleInput(input: Input): AutocompleteMatch {
  */
 export function filterData(str = '', data: string[]) {
   data = data || [];
-  let ctx = String(str).trim();
-  const slashParts = ctx.split('/');
-  ctx = slashParts.pop();
-  const wordParts = String(ctx)
+  let context = String(str).trim();
+  const slashParts = context.split('/');
+  context = slashParts.pop();
+  const wordParts = String(context)
     .trim()
     .split(' ');
 
   return data
-    .filter(function(item) {
-      return strip(item).slice(0, ctx.length) === ctx;
-    })
+    .filter(item => strip(item).slice(0, context.length) === context)
     .map(function(item) {
       let parts = String(item)
         .trim()
@@ -148,12 +143,7 @@ export function parseInput(str = '', idx: number): Input {
   const prefix = prefixParts.join('|');
   const suffix = getSuffix(raw.slice(idx));
   const context = sections[sections.length - 1];
-  return {
-    raw,
-    prefix,
-    suffix,
-    context
-  };
+  return {raw, prefix, suffix, context};
 }
 
 /**
@@ -189,9 +179,9 @@ export function parseMatchSection(input: Input<string>) {
  * @api private
  */
 export function getCommandNames(cmds: ICommand[]): string[] {
-  const commands = _.map(cmds, '_name').concat(..._.map(cmds, '_aliases'));
-  commands.sort();
-  return commands;
+  return _.map(cmds, '_name')
+    .concat(..._.map(cmds, '_aliases'))
+    .sort();
 }
 
 /**
@@ -263,7 +253,7 @@ function handleDataFormat(
 ) {
   let data: string[] = [];
   if (_.isArray(config)) {
-    data = config;
+    data = config; // FIXME: strange, not used
   } else if (_.isFunction(config)) {
     const cbk =
       config.length < 2
@@ -275,13 +265,7 @@ function handleDataFormat(
     const res = config(str, cbk);
 
     if (res instanceof Promise) {
-      res
-        .then(function(resp) {
-          cb(resp);
-        })
-        .catch(function(err) {
-          cb(err);
-        });
+      res.then(resp => cb(resp)).catch(cb);
     } else if (config.length < 2) {
       cb(res);
     }
@@ -312,26 +296,21 @@ export function getMatchData(input: Input<string>, cb: AutocompleteCallback) {
 
   if (midOption === true && !cmd._allowUnknownOptions) {
     const results = [];
-    for (let i = 0; i < cmd.options.length; ++i) {
-      const long = cmd.options[i].long;
-      const short = cmd.options[i].short;
+    for (const {long, short} of cmd.options) {
       if (!long && short) {
         results.push(short);
       } else if (long) {
         results.push(long);
       }
     }
-    cb(results);
-    return;
+    return cb(results);
   }
 
   if (afterOption === true) {
     const opt = strip(input.option).trim();
     const match = cmd.options.find(o => o.short === opt || o.long === opt);
     if (match) {
-      const config = match.autocomplete;
-      handleDataFormat(string, config, cb);
-      return;
+      return handleDataFormat(string, match.autocomplete, cb);
     }
   }
 

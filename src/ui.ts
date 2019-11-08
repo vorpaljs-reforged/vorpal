@@ -105,8 +105,7 @@ class UI extends EventEmitter {
       }
     };
 
-    process.stdin.on('keypress', (letter, key) => {
-      key = key || {};
+    process.stdin.on('keypress', (letter, key = {}) => {
       if (
         key.ctrl === true &&
         key.shift === false &&
@@ -131,9 +130,7 @@ class UI extends EventEmitter {
 
     for (const promptType of prompts) {
       // Add method to Inquirer to get type of prompt.
-      inquirer.prompt.prompts[promptType].prototype.getType = function() {
-        return promptType;
-      };
+      inquirer.prompt.prompts[promptType].prototype.getType = _.constant(promptType);
 
       // Hook in to steal Inquirer's keypress.
       inquirer.prompt.prompts[promptType].prototype.onKeypress = function(e) {
@@ -141,9 +138,8 @@ class UI extends EventEmitter {
         // (not 0.10.0 though) that triggers keypresses for
         // the previous prompt in addition to the current one.
         // So if the prompt is answered, shut it up.
-        if (this.status && this.status === 'answered') {
-          return;
-        }
+        if (this.status === 'answered') return;
+
         self._activePrompt = this;
         self.parent.emit('client_keypress', e);
         self._keypressHandler(e, this);
@@ -177,11 +173,10 @@ class UI extends EventEmitter {
    */
 
   public sigint(fn) {
-    if (_.isFunction(fn)) {
-      this._sigint = fn;
-    } else {
+    if (!_.isFunction(fn)) {
       throw new Error('vorpal.ui.sigint must be passed in a valid function.');
     }
+    this._sigint = fn;
     return this;
   }
 
@@ -196,9 +191,8 @@ class UI extends EventEmitter {
   public prompt(options, cb) {
     let prompt;
     options = options || {};
-    if (!this.parent) {
-      return prompt;
-    }
+    if (!this.parent) return prompt;
+
     if (options.delimiter) {
       this.setDelimiter(options.delimiter);
     }
@@ -244,16 +238,14 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public midPrompt() {
-    const mid = this._midPrompt === true && this.parent !== undefined;
-    return mid;
+  public midPrompt(): boolean {
+    return this._midPrompt === true && this.parent !== undefined;
   }
 
   public setDelimiter(str) {
     const self = this;
-    if (!this.parent) {
-      return;
-    }
+    if (!this.parent) return;
+
     str = String(str).trim() + ' ';
     this._lastDelimiter = str;
     inquirer.prompt.prompts.password.prototype.getQuestion = function() {
@@ -307,28 +299,25 @@ class UI extends EventEmitter {
    * Pauses active prompt, returning
    * the value of what had been typed so far.
    *
-   * @return {String} val
+   * @return {String} value
    * @api public
    */
 
-  public pause() {
-    if (!this.parent) {
-      return false;
-    }
-    if (!this._activePrompt) {
-      return false;
-    }
-    if (!this._midPrompt) {
-      return false;
-    }
-    const val = this._lastDelimiter + this._activePrompt.rl.line;
+  public pause(): string | boolean {
+    if (!this.parent) return false;
+
+    if (!this._activePrompt) return false;
+
+    if (!this._midPrompt) return false;
+
+    const value = this._lastDelimiter + this._activePrompt.rl.line;
     this._midPrompt = false;
     const rl = this._activePrompt.screen.rl;
     const screen = this._activePrompt.screen;
     rl.output.unmute();
     screen.clean();
     rl.output.write('');
-    return val;
+    return value;
   }
 
   /**
@@ -338,20 +327,17 @@ class UI extends EventEmitter {
    * the end.
    *
    * @param {String} val
+   * @return {UI} value
    * @api public
    */
 
-  public resume(val) {
-    if (!this.parent) {
-      return this;
-    }
-    val = val || '';
-    if (!this._activePrompt) {
-      return this;
-    }
-    if (this._midPrompt) {
-      return this;
-    }
+  public resume(val = ''): UI {
+    if (!this.parent) return this;
+
+    if (!this._activePrompt) return this;
+
+    if (this._midPrompt) return this;
+
     const rl = this._activePrompt.screen.rl;
     rl.output.write(val);
     this._midPrompt = true;
@@ -362,10 +348,11 @@ class UI extends EventEmitter {
    * Cancels the active prompt, essentially
    * but cutting out of the inquirer loop.
    *
+   * @return {UI}
    * @api public
    */
 
-  public cancel() {
+  public cancel(): UI {
     if (this.midPrompt()) {
       this._cancel = true;
       this.submit();
@@ -382,7 +369,7 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public attach(vorpal) {
+  public attach(vorpal): UI {
     this.parent = vorpal;
     this.refresh();
     this.parent._prompt();
@@ -415,11 +402,10 @@ class UI extends EventEmitter {
    * @api public
    */
 
-  public log(...args) {
+  public log(...args): UI {
     args = _.isFunction(this._pipeFn) ? this._pipeFn(args) : args;
-    if (args.length === 0 || args[0] === '') {
-      return this;
-    }
+    if (_.isEmpty(args) || args[0] === '') return this;
+
     if (this.midPrompt()) {
       const data = this.pause();
       this._log(...args);
@@ -462,13 +448,11 @@ class UI extends EventEmitter {
    */
 
   public delimiter(str?) {
-    if (!this._activePrompt) {
-      return this;
-    }
+    if (!this._activePrompt) return this;
+
     const prompt = this._activePrompt;
-    if (str === undefined) {
-      return prompt.opt.message;
-    }
+    if (str === undefined) return prompt.opt.message;
+
     prompt.opt.message = str;
     this.refresh();
     return this;
@@ -485,13 +469,11 @@ class UI extends EventEmitter {
    */
 
   public input(str?) {
-    if (!this._activePrompt) {
-      return undefined;
-    }
+    if (!this._activePrompt) return undefined;
+
     const prompt = this._activePrompt;
-    if (str === undefined) {
-      return prompt.rl.line;
-    }
+    if (str === undefined) return prompt.rl.line;
+
     const width = prompt.rl.line.length;
     prompt.rl.line = str;
     const newWidth = prompt.rl.line.length;
@@ -512,12 +494,11 @@ class UI extends EventEmitter {
    */
 
   public imprint() {
-    if (!this.parent) {
-      return this;
-    }
-    const val = this._activePrompt.rl.line;
+    if (!this.parent) return this;
+
+    const value = this._activePrompt.rl.line;
     const delimiter = this._lastDelimiter || this.delimiter() || '';
-    this.log(delimiter + val);
+    this.log(delimiter + value);
     return this;
   }
 
@@ -530,9 +511,8 @@ class UI extends EventEmitter {
    */
 
   public refresh() {
-    if (!this.parent || !this._activePrompt) {
-      return this;
-    }
+    if (!this.parent || !this._activePrompt) return this;
+
     this._activePrompt.screen.clean();
     this._activePrompt.render();
     this._activePrompt.rl.output.write(this._activePrompt.rl.line);

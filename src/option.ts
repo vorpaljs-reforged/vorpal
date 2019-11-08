@@ -39,10 +39,9 @@ export default class Option {
    */
 
   public name() {
-    if (this.long !== undefined) {
-      return this.long.replace('--', '').replace('no-', '');
-    }
-    return this.short.replace('-', '');
+    return this.long !== undefined
+      ? this.long.replace('--', '').replace('no-', '')
+      : this.short.replace('-', '');
   }
 
   /**

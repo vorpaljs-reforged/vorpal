@@ -20,10 +20,9 @@ export default function(callback) {
   function interceptor(string) {
     // only intercept the string
     const result = callback(string);
-    if (typeof result === 'string') {
-      string = result.replace(/\n$/, '') + (result && /\n$/.test(string) ? '\n' : '');
-    }
-    return string;
+    return _.isString(result)
+      ? result.replace(/\n$/, '') + (result && /\n$/.test(string) ? '\n' : '')
+      : string;
   }
 
   process.stdout.write = (function(write) {

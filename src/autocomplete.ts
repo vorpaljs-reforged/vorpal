@@ -1,4 +1,4 @@
-import {clone} from 'lodash';
+import {clone, isEmpty} from 'lodash';
 import strip from 'strip-ansi';
 import {
   assembleInput,
@@ -88,11 +88,8 @@ const autocomplete: IAutocomplete = {
    * @return {String}
    * @api private
    */
-  match(str: string, arr: string[], options: AutocompleteOptions): AutocompleteMatch {
-    arr = arr || [];
-    options = options || {};
-    arr.sort();
-    const arrX = clone(arr);
+  match(str: string, arr: string[] = [], options: AutocompleteOptions = {}): AutocompleteMatch {
+    const arrX = clone(arr).sort();
     let strX = String(str);
 
     let prefix = '';
@@ -101,13 +98,13 @@ const autocomplete: IAutocomplete = {
       const parts = strX.split('/');
       strX = parts.pop();
       prefix = parts.join('/');
-      prefix = parts.length > 0 ? prefix + '/' : prefix;
+      prefix = !isEmpty(parts) ? prefix + '/' : prefix;
     }
 
     const matches: string[] = [];
-    for (let i = 0; i < arrX.length; i++) {
-      if (strip(arrX[i]).slice(0, strX.length) === strX) {
-        matches.push(arrX[i]);
+    for (const item of arrX) {
+      if (strip(item).slice(0, strX.length) === strX) {
+        matches.push(item);
       }
     }
     if (matches.length === 1) {
@@ -115,11 +112,10 @@ const autocomplete: IAutocomplete = {
       const space =
         String(strip(matches[0])).slice(strip(matches[0]).length - 1) === '/' ? '' : ' ';
       return prefix + matches[0] + space;
-    } else if (matches.length === 0) {
-      return undefined;
-    } else if (strX.length === 0) {
-      return matches;
     }
+    if (isEmpty(matches)) return undefined;
+
+    if (isEmpty(strX)) return matches;
 
     const longestMatchLength = matches.reduce(function(previous, current) {
       for (let i = 0; i < current.length; i++) {
