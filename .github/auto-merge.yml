@@ -1,0 +1,14 @@
+updateBranch: true
+reportStatus: true
+
+minApprovals:
+  MEMBER: 2
+blockingLabels:
+  - blocked
+
+mergeMethod: merge
+mergeCommitMessage: |
+  {title} (#{number})
+
+  {body}
+deleteBranchAfterMerge: true
