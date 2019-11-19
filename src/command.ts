@@ -1,14 +1,27 @@
-/**
- * Module dependencies.
- */
+import {
+  camelCase,
+  isBoolean,
+  isUndefined,
+  isArray,
+  isEmpty,
+  includes,
+  reject,
+  isFunction,
+  isNil
+} from 'lodash';
 
 import { EventEmitter } from 'events';
-import _ from 'lodash';
 import Option from './option';
-import { IAutocompleteConfig } from './types/autocomplete'
-import { ICommand, IVorpal } from './types/types';
+import { AutocompleteConfig } from './autocomplete';
 import util from './util';
-import Vorpal, { Option } from '.';
+import Vorpal from './vorpal';
+
+export interface Args {
+  [key: string]: any;
+  options: {
+    [key: string]: any;
+  };
+}
 
 export interface Arg {
   required: boolean;
@@ -20,54 +33,59 @@ export interface HasOptions {
   [option: string]: string;
 }
 
+export type Action = (args: Args) => Promise<void>;
+
+export type Validate = (args: Args) => boolean | string;
+
+export type Cancel = () => void;
+
+export type Done = () => void;
+
+export type Init = () => void;
+
+export type Types = { [key in 'string' | 'boolean']?: ReadonlyArray<string> };
+
 export default class Command extends EventEmitter {
   public commands: Command[] = [];
-  public options: Option[];
+  public options: Option[] = [];
   public parent: Vorpal;
 
-  private _aliases: string[];
-  private _args;
+  private _aliases: string[] = [];
+  private _args: Arg[] = [];
   private _name: string;
-  private _relay: boolean;
-  private _hidden: boolean;
+  private _relay = false;
+  private _hidden = false;
   private _parent: Vorpal;
-  private _description: string;
-  private _delimiter;
-  private _mode;
-  private _catch: boolean;
-  private _help;
+  private _description?: string;
+  private _delimiter?: string;
+  private _mode = false;
+  private _catch: Function | false = false;
+  private _help?: Function;
   private _noHelp: boolean;
   private _types;
-  private _init;
+  private _init?: Init;
   private _after;
-  private _allowUnknownOptions: boolean;
-  private _autocomplete: IAutocompleteConfig;
-  private _done;
-  private _cancel;
+  private _allowUnknownOptions = false;
+  private _autocomplete: AutocompleteConfig;
+  private _done?: Done;
+  private _cancel?: Cancel;
   private _usage;
-  private _fn;
-  private _validate;
+  private _fn?: Action;
+  private _validate?: Validate;
   private _parse;
+
+  // Index signature used to store options.
+  // Must be any to remain compatible with other class properties.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 
   /**
    * Initialize a new `Command` instance.
    */
   constructor(name: string, parent: Vorpal) {
     super();
-    this.commands = [];
-    this.options = [];
-    this._args = [] as Arg[];
-    this._aliases = [];
     this._name = name;
-    this._relay = false;
-    this._hidden = false;
     this._parent = parent;
-    this._mode = false;
-    this._catch = false;
-    this._help = undefined;
-    this._init = undefined;
-    this._after = undefined;
-    this._allowUnknownOptions = false;
   }
 
   /**
@@ -76,12 +94,12 @@ export default class Command extends EventEmitter {
   public option(
     flags: string,
     description: string,
-    autocomplete?: IAutocompleteConfig,
+    autocomplete?: AutocompleteConfig,
     defaultValue?: string | boolean
-  ): Command {
+  ) {
     const option = new Option(flags, description, autocomplete);
-    const oname = option.name();
-    const name = _.camelCase(oname);
+    const optionName = option.name();
+    const name = camelCase(optionName);
 
     // preassign default value only for --no-*, [optional], or <required>
     if (option.bool === false || option.optional || option.required) {
@@ -100,9 +118,9 @@ export default class Command extends EventEmitter {
 
     // when it's passed assign the value
     // and conditionally invoke the callback
-    this.on(oname, val => {
+    this.on(optionName, val => {
       // unassigned or bool
-      if (_.isBoolean(this[name]) && _.isUndefined(this[name])) {
+      if (isBoolean(this[name]) && isUndefined(this[name])) {
         // if no value, bool true, and we have a default, then use it!
         if (val === null) {
           this[name] = option.bool ? defaultValue || true : false;
@@ -120,26 +138,16 @@ export default class Command extends EventEmitter {
 
   /**
    * Defines an action for a given command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public action(fn) {
+  public action(fn: Action) {
     this._fn = fn;
     return this;
   }
 
   /**
    * Let's you compose other funtions to extend the command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public use(fn) {
+  public use(fn: (self: this) => this) {
     return fn(this);
   }
 
@@ -148,12 +156,8 @@ export default class Command extends EventEmitter {
    * before action is performed. Arguments
    * are valid if no errors are thrown from
    * the function.
-   *
-   * @param fn
-   * @returns {Command}
-   * @api public
    */
-  public validate(fn) {
+  public validate(fn: Validate) {
     this._validate = fn;
     return this;
   }
@@ -161,11 +165,8 @@ export default class Command extends EventEmitter {
   /**
    * Defines a function to be called when the
    * command is canceled.
-   *
-   * @param fn
-   * @returns {Command}
-   * @api public
-   */ public cancel(fn) {
+   */
+  public cancel(fn: Cancel) {
     this._cancel = fn;
     return this;
   }
@@ -173,13 +174,8 @@ export default class Command extends EventEmitter {
   /**
    * Defines a method to be called when
    * the command set has completed.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public done(fn) {
+  public done(fn: Done) {
     this._done = fn;
     return this;
   }
@@ -188,26 +184,16 @@ export default class Command extends EventEmitter {
    * Defines tabbed auto-completion
    * for the given command. Favored over
    * deprecated command.autocompletion.
-   *
-   * @param {IAutocompleteConfig} conf
-   * @return {Command}
-   * @api public
    */
-
-  public autocomplete(conf: IAutocompleteConfig) {
+  public autocomplete(conf: AutocompleteConfig) {
     this._autocomplete = conf;
     return this;
   }
 
   /**
    * Defines an init action for a mode command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public init(fn) {
+  public init(fn: Init) {
     if (this._mode !== true) {
       throw Error('Cannot call init from a non-mode action.');
     }
@@ -218,13 +204,8 @@ export default class Command extends EventEmitter {
   /**
    * Defines a prompt delimiter for a
    * mode once entered.
-   *
-   * @param {String} delimiter
-   * @return {Command}
-   * @api public
    */
-
-  public delimiter(delimiter) {
+  public delimiter(delimiter: string) {
     this._delimiter = delimiter;
     return this;
   }
@@ -232,20 +213,17 @@ export default class Command extends EventEmitter {
   /**
    * Sets args for static typing of options
    * using minimist.
-   *
-   * @param {Object} types
-   * @return {Command}
-   * @api public
    */
-
-  public types(types) {
-    const supported = ['string', 'boolean'];
-    for (const item of Object.keys(types)) {
-      if (supported.indexOf(item) === -1) {
-        throw new Error('An invalid type was passed into command.types(): ' + item);
-      }
-      types[item] = !_.isArray(types[item]) ? [types[item]] : types[item];
+  public types(types: Types) {
+    function isValid(item: string): item is 'string' | 'boolean' {
+      return ['string', 'boolean'].includes(item);
     }
+    Object.keys(types).forEach(key => {
+      if (!isValid(key)) {
+        throw new Error('An invalid type was passed into command.types(): ' + key);
+      }
+      types[key] = (Array.isArray(types[key]) ? types[key] : [types[key]]) as string[];
+    });
     this._types = types;
     return this;
   }
@@ -260,15 +238,15 @@ export default class Command extends EventEmitter {
 
   public alias(...aliases) {
     for (const alias of aliases) {
-      if (_.isArray(alias)) {
+      if (isArray(alias)) {
         for (const subalias of alias) {
           this.alias(subalias);
         }
         return this;
       }
       this._parent.commands.forEach(cmd => {
-        if (!_.isEmpty(cmd._aliases)) {
-          if (_.includes(cmd._aliases, alias)) {
+        if (!isEmpty(cmd._aliases)) {
+          if (includes(cmd._aliases, alias)) {
             const msg =
               'Duplicate alias "' +
               alias +
@@ -311,7 +289,7 @@ export default class Command extends EventEmitter {
 
   public remove() {
     const self = this;
-    this._parent.commands = _.reject(this._parent.commands, function(command) {
+    this._parent.commands = reject(this._parent.commands, function(command) {
       if (command._name === self._name) {
         return true;
       }
@@ -407,7 +385,7 @@ export default class Command extends EventEmitter {
       (this.commands.length ? ' [command]' : '') +
       (this._args.length ? ` ${args.join(' ')}` : '');
 
-    if (_.isNil(str)) {
+    if (isNil(str)) {
       return this._usage || usage;
     }
 
@@ -452,7 +430,7 @@ export default class Command extends EventEmitter {
    */
 
   public help(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._help = fn;
     }
     return this;
@@ -468,7 +446,7 @@ export default class Command extends EventEmitter {
    */
 
   public parse(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._parse = fn;
     }
     return this;
@@ -483,7 +461,7 @@ export default class Command extends EventEmitter {
    */
 
   public after(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._after = fn;
     }
     return this;

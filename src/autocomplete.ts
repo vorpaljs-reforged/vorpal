@@ -1,4 +1,4 @@
-import {clone} from 'lodash';
+import { clone } from 'lodash';
 import strip from 'strip-ansi';
 import {
   assembleInput,
@@ -11,13 +11,38 @@ import {
   parseInput,
   parseMatchSection
 } from './autocomplete-utils';
-import {
-  AutocompleteConfigCallback,
-  AutocompleteMatch,
-  AutocompleteOptions,
-  IAutocomplete,
-  Input
-} from './types/autocomplete';
+import Command from './command';
+
+export interface IAutocomplete {
+  exec(str: string, cb: (error: Error | undefined, match: AutocompleteMatch) => unknown): void;
+  match(str: string, arr: string[], options: AutocompleteOptions): AutocompleteMatch;
+}
+
+export interface Input<T extends AutocompleteMatch = AutocompleteMatch> {
+  raw: string;
+  prefix: string;
+  suffix: string;
+  context: T;
+  match?: Command;
+  option?: string;
+}
+
+export interface AutocompleteOptions {
+  ignoreSlashes?: boolean;
+}
+
+export type AutocompleteMatch = string | string[] | undefined;
+
+export type AutocompleteCallback = (data: AutocompleteMatch) => unknown;
+
+export type AutocompleteConfigCallback = (error: Error | undefined, arr: string[]) => void;
+
+export type AutocompleteConfigFn = (
+  input: AutocompleteMatch,
+  callback: AutocompleteConfigCallback
+) => string[];
+
+export type AutocompleteConfig = string[] | { data: AutocompleteConfigFn };
 
 const autocomplete: IAutocomplete = {
   /**
@@ -38,7 +63,7 @@ const autocomplete: IAutocomplete = {
   exec(str: string, cb: AutocompleteConfigCallback): void {
     let input = parseInput(str, this.parent.ui._activePrompt.screen.rl.cursor);
     const commands = getCommandNames(this.parent.commands);
-    const vorpalMatch = getMatch(input.context as string, commands, {ignoreSlashes: true});
+    const vorpalMatch = getMatch(input.context as string, commands, { ignoreSlashes: true });
     let freezeTabs = false;
 
     const end = (innerStr: AutocompleteMatch) => {
@@ -63,7 +88,7 @@ const autocomplete: IAutocomplete = {
 
     if (input.match) {
       input = parseMatchSection.call(this, input);
-      getMatchData.call(this, input, function(data: string[]) {
+      getMatchData.call(this, input, function (data: string[]) {
         const dataMatch = getMatch(input.context as string, data);
         if (dataMatch) {
           input.context = dataMatch;
@@ -121,7 +146,7 @@ const autocomplete: IAutocomplete = {
       return matches;
     }
 
-    const longestMatchLength = matches.reduce(function(previous, current) {
+    const longestMatchLength = matches.reduce(function (previous, current) {
       for (let i = 0; i < current.length; i++) {
         if (previous[i] && current[i] !== previous[i]) {
           return current.substr(0, i);
