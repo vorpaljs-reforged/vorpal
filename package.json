@@ -30,7 +30,7 @@
     "lint:fix": "npm run lint -- --fix",
     "publish-coverage": "codecov",
     "test": "npm run lint && npm run test:unit",
-    "test:unit": "jest --coverage --forceExit",
+    "test:unit": "jest",
     "test:watch": "npm run test:unit -- --watch",
     "prepublishOnly": "npm run compile"
   },

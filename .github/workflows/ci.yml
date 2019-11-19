@@ -15,8 +15,19 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm ci
       - run: npm run compile
+      - run: npm run test
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: npm ci
+      - run: npm run compile
       - uses: paambaati/codeclimate-action@v2.3.0
         env:
           CC_TEST_REPORTER_ID: 87fd3d019846f52bb13520ba07f41a7c8cf6e84a5729c64218ed32cfb7792349
         with:
-          coverageCommand: npm run test
+          coverageCommand: npm run test --coverage
