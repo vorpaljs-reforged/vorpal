@@ -5,6 +5,7 @@ module.exports = {
     '^.+\\.ts$': 'ts-jest',
   },
   collectCoverageFrom: ['src/**/*.ts'],
+  coverageReporters: ['lcov'],
   testMatch: ['**/*.spec.ts'],
   globals: {
     'ts-jest': {
