@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import inquirer from 'inquirer';
 import _ from 'lodash';
 import logUpdate from 'log-update';
@@ -151,9 +151,9 @@ class UI extends EventEmitter {
 
       // Add hook to render method.
       const render = inquirer.prompt.prompts[promptType].prototype.render;
-      inquirer.prompt.prompts[promptType].prototype.render = function() {
+      inquirer.prompt.prompts[promptType].prototype.render = function(...args) {
         self._activePrompt = this;
-        return render.apply(this, arguments);
+        return render.apply(this, args);
       };
     }
 
@@ -211,7 +211,7 @@ class UI extends EventEmitter {
     }
     this._midPrompt = true;
     try {
-      prompt = inquirer.prompt(options, result => {
+      prompt = inquirer.prompt(options).then(result => {
         this.inquirerStdout = [];
         this._midPrompt = false;
         if (this._cancel === true) {
@@ -293,15 +293,14 @@ class UI extends EventEmitter {
     const newWidth = prompt.rl.line.length;
     const diff = newWidth - width;
     prompt.rl.cursor += diff;
-    const cursor = 0;
     let message = prompt.getQuestion();
     const addition = prompt.status === 'answered' ? chalk.cyan(prompt.answer) : line;
     message += addition;
-    prompt.screen.render(message, { cursor });
+    prompt.screen.render(message);
 
     const key = (e.key || {}).name;
     const value = prompt ? String(line) : undefined;
-    this.emit('vorpal_ui_keypress', { key, value, e });
+    this.emit('vorpal_ui_keypress', {key, value, e});
   }
 
   /**
@@ -498,11 +497,10 @@ class UI extends EventEmitter {
     const newWidth = prompt.rl.line.length;
     const diff = newWidth - width;
     prompt.rl.cursor += diff;
-    const cursor = 0;
     let message = prompt.getQuestion();
     const addition = prompt.status === 'answered' ? chalk.cyan(prompt.answer) : prompt.rl.line;
     message += addition;
-    prompt.screen.render(message, { cursor });
+    prompt.screen.render(message);
     return this;
   }
 
@@ -610,7 +608,7 @@ ui.redraw.done = function() {
 global.__vorpal = global.__vorpal || {};
 global.__vorpal.ui = global.__vorpal.ui || {
   exists: false,
-  exports: undefined,
+  exports: undefined
 };
 
 if (!global.__vorpal.ui.exists) {

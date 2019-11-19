@@ -2,7 +2,7 @@
  * Module dependencies.
  */
 
-import { EventEmitter } from 'events';
+import {EventEmitter} from 'events';
 import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
@@ -79,7 +79,7 @@ export default class Session extends EventEmitter {
    * @api public
    */
   public log(...args: string[]) {
-    return this._log.apply(this, args);
+    return this._log(...args);
   }
 
   /**
@@ -90,22 +90,20 @@ export default class Session extends EventEmitter {
    * @return {Session}
    * @api public
    */
-  public _log() {
+  public _log(...args) {
     const self = this;
     if (this.isLocal()) {
-      this.parent.ui.log.apply(this.parent.ui, arguments);
+      this.parent.ui.log(...args);
     } else {
       // If it's an error, expose the stack. Otherwise
       // we get a helpful '{}'.
-      const args = [];
-      for (let i = 0; i < arguments.length; ++i) {
-        let str = arguments[i];
-        str = str && str.stack ? 'Error: ' + str.message : str;
-        args.push(str);
+      const value = [];
+      for (const arg of args) {
+        args.push(arg && arg.stack ? 'Error: ' + arg.message : arg);
       }
       self.parent._send('vantage-ssn-stdout-downstream', 'downstream', {
         sessionId: self.id,
-        value: args,
+        value
       });
     }
     return this;
@@ -167,7 +165,7 @@ export default class Session extends EventEmitter {
     } else {
       this.parent._send('vantage-delimiter-downstream', 'downstream', {
         value: str,
-        sessionId: this.id,
+        sessionId: this.id
       });
     }
     return this;
@@ -188,7 +186,7 @@ export default class Session extends EventEmitter {
     if (!this.isLocal()) {
       this.parent._send('vantage-mode-delimiter-downstream', 'downstream', {
         value: str,
-        sessionId: this.id,
+        sessionId: this.id
       });
     } else {
       if (str === false || str === 'false') {
@@ -295,7 +293,7 @@ export default class Session extends EventEmitter {
     const commandInstance = new CommandInstance({
       downstream: wrapper.pipes[0],
       commandObject: wrapper.commandObject,
-      commandWrapper: wrapper,
+      commandWrapper: wrapper
     });
 
     wrapper.commandInstance = commandInstance;
@@ -333,7 +331,7 @@ export default class Session extends EventEmitter {
       self._commandSetCallback = undefined;
       self._registeredCommands = 0;
       self._completedCommands = 0;
-      self.parent.emit('client_command_cancelled', { command: wrapper.command });
+      self.parent.emit('client_command_cancelled', {command: wrapper.command});
 
       cbk(wrapper);
     };
@@ -355,9 +353,9 @@ export default class Session extends EventEmitter {
           stack = err;
         }
         self.log(stack);
-        self.parent.emit('client_command_error', { command: wrapper.command, error: err });
+        self.parent.emit('client_command_error', {command: wrapper.command, error: err});
       } else if (self.isLocal()) {
-        self.parent.emit('client_command_executed', { command: wrapper.command });
+        self.parent.emit('client_command_executed', {command: wrapper.command});
       }
 
       self.removeListener('vorpal_command_cancel', self.cancelCommands);
@@ -370,7 +368,7 @@ export default class Session extends EventEmitter {
       response = {
         error: err,
         data,
-        args: argus,
+        args: argus
       };
       self.completeCommand();
     }

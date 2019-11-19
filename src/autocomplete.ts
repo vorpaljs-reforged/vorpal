@@ -1,20 +1,23 @@
 import {clone} from 'lodash';
 import strip from 'strip-ansi';
 import {
-  assembleInput, filterData,
+  assembleInput,
+  filterData,
   getCommandNames,
-  getMatch, getMatchData,
+  getMatch,
+  getMatchData,
   getMatchObject,
   handleTabCounts,
-  parseInput, parseMatchSection,
-} from './autocomplete-utils'
+  parseInput,
+  parseMatchSection
+} from './autocomplete-utils';
 import {
   AutocompleteConfigCallback,
   AutocompleteMatch,
   AutocompleteOptions,
   IAutocomplete,
-  Input,
-} from './types/autocomplete'
+  Input
+} from './types/autocomplete';
 
 const autocomplete: IAutocomplete = {
   /**
@@ -35,7 +38,7 @@ const autocomplete: IAutocomplete = {
   exec(str: string, cb: AutocompleteConfigCallback): void {
     let input = parseInput(str, this.parent.ui._activePrompt.screen.rl.cursor);
     const commands = getCommandNames(this.parent.commands);
-    const vorpalMatch = getMatch(input.context as string, commands, { ignoreSlashes: true });
+    const vorpalMatch = getMatch(input.context as string, commands, {ignoreSlashes: true});
     let freezeTabs = false;
 
     const end = (innerStr: AutocompleteMatch) => {
@@ -134,7 +137,7 @@ const autocomplete: IAutocomplete = {
 
     // return the longest matching portion along with the prefix
     return prefix + matches[0].substr(0, longestMatchLength);
-  },
+  }
 };
 
 export default autocomplete;

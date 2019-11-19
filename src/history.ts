@@ -1,7 +1,7 @@
 'use strict';
 
 import _ from 'lodash';
-import { LocalStorage } from 'node-localstorage';
+import {LocalStorage} from 'node-localstorage';
 import os from 'os';
 import {normalize, join} from 'path';
 

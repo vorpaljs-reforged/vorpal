@@ -16,20 +16,6 @@ import _ from 'lodash';
 export default function(callback) {
   const oldStdoutWrite = process.stdout.write;
   const oldConsoleError = console.error;
-  process.stdout.write = (function(write) {
-    return function(string) {
-      const args = _.toArray(arguments);
-      args[0] = interceptor(string);
-      return write.apply(process.stdout, args);
-    };
-  })(process.stdout.write);
-
-  console.error = (function(fn) {
-    return function(...args) {
-      args.unshift('\x1b[31m[ERROR]\x1b[0m');
-      console.log.apply(console.log, args);
-    };
-  })(console.error);
 
   function interceptor(string) {
     // only intercept the string
@@ -39,6 +25,20 @@ export default function(callback) {
     }
     return string;
   }
+
+  process.stdout.write = (function(write) {
+    return function(...args) {
+      args[0] = interceptor(args[0]);
+      return write.apply(process.stdout, args);
+    };
+  })(process.stdout.write);
+
+  console.error = (function(fn) {
+    return function(...args) {
+      args.unshift('\x1b[31m[ERROR]\x1b[0m');
+      console.log(...args);
+    };
+  })(console.error);
 
   // puts back to original
   return function unhook() {

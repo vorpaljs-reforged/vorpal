@@ -26,17 +26,12 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint:base": "eslint --ext .ts src/**",
-    "lint:check": "npm run lint:base",
-    "lint:fix": "npm run lint:base -- --fix",
-    "prettier:base": "prettier \"{.,{src,test}/**}/*.@(ts|js)\"",
-    "prettier:check": "npm run prettier:base -- --list-different",
-    "prettier:fix": "npm run prettier:base -- --write",
-    "check": "npm run lint:check && npm run prettier:check",
-    "fix": "npm run lint:fix && npm run prettier:fix",
+    "lint": "eslint src --ext .ts --cache",
+    "lint:fix": "npm run lint -- --fix",
     "publish-coverage": "codecov",
-    "test": "jest --coverage --forceExit",
-    "test:watch": "npm run test -- --watch",
+    "test": "npm run lint && npm run test:unit",
+    "test:unit": "jest --coverage --forceExit",
+    "test:watch": "npm run test:unit -- --watch",
     "prepublishOnly": "npm run compile"
   },
   "repository": {
@@ -49,7 +44,7 @@
   "homepage": "https://github.com/dthree/vorpal#readme",
   "dependencies": {
     "chalk": "^2.4.2",
-    "inquirer": "0.11.0",
+    "inquirer": "^7.0.0",
     "lodash": "^4.17.15",
     "log-update": "^3.3.0",
     "minimist": "^1.2.0",
@@ -58,9 +53,7 @@
     "wrap-ansi": "^6.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.6.4",
-    "@babel/preset-env": "^7.6.3",
-    "@babel/register": "^7.6.2",
+    "@types/inquirer": "^6.5.0",
     "@types/jest": "^24.0.19",
     "@types/lodash": "^4.14.144",
     "@types/minimist": "^1.2.0",
@@ -69,37 +62,16 @@
     "@types/wrap-ansi": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^2.4.0",
     "@typescript-eslint/parser": "^2.4.0",
-    "babel-jest": "^24.9.0",
     "codecov": "^3.6.1",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-prettier": "^3.1.1",
     "jest": "^24.9.0",
-    "jest-junit": "^8.0.0",
-    "load-plugins": "^2.1.2",
-    "moment": "^2.24.0",
-    "npm-check": "^5.9.0",
     "prettier": "^1.18.2",
-    "request": "^2.88.0",
-    "should": "^13.2.3",
     "ts-jest": "^24.1.0",
     "typescript": "^3.6.4",
     "vorpal-less": "0.0.13",
-    "vorpal-repl": "^1.1.8",
-    "xo": "^0.25.3"
-  },
-  "xo": {
-    "space": true,
-    "rules": {
-      "no-eval": 0,
-      "no-unused-expressions": 0,
-      "max-nested-callbacks": 0,
-      "no-proto": 0,
-      "wrap-iife": 0,
-      "global-require": 0,
-      "no-negated-condition": 0,
-      "no-loop-func": 0,
-      "no-implicit-coercion": 0,
-      "no-use-extend-native/no-use-extend-native": 0,
-      "no-undef": 0
-    }
+    "vorpal-repl": "^1.1.8"
   },
   "files": [
     "dist"
