@@ -31,10 +31,15 @@ interface DataSession {
   completed?: boolean;
 }
 
-export default class Vorpal extends EventEmitter implements IVorpal {
-  public chalk;
-  public lodash: _.LoDashStatic;
-  public parent: Vorpal;
+export default class Vorpal extends EventEmitter {
+  // @todo: do we really need these references?
+  public chalk: typeof chalk;
+  public lodash: typeof _;
+  public ui: typeof ui;
+  public util: typeof VorpalUtil;
+  public Session: typeof Session;
+
+  public parent?: Vorpal;
   private _version: string;
   private _title: string;
   private _description: string;
@@ -42,23 +47,20 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   public cmdHistory: History;
   public commands: Command[];
   private _queue: any[];
-  private _command: any;
-  public ui: any;
+  private _command?: Command;
   private _delimiter: string;
-  private server: {sessions: any[]};
+  private server: { sessions: any[] };
   private _hooked: boolean;
-  public util: any;
-  public Session: typeof Session;
-  public session: any;
+  public session: Session;
   private isCommandArgKeyPairNormalized: boolean;
-  private executables: boolean;
+  private executables?: boolean;
   public _help: any;
-  public _fatal: boolean;
+  public _fatal?: boolean;
 
   constructor() {
     super();
-    // Program version
-    // Exposed through vorpal.version(str);
+
+    // Program version, exposed through vorpal.version(str);
     this._version = '';
 
     // Program title
@@ -111,7 +113,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     this.Session = Session;
 
     // Active vorpal server session.
-    this.session = new this.Session({
+    this.session = new Session({
       local: true,
       user: 'local',
       parent: this,

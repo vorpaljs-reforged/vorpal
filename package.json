@@ -69,6 +69,7 @@
     "jest": "^24.9.0",
     "prettier": "^1.18.2",
     "ts-jest": "^24.1.0",
+    "typed-emitter": "^0.2.0",
     "typescript": "^3.6.4",
     "vorpal-less": "0.0.13",
     "vorpal-repl": "^1.1.8"

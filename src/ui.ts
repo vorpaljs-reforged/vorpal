@@ -1,12 +1,11 @@
-/**
- * Module dependencies.
- */
+import { EventEmitter } from 'events';
 
 import chalk from 'chalk';
-import {EventEmitter} from 'events';
 import inquirer from 'inquirer';
 import _ from 'lodash';
 import logUpdate from 'log-update';
+import TypedEmitter from 'typed-emitter';
+
 import util from './util';
 
 interface Redraw {
@@ -15,7 +14,11 @@ interface Redraw {
   done?: Function;
 }
 
-class UI extends EventEmitter {
+interface Events {
+  vorpal_ui_keypress: (data: { key: string; value?: string; e: any }) => void;
+}
+
+class UI extends (EventEmitter as { new (): TypedEmitter<Events> }) {
   private _activePrompt;
   private parent;
   private _midPrompt: boolean;
@@ -300,7 +303,7 @@ class UI extends EventEmitter {
 
     const key = (e.key || {}).name;
     const value = prompt ? String(line) : undefined;
-    this.emit('vorpal_ui_keypress', {key, value, e});
+    this.emit('vorpal_ui_keypress', { key, value, e });
   }
 
   /**
