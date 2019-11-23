@@ -142,16 +142,16 @@ export default class Vorpal extends EventEmitter {
    * Parses `process.argv` and executes
    * a Vorpal command based on it.
    */
-  public parse<T extends 'minimist' | undefined>(
+  public parse<T>(
     argv: string[],
-    options?: { use: T }
-  ): T extends 'minimist' ? minimist.ParsedArgs : Vorpal {
+    options: { use?: T | 'minimist' } = {}
+  ): T extends string ? minimist.ParsedArgs : Vorpal {
     const args = argv;
     const catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
-      if (options && options.use === 'minimist') {
+      if (options.use === 'minimist') {
         return minimist(args) as any;
       }
 
