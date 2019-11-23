@@ -32,23 +32,23 @@ export interface HasOptions {
   [option: string]: string;
 }
 
-export type Action = (args: Args) => Promise<void>;
+export type ActionFn = (args: Args) => Promise<void>;
 
-export type Validate = (args: Args) => boolean | string;
+export type ValidateFn = (args: Args) => boolean | string;
 
-export type Cancel = () => void;
+export type CancelFn = () => void;
 
-export type Done = () => void;
+export type DoneFn = () => void;
 
-export type Init = () => void;
+export type InitFn = () => void;
 
 export type Types = { [key in 'string' | 'boolean']?: ReadonlyArray<string> };
 
-export type Help = Function;
+export type HelpFn = Function;
 
-export type Parse = Function;
+export type ParseFn = Function;
 
-export type After = Function;
+export type AfterFn = Function;
 
 export default class Command extends EventEmitter {
   public commands: Command[] = [];
@@ -67,19 +67,19 @@ export default class Command extends EventEmitter {
   private _delimiter?: string;
   private _mode = false;
   private _catch: Function | false = false;
-  private _help?: Help;
+  private _help?: HelpFn;
   private _noHelp?: boolean;
   private _types?: Types;
-  private _init?: Init;
-  private _after?: After;
+  private _init?: InitFn;
+  private _after?: AfterFn;
   private _allowUnknownOptions = false;
   private _autocomplete?: AutocompleteConfig;
-  private _done?: Done;
-  private _cancel?: Cancel;
+  private _done?: DoneFn;
+  private _cancel?: CancelFn;
   private _usage?: string;
-  private _fn?: Action;
-  private _validate?: Validate;
-  private _parse?: Parse;
+  private _fn?: ActionFn;
+  private _validate?: ValidateFn;
+  private _parse?: ParseFn;
 
   // Index signature used to store options.
   // Must be any to remain compatible with other class properties.
@@ -146,7 +146,7 @@ export default class Command extends EventEmitter {
   /**
    * Defines an action for a given command.
    */
-  public action(fn: Action) {
+  public action(fn: ActionFn) {
     this._fn = fn;
     return this;
   }
@@ -164,7 +164,7 @@ export default class Command extends EventEmitter {
    * are valid if no errors are thrown from
    * the function.
    */
-  public validate(fn: Validate) {
+  public validate(fn: ValidateFn) {
     this._validate = fn;
     return this;
   }
@@ -173,7 +173,7 @@ export default class Command extends EventEmitter {
    * Defines a function to be called when the
    * command is canceled.
    */
-  public cancel(fn: Cancel) {
+  public cancel(fn: CancelFn) {
     this._cancel = fn;
     return this;
   }
@@ -182,7 +182,7 @@ export default class Command extends EventEmitter {
    * Defines a method to be called when
    * the command set has completed.
    */
-  public done(fn: Done) {
+  public done(fn: DoneFn) {
     this._done = fn;
     return this;
   }
@@ -200,7 +200,7 @@ export default class Command extends EventEmitter {
   /**
    * Defines an init action for a mode command.
    */
-  public init(fn: Init) {
+  public init(fn: InitFn) {
     if (this._mode !== true) {
       throw Error('Cannot call init from a non-mode action.');
     }
@@ -386,7 +386,7 @@ export default class Command extends EventEmitter {
   /**
    * Adds a custom handling for the --help flag.
    */
-  public help(fn: Help) {
+  public help(fn: HelpFn) {
     if (isFunction(fn)) {
       this._help = fn;
     }
@@ -397,7 +397,7 @@ export default class Command extends EventEmitter {
    * Edits the raw command string before it
    * is executed.
    */
-  public parse(fn: Parse) {
+  public parse(fn: ParseFn) {
     if (isFunction(fn)) {
       this._parse = fn;
     }
@@ -407,7 +407,7 @@ export default class Command extends EventEmitter {
   /**
    * Adds a command to be executed after command completion.
    */
-  public after(fn: After) {
+  public after(fn: AfterFn) {
     if (isFunction(fn)) {
       this._after = fn;
     }

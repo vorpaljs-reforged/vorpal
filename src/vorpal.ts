@@ -1,20 +1,17 @@
-/**
- * Module dependencies.
- */
+import { EventEmitter } from 'events';
+import os from 'os';
 
 import chalk from 'chalk';
-import {EventEmitter} from 'events';
 import _ from 'lodash';
 import minimist from 'minimist';
-import os from 'os';
 import wrap from 'wrap-ansi';
+
 import Command from './command';
-import {CommandInstance} from './command-instance';
+import { CommandInstance } from './command-instance';
 import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import {IVorpal} from './types/types';
 import ui from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
@@ -23,6 +20,7 @@ interface PromptOption {
   sessionId?: string;
   message?: string;
 }
+
 interface DataSession {
   sessionId?: string;
   command?: string;
