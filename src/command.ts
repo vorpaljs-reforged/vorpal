@@ -5,7 +5,6 @@ import {
   isArray,
   isEmpty,
   includes,
-  reject,
   isFunction,
   isNil
 } from 'lodash';
@@ -17,9 +16,9 @@ import util from './util';
 import Vorpal from './vorpal';
 
 export interface Args {
-  [key: string]: any;
+  [key: string]: string | string[] | object | undefined;
   options: {
-    [key: string]: any;
+    [key: string]: string | string[] | boolean | undefined;
   };
 }
 
@@ -45,10 +44,18 @@ export type Init = () => void;
 
 export type Types = { [key in 'string' | 'boolean']?: ReadonlyArray<string> };
 
+export type Help = Function;
+
+export type Parse = Function;
+
+export type After = Function;
+
 export default class Command extends EventEmitter {
   public commands: Command[] = [];
   public options: Option[] = [];
-  public parent: Vorpal;
+
+  // @todo: can this be removed (in favour of _parent)?
+  public parent?: Vorpal;
 
   private _aliases: string[] = [];
   private _args: Arg[] = [];
@@ -60,19 +67,19 @@ export default class Command extends EventEmitter {
   private _delimiter?: string;
   private _mode = false;
   private _catch: Function | false = false;
-  private _help?: Function;
-  private _noHelp: boolean;
-  private _types;
+  private _help?: Help;
+  private _noHelp?: boolean;
+  private _types?: Types;
   private _init?: Init;
-  private _after;
+  private _after?: After;
   private _allowUnknownOptions = false;
-  private _autocomplete: AutocompleteConfig;
+  private _autocomplete?: AutocompleteConfig;
   private _done?: Done;
   private _cancel?: Cancel;
-  private _usage;
+  private _usage?: string;
   private _fn?: Action;
   private _validate?: Validate;
-  private _parse;
+  private _parse?: Parse;
 
   // Index signature used to store options.
   // Must be any to remain compatible with other class properties.
@@ -230,13 +237,8 @@ export default class Command extends EventEmitter {
 
   /**
    * Defines an alias for a given command.
-   *
-   * @param {String} alias
-   * @return {Command}
-   * @api public
    */
-
-  public alias(...aliases) {
+  public alias(...aliases: string[]) {
     for (const alias of aliases) {
       if (isArray(alias)) {
         for (const subalias of alias) {
@@ -266,13 +268,8 @@ export default class Command extends EventEmitter {
 
   /**
    * Defines description for given command.
-   *
-   * @param {String} str
-   * @return {Command}
-   * @api public
    */
-
-  public description(str) {
+  public description(str: string) {
     if (arguments.length === 0) {
       return this._description;
     }
@@ -282,42 +279,27 @@ export default class Command extends EventEmitter {
 
   /**
    * Removes self from Vorpal instance.
-   *
-   * @return {Command}
-   * @api public
    */
-
   public remove() {
-    const self = this;
-    this._parent.commands = reject(this._parent.commands, function(command) {
-      if (command._name === self._name) {
-        return true;
-      }
+    this._parent.commands = this._parent.commands.filter(command => {
+      return command._name !== this._name;
     });
     return this;
   }
 
   /**
    * Returns the commands arguments as string.
-   *
-   * @param {String} description
-   * @return {String}
-   * @api public
+   * @todo: this actually returns void
    */
-
-  public arguments(description) {
+  public arguments(description: string) {
     return this._parseExpectedArgs(description.split(/ +/));
   }
 
   /**
    * Returns the help info for given command.
-   *
-   * @return {String}
-   * @api public
    */
-
   public helpInformation() {
-    let description = [];
+    let description: string[] = [];
     const cmdName = this._name;
     let alias = '';
 
@@ -330,7 +312,8 @@ export default class Command extends EventEmitter {
     }
     const usage = ['', `  Usage:  ${cmdName} ${this.usage()}`, ''];
 
-    const cmds = [];
+    // @todo: why is this here?
+    const cmds: never[] = [];
 
     const help = String(this.optionHelp().replace(/^/gm, '    '));
     const options = ['  Options:', '', help, ''];
@@ -346,11 +329,7 @@ export default class Command extends EventEmitter {
 
   /**
    * Doesn't show command in the help menu.
-   *
-   * @return {Command}
-   * @api public
    */
-
   public hidden() {
     this._hidden = true;
     return this;
@@ -358,12 +337,7 @@ export default class Command extends EventEmitter {
 
   /**
    * Allows undeclared options to be passed in with the command.
-   *
-   * @param {Boolean} [allowUnknownOptions=true]
-   * @return {Command}
-   * @api public
    */
-
   public allowUnknownOptions(allowUnknownOptions = true) {
     this._allowUnknownOptions = !!allowUnknownOptions;
     return this;
@@ -371,13 +345,8 @@ export default class Command extends EventEmitter {
 
   /**
    * Returns the command usage string for help.
-   *
-   * @param {String} str
-   * @return {String}
-   * @api public
    */
-
-  public usage(str?) {
+  public usage(str?: string) {
     const args = this._args.map(arg => util.humanReadableArgName(arg));
 
     const usage =
@@ -396,11 +365,7 @@ export default class Command extends EventEmitter {
 
   /**
    * Returns the help string for the command's options.
-   *
-   * @return {String}
-   * @api public
    */
-
   public optionHelp() {
     const width = this._largestOptionLength();
 
@@ -412,9 +377,6 @@ export default class Command extends EventEmitter {
 
   /**
    * Returns the length of the longest option.
-   *
-   * @return {Number}
-   * @api private
    */
 
   private _largestOptionLength() {
@@ -423,13 +385,8 @@ export default class Command extends EventEmitter {
 
   /**
    * Adds a custom handling for the --help flag.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public help(fn) {
+  public help(fn: Help) {
     if (isFunction(fn)) {
       this._help = fn;
     }
@@ -439,13 +396,8 @@ export default class Command extends EventEmitter {
   /**
    * Edits the raw command string before it
    * is executed.
-   *
-   * @param {String} str
-   * @return {String} str
-   * @api public
    */
-
-  public parse(fn) {
+  public parse(fn: Parse) {
     if (isFunction(fn)) {
       this._parse = fn;
     }
@@ -454,13 +406,8 @@ export default class Command extends EventEmitter {
 
   /**
    * Adds a command to be executed after command completion.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public after(fn) {
+  public after(fn: After) {
     if (isFunction(fn)) {
       this._after = fn;
     }
@@ -468,18 +415,12 @@ export default class Command extends EventEmitter {
   }
 
   /**
-   * Parses and returns expected command arguments.
-   *
-   * @param {String} args
-   * @return {Array}
-   * @api private
+   * Parses and sets expected command arguments.
    */
-
-  public _parseExpectedArgs(args) {
+  public _parseExpectedArgs(args: string[]) {
     if (!args.length) {
       return;
     }
-    const self = this;
     args.forEach(arg => {
       const argDetails = {
         required: false,
@@ -499,14 +440,14 @@ export default class Command extends EventEmitter {
         argDetails.name = argDetails.name.slice(0, -3);
       }
       if (argDetails.name) {
-        self._args.push(argDetails);
+        this._args.push(argDetails);
       }
     });
 
     // If the user entered args in a weird order,
     // properly sequence them.
-    if (self._args.length > 1) {
-      self._args = self._args.sort(function(argu1, argu2) {
+    if (this._args.length > 1) {
+      this._args = this._args.sort(function(argu1, argu2) {
         if (argu1.required && !argu2.required) {
           return -1;
         } else if (argu2.required && !argu1.required) {
