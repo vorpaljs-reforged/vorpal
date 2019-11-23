@@ -620,4 +620,4 @@ if (!global.__vorpal.ui.exists) {
 }
 // TODO : check this is still needed in TS?
 
-export default global.__vorpal.ui.exports;
+export default global.__vorpal.ui.exports as typeof ui;

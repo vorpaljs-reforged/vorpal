@@ -128,9 +128,7 @@ export default class Vorpal extends EventEmitter {
 
   /**
    * Extension to `constructor`.
-   * @api private
    */
-
   public _init() {
     ui.on('vorpal_ui_keypress', data => {
       this.emit('keypress', data);
@@ -143,39 +141,39 @@ export default class Vorpal extends EventEmitter {
   /**
    * Parses `process.argv` and executes
    * a Vorpal command based on it.
-   * @api public
    */
-
-  public parse(argv, options) {
-    options = options || {};
+  public parse<T extends 'minimist' | undefined>(
+    argv: string[],
+    options?: { use: T }
+  ): T extends 'minimist' ? minimist.ParsedArgs : Vorpal {
     const args = argv;
-    let result: Vorpal | minimist.ParsedArgs = this;
     const catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
-      if (options.use === 'minimist') {
-        result = minimist(args);
-      } else {
-        // Wrap the spaced args back in quotes.
-        for (let i = 0; i < args.length; ++i) {
-          if (i === 0) {
-            continue;
-          }
-          if (args[i].indexOf(' ') > -1) {
-            args[i] = `"${args[i]}"`;
-          }
-        }
-        this.exec(args.join(' '), function(err) {
-          if (err !== undefined && err !== null) {
-            throw new Error(err);
-          }
-          process.exit(0);
-        });
+      if (options && options.use === 'minimist') {
+        return minimist(args) as any;
       }
+
+      // Wrap the spaced args back in quotes.
+      for (let i = 0; i < args.length; ++i) {
+        if (i === 0) {
+          continue;
+        }
+        if (args[i].indexOf(' ') > -1) {
+          args[i] = `"${args[i]}"`;
+        }
+      }
+      this.exec(args.join(' '), function(err) {
+        if (err !== undefined && err !== null) {
+          throw new Error(err);
+        }
+        process.exit(0);
+      });
     }
-    return result;
+    return this as any;
   }
+
   /**
    * Sets version of your application's API.
    *
@@ -537,23 +535,17 @@ export default class Vorpal extends EventEmitter {
    * Listener for a UI keypress. Either
    * handles the keypress locally or sends
    * it upstream.
-   *
-   * @param {String} key
-   * @param {String} value
-   * @api private
    */
-
-  public _onKeypress(key, value) {
-    const self = this;
+  public _onKeypress(key: string, value?: string) {
     if (this.session.isLocal() && !this.session.client && !this._command) {
-      this.session.getKeypressResult(key, value, function(err, result) {
+      this.session.getKeypressResult(key, value, (err, result) => {
         if (!err && result !== undefined) {
           if (_.isArray(result)) {
             const formatted = VorpalUtil.prettifyArray(result);
-            self.ui.imprint();
-            self.session.log(formatted);
+            this.ui.imprint();
+            this.session.log(formatted);
           } else {
-            self.ui.input(result);
+            this.ui.input(result);
           }
         }
       });
