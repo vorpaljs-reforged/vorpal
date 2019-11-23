@@ -24,6 +24,7 @@ export default class Session extends EventEmitter {
   public id: any;
   public vorpal;
   public parent: Vorpal;
+  public client: any;
   public authenticating: any;
   public user: any;
   public host: any;
