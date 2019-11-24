@@ -7,6 +7,7 @@ import logUpdate from 'log-update';
 import TypedEmitter from 'typed-emitter';
 
 import util from './util';
+import Vorpal from 'vorpal';
 
 interface Redraw {
   (str: string): UI;
@@ -14,14 +15,22 @@ interface Redraw {
   done?: Function;
 }
 
-interface Events {
-  vorpal_ui_keypress: (data: { key: string; value?: string; e: any }) => void;
+export interface KeyPressData {
+  key: string;
+  value?: string;
+  e: any;
 }
 
-type TypedEventEmitter = { new (): TypedEmitter<Events> }
+export type PipeFn = Function;
+
+interface Events {
+  vorpal_ui_keypress: (data: KeyPressData) => void;
+}
+
+type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
 class UI extends (EventEmitter as TypedEventEmitter) {
-  private _activePrompt;
+  public _activePrompt;
   private parent;
   private _midPrompt: boolean;
   private _lastDelimiter: string;
@@ -32,7 +41,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
   public inquirer;
   private inquirerStdout: string[];
   public _cancelled: boolean;
-  public _pipeFn: any;
+  public _pipeFn?: PipeFn;
   private _log: (...args) => void;
   // FIXME §here: more to add
 
@@ -45,7 +54,10 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * @api private
    */
   constructor() {
+    // eslint-disable-next-line constructor-super
     super();
+
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
     // Attached vorpal instance. The UI can
@@ -311,11 +323,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
   /**
    * Pauses active prompt, returning
    * the value of what had been typed so far.
-   *
-   * @return {String} val
-   * @api public
    */
-
   public pause() {
     if (!this.parent) {
       return false;
@@ -341,12 +349,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * a string, which will fill the prompt
    * with that text and put the cursor at
    * the end.
-   *
-   * @param {String} val
-   * @api public
    */
-
-  public resume(val) {
+  public resume(val: string) {
     if (!this.parent) {
       return this;
     }
@@ -366,10 +370,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
   /**
    * Cancels the active prompt, essentially
    * but cutting out of the inquirer loop.
-   *
-   * @api public
    */
-
   public cancel() {
     if (this.midPrompt()) {
       this._cancel = true;
@@ -381,13 +382,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Attaches TTY prompt to a given Vorpal instance.
-   *
-   * @param {Vorpal} vorpal
-   * @return {UI}
-   * @api public
    */
-
-  public attach(vorpal) {
+  public attach(vorpal: Vorpal) {
     this.parent = vorpal;
     this.refresh();
     this.parent._prompt();
@@ -396,13 +392,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Detaches UI from a given Vorpal instance.
-   *
-   * @param {Vorpal} vorpal
-   * @return {UI}
-   * @api public
    */
-
-  public detach(vorpal) {
+  public detach(vorpal: Vorpal) {
     if (vorpal === this.parent) {
       this.parent = undefined;
     }
@@ -415,12 +406,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * through ui.pipe(). Pauses any active
    * prompts, logs the data and then if
    * paused, resumes the prompt.
-   *
-   * @return {UI}
-   * @api public
    */
-
-  public log(...args) {
+  public log(...args: string[]) {
     args = _.isFunction(this._pipeFn) ? this._pipeFn(args) : args;
     if (args.length === 0 || args[0] === '') {
       return this;

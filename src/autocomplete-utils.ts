@@ -6,10 +6,10 @@ import {
   AutocompleteConfigFn,
   AutocompleteMatch,
   AutocompleteOptions,
-  IAutocompleteConfig,
+  AutocompleteConfig,
   Input
-} from './types/autocomplete';
-import { ICommand, IVorpal } from './types/types';
+} from './autocomplete';
+import Session from './session';
 
 /**
  * Tracks how many times tab was pressed
@@ -20,8 +20,8 @@ import { ICommand, IVorpal } from './types/types';
  * @return {String} result
  * @api private
  */
-export function handleTabCounts(match: AutocompleteMatch, freezeTabs: boolean): AutocompleteMatch {
-  let result;
+export function handleTabCounts(this: Session, match: AutocompleteMatch, freezeTabs: boolean) {
+  let result: AutocompleteMatch;
   if (_.isArray(match)) {
     this._tabCount += 1;
     if (this._tabCount > 1) {

@@ -57,18 +57,20 @@ export default class Command extends EventEmitter {
   // @todo: can this be removed (in favour of _parent)?
   public parent?: Vorpal;
 
+  // @todo: these were set to private but are accessed from outside this class
+  public _noHelp?: boolean;
+  public _mode = false;
+  public _catch = false;
+  public _name: string;
+
   private _aliases: string[] = [];
   private _args: Arg[] = [];
-  private _name: string;
   private _relay = false;
   private _hidden = false;
   private _parent: Vorpal;
   private _description?: string;
   private _delimiter?: string;
-  private _mode = false;
-  private _catch: Function | false = false;
   private _help?: HelpFn;
-  private _noHelp?: boolean;
   private _types?: Types;
   private _init?: InitFn;
   private _after?: AfterFn;

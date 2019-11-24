@@ -15,7 +15,7 @@ export default class History {
   public _localStorage?: LocalStorage;
   public _inMode?: boolean;
 
-  public _storageKey = undefined;
+  public _storageKey?: string;
 
   // Prompt Command History
   // Histctr moves based on number of times 'up' (+= ctr)
@@ -52,7 +52,7 @@ export default class History {
    * Calls init internally to initialize
    * the history with the id.
    */
-  public setId(id) {
+  public setId(id: string) {
     // Initialize a localStorage instance with default
     // path if it is not initialized
     if (!this._localStorage) {
@@ -65,10 +65,8 @@ export default class History {
   /**
    * Initialize a local storage instance with
    * the path if not already initialized.
-   *
-   * @param path
    */
-  public setStoragePath(path) {
+  public setStoragePath(path: string) {
     if (!this._localStorage) {
       this._localStorage = new LocalStorage(path);
     }
@@ -76,8 +74,6 @@ export default class History {
 
   /**
    * Get previous history. Called when up is pressed.
-   *
-   * @return {String}
    */
   public getPreviousHistory() {
     this._histCtr++;

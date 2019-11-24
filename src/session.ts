@@ -1,14 +1,8 @@
-/**
- * Module dependencies.
- */
-
 import { EventEmitter } from 'events';
-import _ from 'lodash';
+import _, { noop } from 'lodash';
 import os from 'os';
-import autocomplete from './autocomplete';
-import Command from './command';
+import autocomplete, { AutocompleteConfigCallback } from './autocomplete';
 import { CommandInstance } from './command-instance';
-import util from './util';
 import Vorpal from './vorpal';
 
 interface CommandResponse {
@@ -209,13 +203,13 @@ export default class Session extends EventEmitter {
    * @return {Function}
    * @api private
    */
-  private getKeypressResult(key: string, value, cb = _.noop) {
-    const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
+  public getKeypressResult(key: string, value?: string, cb: AutocompleteConfigCallback = noop) {
+    const keyMatch = ['up', 'down', 'tab'].includes(key);
     if (key !== 'tab') {
       this._tabCount = 0;
     }
     if (keyMatch) {
-      if (['up', 'down'].indexOf(key) > -1) {
+      if (['up', 'down'].includes(key)) {
         cb(undefined, this.getHistory(key));
       } else if (key === 'tab') {
         this.getAutocomplete(value, cb);
@@ -234,17 +228,12 @@ export default class Session extends EventEmitter {
 
   /**
    * New autocomplete.
-   *
-   * @param {String} str
-   * @param {Function} cb
-   * @api private
    */
-
-  private getAutocomplete(str, cb) {
+  private getAutocomplete(str?: string, cb: AutocompleteConfigCallback = noop) {
     return autocomplete.exec.call(this, str, cb);
   }
 
-  public _autocomplete(str, arr) {
+  public _autocomplete(str: string, arr: string[]) {
     return autocomplete.match.call(this, str, arr);
   }
 
