@@ -5,11 +5,11 @@
 import _ from 'lodash';
 import minimist from 'minimist';
 import strip from 'strip-ansi';
-import {Arg} from './command';
-import {ICommand} from './types/types';
+import { Arg } from './command';
+import { ICommand } from './types/types';
 
 interface Options {
-  options: {[key: string]: any};
+  options: { [key: string]: any };
 }
 
 export default {
@@ -151,7 +151,7 @@ export default {
     let matchArgs;
     for (let i = 0; i < parts.length; ++i) {
       const subcommand = String(parts.slice(0, parts.length - i).join(' ')).trim();
-      match = _.find(cmds, {_name: subcommand}) || match;
+      match = _.find(cmds, { _name: subcommand }) || match;
       if (!match) {
         for (const command of Object.values(cmds)) {
           const idx = command._aliases.indexOf(subcommand);
@@ -205,7 +205,7 @@ export default {
   },
 
   buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized: boolean) {
-    let args: Options = {options: {}};
+    let args: Options = { options: {} };
 
     if (isCommandArgKeyPairNormalized) {
       // Normalize all foo="bar" with "foo='bar'"

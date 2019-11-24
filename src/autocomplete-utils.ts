@@ -9,7 +9,7 @@ import {
   IAutocompleteConfig,
   Input
 } from './types/autocomplete';
-import {ICommand, IVorpal} from './types/types';
+import { ICommand, IVorpal } from './types/types';
 
 /**
  * Tracks how many times tab was pressed
@@ -223,7 +223,7 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
   });
 
   let matchObject: ICommand = match
-    ? _.find(this.parent.commands, {_name: String(match).trim()})
+    ? _.find(this.parent.commands, { _name: String(match).trim() })
     : undefined;
 
   if (!matchObject) {

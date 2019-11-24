@@ -88,7 +88,7 @@ const autocomplete: IAutocomplete = {
 
     if (input.match) {
       input = parseMatchSection.call(this, input);
-      getMatchData.call(this, input, function (data: string[]) {
+      getMatchData.call(this, input, function(data: string[]) {
         const dataMatch = getMatch(input.context as string, data);
         if (dataMatch) {
           input.context = dataMatch;
@@ -146,7 +146,7 @@ const autocomplete: IAutocomplete = {
       return matches;
     }
 
-    const longestMatchLength = matches.reduce(function (previous, current) {
+    const longestMatchLength = matches.reduce(function(previous, current) {
       for (let i = 0; i < current.length; i++) {
         if (previous[i] && current[i] !== previous[i]) {
           return current.substr(0, i);

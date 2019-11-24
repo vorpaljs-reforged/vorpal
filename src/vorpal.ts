@@ -2,11 +2,7 @@ import { EventEmitter } from 'events';
 import os from 'os';
 
 import chalk from 'chalk';
-import _, {
-  isFunction,
-  isArray,
-  isString
-} from 'lodash';
+import _, { isFunction, isArray, isString } from 'lodash';
 import minimist from 'minimist';
 import wrap from 'wrap-ansi';
 
@@ -639,7 +635,7 @@ export default class Vorpal extends EventEmitter {
         name: 'command',
         message: ssn.fullDelimiter()
       },
-      function (result) {
+      function(result) {
         if (self.ui._cancelled === true) {
           self.ui._cancelled = false;
           return;
@@ -650,7 +646,7 @@ export default class Vorpal extends EventEmitter {
           self._prompt(data);
           return;
         }
-        self.exec(str, function () {
+        self.exec(str, function() {
           self._prompt(data);
         });
       }
@@ -871,7 +867,7 @@ export default class Vorpal extends EventEmitter {
       item.commandObject = match;
       const init =
         match._init ||
-        function (arrgs, cb) {
+        function(arrgs, cb) {
           cb();
         };
       const delimiter = match._delimiter || String(item.command) + ':';
@@ -976,7 +972,7 @@ export default class Vorpal extends EventEmitter {
       // execution string.
 
       // Build the instances for each pipe.
-      item.pipes = item.pipes.map(function (pipe) {
+      item.pipes = item.pipes.map(function(pipe) {
         return new CommandInstance({
           commandWrapper: item,
           command: pipe.command._name,
@@ -993,7 +989,7 @@ export default class Vorpal extends EventEmitter {
         item.pipes[k].downstream = downstream;
       }
 
-      item.session.execCommandSet(item, function (wrapper, err, data, argus) {
+      item.session.execCommandSet(item, function(wrapper, err, data, argus) {
         callback(wrapper, err, data, argus);
       });
     } else {
@@ -1105,24 +1101,24 @@ export default class Vorpal extends EventEmitter {
     const commandMatch = matches.length > 0;
     const commandMatchLength = commandMatch
       ? String(command)
-        .trim()
-        .split(' ').length + 1
+          .trim()
+          .split(' ').length + 1
       : 1;
     matches = matches.length === 0 ? this.commands : matches;
 
     const skipGroups = !(matches.length + 6 > process.stdout.rows);
 
     const commands = matches
-      .filter(function (cmd) {
+      .filter(function(cmd) {
         return !cmd._noHelp;
       })
-      .filter(function (cmd) {
+      .filter(function(cmd) {
         return !cmd._catch;
       })
-      .filter(function (cmd) {
+      .filter(function(cmd) {
         return !cmd._hidden;
       })
-      .filter(function (cmd) {
+      .filter(function(cmd) {
         if (skipGroups === true) {
           return true;
         }
@@ -1137,15 +1133,15 @@ export default class Vorpal extends EventEmitter {
 
         return [
           cmd._name +
-          (cmd._alias ? '|' + cmd._alias : '') +
-          (cmd.options.length ? ' [options]' : '') +
-          ' ' +
-          args,
+            (cmd._alias ? '|' + cmd._alias : '') +
+            (cmd.options.length ? ' [options]' : '') +
+            ' ' +
+            args,
           cmd.description() || ''
         ];
       });
 
-    const width = commands.reduce(function (max, commandX) {
+    const width = commands.reduce(function(max, commandX) {
       return Math.max(max, commandX[0].length);
     }, 0);
 
@@ -1153,28 +1149,28 @@ export default class Vorpal extends EventEmitter {
 
     let groups = _.uniq(
       matches
-        .filter(function (cmd) {
+        .filter(function(cmd) {
           return (
             String(cmd._name)
               .trim()
               .split(' ').length > commandMatchLength
           );
         })
-        .map(function (cmd) {
+        .map(function(cmd) {
           return String(cmd._name)
             .split(' ')
             .slice(0, commandMatchLength)
             .join(' ');
         })
-        .map(function (cmd) {
+        .map(function(cmd) {
           counts[cmd] = counts[cmd] || 0;
           counts[cmd]++;
           return cmd;
         })
-    ).map(function (cmd) {
+    ).map(function(cmd) {
       const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
         counts[cmd] === 1 ? '' : 's'
-        }.`;
+      }.`;
       return prefix;
     });
 
@@ -1186,20 +1182,20 @@ export default class Vorpal extends EventEmitter {
       commands.length < 1
         ? ''
         : '\n  Commands:\n\n' +
-        commands
-          .map(function (cmd) {
-            const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
-            const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
-            for (let i = 0; i < suffixArr.length; ++i) {
-              if (i !== 0) {
-                suffixArr[i] = VorpalUtil.pad('', width + 6) + suffixArr[i];
+          commands
+            .map(function(cmd) {
+              const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
+              const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
+              for (let i = 0; i < suffixArr.length; ++i) {
+                if (i !== 0) {
+                  suffixArr[i] = VorpalUtil.pad('', width + 6) + suffixArr[i];
+                }
               }
-            }
-            const suffix = suffixArr.join('\n');
-            return prefix + suffix;
-          })
-          .join('\n') +
-        '\n\n';
+              const suffix = suffixArr.join('\n');
+              return prefix + suffix;
+            })
+            .join('\n') +
+          '\n\n';
 
     const groupsString =
       groups.length < 1 ? '' : '  Command Groups:\n\n' + groups.join('\n') + '\n';
@@ -1292,7 +1288,7 @@ export default class Vorpal extends EventEmitter {
    */
   public _proxy(str, direction, data, options) {
     const self = this;
-    return new Promise(function (resolve) {
+    return new Promise(function(resolve) {
       const ssn = self.getSessionById(data.sessionId);
       if (ssn && (!ssn.isLocal() && ssn.client)) {
         self._send(str, direction, data, options);
@@ -1328,9 +1324,9 @@ export default class Vorpal extends EventEmitter {
       };
       throw new Error(
         'No session found for id ' +
-        id +
-        ' in vorpal.getSessionById. Sessions: ' +
-        JSON.stringify(sessions)
+          id +
+          ' in vorpal.getSessionById. Sessions: ' +
+          JSON.stringify(sessions)
       );
     }
     return ssn;

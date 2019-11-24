@@ -3,7 +3,7 @@
  */
 
 import _ from 'lodash';
-import {inspect} from 'util';
+import { inspect } from 'util';
 import util from './util';
 
 function viewed(str: string) {

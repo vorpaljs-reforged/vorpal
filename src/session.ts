@@ -2,12 +2,12 @@
  * Module dependencies.
  */
 
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
 import Command from './command';
-import {CommandInstance} from './command-instance';
+import { CommandInstance } from './command-instance';
 import util from './util';
 import Vorpal from './vorpal';
 
@@ -332,7 +332,7 @@ export default class Session extends EventEmitter {
       self._commandSetCallback = undefined;
       self._registeredCommands = 0;
       self._completedCommands = 0;
-      self.parent.emit('client_command_cancelled', {command: wrapper.command});
+      self.parent.emit('client_command_cancelled', { command: wrapper.command });
 
       cbk(wrapper);
     };
@@ -354,9 +354,9 @@ export default class Session extends EventEmitter {
           stack = err;
         }
         self.log(stack);
-        self.parent.emit('client_command_error', {command: wrapper.command, error: err});
+        self.parent.emit('client_command_error', { command: wrapper.command, error: err });
       } else if (self.isLocal()) {
-        self.parent.emit('client_command_executed', {command: wrapper.command});
+        self.parent.emit('client_command_executed', { command: wrapper.command });
       }
 
       self.removeListener('vorpal_command_cancel', self.cancelCommands);

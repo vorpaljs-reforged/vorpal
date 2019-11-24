@@ -35,7 +35,7 @@ export class CommandInstance {
    */
 
   constructor(params: CommandInstanceParams = {}) {
-    const {command, commandObject, args, commandWrapper, callback, downstream} = params;
+    const { command, commandObject, args, commandWrapper, callback, downstream } = params;
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
