@@ -286,14 +286,20 @@ export default class Vorpal extends EventEmitter {
    * @api public
    */
 
-  public command(name, desc?, opts?) {
+  public command(name: string, desc?: string, opts?: {}) {
     opts = opts || {};
     name = String(name);
 
     const args = name.match(/(\[[^\]]*\]|<[^>]*>)/g) || [];
 
     const cmdNameRegExp = /^([^[<]*)/;
-    const cmdName = cmdNameRegExp.exec(name)[0].trim();
+    const cmdNameMatches = cmdNameRegExp.exec(name);
+
+    if (cmdNameMatches === null || cmdNameMatches.length === 0) {
+      throw new Error('Could not find a command name')
+    }
+
+    const cmdName = cmdNameMatches[0].trim();
 
     const cmd = new Command(cmdName, this);
 
