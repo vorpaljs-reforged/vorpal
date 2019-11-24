@@ -18,7 +18,9 @@ interface Events {
   vorpal_ui_keypress: (data: { key: string; value?: string; e: any }) => void;
 }
 
-class UI extends (EventEmitter as { new (): TypedEmitter<Events> }) {
+type TypedEventEmitter = { new (): TypedEmitter<Events> }
+
+class UI extends (EventEmitter as TypedEventEmitter) {
   private _activePrompt;
   private parent;
   private _midPrompt: boolean;

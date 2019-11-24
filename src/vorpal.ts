@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import _, { isFunction, isArray, isString, isObject, find, uniq, extend, forEach, map } from 'lodash';
 import minimist from 'minimist';
 import wrap from 'wrap-ansi';
+import TypedEmitter from 'typed-emitter';
 
 import Command, { ActionFn } from './command';
 import { CommandInstance } from './command-instance';
@@ -38,7 +39,17 @@ type UseCommandShape = {
   options: [string, string] | [string, string][];
 };
 
-export default class Vorpal extends EventEmitter {
+interface CommandOptions {
+  noHelp: boolean;
+}
+
+interface Events {
+  vorpal_ui_keypress: (data: { key: string; value?: string; e: any }) => void;
+}
+
+type TypedEventEmitter = { new (): TypedEmitter<Events> }
+
+export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   // @todo: do we really need these references?
   public chalk: typeof chalk;
   public lodash: typeof _;
@@ -278,15 +289,8 @@ export default class Vorpal extends EventEmitter {
 
   /**
    * Registers a new command in the vorpal API.
-   *
-   * @param {String} name
-   * @param {String} desc
-   * @param {Object} opts
-   * @return {Command}
-   * @api public
    */
-
-  public command(name: string, desc?: string, opts?: {}) {
+  public command(name: string, desc?: string, opts?: CommandOptions) {
     opts = opts || {};
     name = String(name);
 
