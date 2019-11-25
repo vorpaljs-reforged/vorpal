@@ -59,10 +59,12 @@ type PromptEventData = {
 interface Events {
   command_registered: (data: { command: Command; name: string }) => void;
   keypress: (data: KeyPressData) => void;
+  client_prompt_submit: (data: string) => void;
   'vantage-prompt-upstream': (data: PromptEventData) => void;
   'vantage-prompt-downstream': (data: PromptEventData) => void;
   'vantage-keypress-upstream': (data: KeyPressData) => void;
   'vantage-keypress-downstream': (data: KeyPressData) => void;
+  'vantage-resume-downstream': (data: SessionData) => void;
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
@@ -578,28 +580,22 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   /**
    * Renders the CLI prompt or sends the
    * request to do so downstream.
-   *
-   * @param {Object} data
-   * @return {Vorpal}
-   * @api private
    */
-
-  public _prompt(data: DataSession = {}) {
-    const self = this;
+  public _prompt(data: SessionData = {}) {
     if (!data.sessionId) {
-      data.sessionId = self.session.id;
+      data.sessionId = this.session.id;
     }
-    const ssn = self.getSessionById(data.sessionId);
+    const ssn = this.getSessionById(data.sessionId);
 
     // If we somehow got to _prompt and aren't the
     // local client, send the command downstream.
     if (!ssn.isLocal()) {
       this._send('vantage-resume-downstream', 'downstream', { sessionId: data.sessionId });
-      return self;
+      return this;
     }
 
     if (ui.midPrompt()) {
-      return self;
+      return this;
     }
 
     const prompt = ui.prompt(
@@ -608,19 +604,19 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         name: 'command',
         message: ssn.fullDelimiter()
       },
-      function(result) {
-        if (self.ui._cancelled === true) {
-          self.ui._cancelled = false;
+      result => {
+        if (this.ui._cancelled === true) {
+          this.ui._cancelled = false;
           return;
         }
         const str = String(result.command).trim();
-        self.emit('client_prompt_submit', str);
+        this.emit('client_prompt_submit', str);
         if (str === '' || str === 'undefined') {
-          self._prompt(data);
+          this._prompt(data);
           return;
         }
-        self.exec(str, function() {
-          self._prompt(data);
+        this.exec(str, () => {
+          this._prompt(data);
         });
       }
     );
