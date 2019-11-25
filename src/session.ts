@@ -15,16 +15,17 @@ export default class Session extends EventEmitter {
   public _registeredCommands: number;
   public _completedCommands: number;
   public _commandSetCallback: any;
-  public id: any;
+  public id: string;
   public vorpal;
   public parent: Vorpal;
-  public client: any;
+  public client?: Vorpal; // @todo: actually, never?
+  public server?: Vorpal; // @todo: actually, never?
   public authenticating: any;
   public user: any;
   public host: any;
   public address: any;
   public _isLocal: any;
-  public _delimiter: any;
+  public _delimiter: string;
   public _modeDelimiter: any;
   public _tabCount: number;
   public cmdHistory: any;
@@ -144,15 +145,13 @@ export default class Session extends EventEmitter {
 
   /**
    * Sets the delimiter for this session.
-   *
-   * @param {String} str
-   * @return {Session}
-   * @api public
    */
-
-  public delimiter(str) {
+  public delimiter<T>(str?: T): T extends string ? this : string {
     if (str === undefined) {
-      return this._delimiter;
+      // Type cast as any here to use function return type
+      // https://github.com/microsoft/TypeScript/issues/24929
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this._delimiter as any;
     }
     this._delimiter = String(str).trim() + ' ';
     if (this.isLocal()) {
@@ -163,7 +162,10 @@ export default class Session extends EventEmitter {
         sessionId: this.id
       });
     }
-    return this;
+    // Type cast as any here to use function return type
+    // https://github.com/microsoft/TypeScript/issues/24929
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this as any;
   }
 
   /**

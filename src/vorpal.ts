@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import os from 'os';
 
 import chalk from 'chalk';
-import _, { isFunction, isArray, isString, isObject, find, uniq, forEach, map } from 'lodash';
+import _, { isFunction, isArray, isString, isObject, find, uniq, forEach } from 'lodash';
 import minimist from 'minimist';
 import wrap from 'wrap-ansi';
 import TypedEmitter from 'typed-emitter';
@@ -16,21 +16,26 @@ import Session from './session';
 import ui, { KeyPressData, PipeFn } from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
+import { QuestionCollection } from 'inquirer';
 
 interface PromptOption {
   sessionId?: string;
   message?: string;
 }
 
-interface DataSession {
+interface SessionData {
   sessionId?: string;
-  command?: string;
-  args?: any;
-  options?: PromptOption;
-  value?: any;
-  key?: string;
-  completed?: boolean;
 }
+
+// interface DataSession {
+//   sessionId?: string;
+//   command?: string;
+//   args?: any;
+//   options?: PromptOption;
+//   value?: any;
+//   key?: string;
+//   completed?: boolean;
+// }
 
 type UseCommandShape = {
   command?: string;
@@ -45,9 +50,19 @@ interface CommandOptions {
   noHelp?: boolean;
 }
 
+type PromptEventData = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+  options: QuestionCollection;
+} & PromptOption;
+
 interface Events {
   command_registered: (data: { command: Command; name: string }) => void;
   keypress: (data: KeyPressData) => void;
+  'vantage-prompt-upstream': (data: PromptEventData) => void;
+  'vantage-prompt-downstream': (data: PromptEventData) => void;
+  'vantage-keypress-upstream': (data: KeyPressData) => void;
+  'vantage-keypress-downstream': (data: KeyPressData) => void;
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
@@ -70,7 +85,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   private _queue: any[];
   private _command?: Command;
   private _delimiter: string;
-  private server: { sessions: any[] };
+  private server: { sessions: Session[] };
   private _hooked: boolean;
   public session: Session;
   private isCommandArgKeyPairNormalized: boolean;
@@ -508,22 +523,20 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       });
     }
   }
+
   /**
    * For use in vorpal API commands, sends
    * a prompt command downstream to the local
    * terminal. Executes a prompt and returns
    * the response upstream to the API command.
-   *
-   * @param {Object} options
-   * @param {Function} userCallback
-   * @return {Vorpal}
-   * @api public
    */
-
-  public prompt(options: PromptOption = {}, userCallback) {
+  public prompt<T>(
+    options: QuestionCollection<T> & PromptOption,
+    userCallback: (result: T) => void
+  ) {
     return new Promise(resolve => {
       // Setup callback to also resolve promise.
-      const cb = response => {
+      const cb = (response: T) => {
         // Does not currently handle Inquirer validation errors.
         resolve(response);
         if (userCallback) {
@@ -538,7 +551,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         throw new Error('Vorpal.prompt was called without a passed Session ID.');
       }
 
-      const handler = data => {
+      const handler = (data: PromptEventData) => {
         const response = data.value;
         this.removeListener('vantage-prompt-upstream', handler);
         cb(response);
@@ -546,7 +559,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
 
       if (ssn.isLocal()) {
         ui.setDelimiter(options.message || ssn.delimiter());
-        prompt = ui.prompt(options, result => {
+        prompt = ui.prompt<T>(options, result => {
           ui.setDelimiter(ssn.delimiter());
           cb(result);
         });
@@ -1214,7 +1227,12 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * @api private
    */
 
-  public _send(str, direction, data: DataSession = {}, options = {}) {
+  public _send<E extends keyof Events>(
+    str: E,
+    direction: 'upstream' | 'downstream',
+    data: Parameters<Events[E]>[0] & SessionData,
+    options = {}
+  ) {
     const ssn = this.getSessionById(data.sessionId);
     if (!ssn) {
       throw new Error('No Sessions logged for ID ' + data.sessionId + ' in vorpal._send.');
@@ -1266,21 +1284,22 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public getSessionById(id: string) {
+  public getSessionById(id?: string) {
     if (isObject(id)) {
       throw new Error(
         'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'
       );
     }
-    let ssn = find(this.server.sessions, { id });
-    ssn = this.session.id === id ? this.session : ssn;
     if (!id) {
       throw new Error('vorpal.getSessionById was called with no ID passed.');
     }
+
+    let ssn = find(this.server.sessions, { id });
+    ssn = this.session.id === id ? this.session : ssn;
     if (!ssn) {
       const sessions = {
         local: this.session.id,
-        server: map(this.server.sessions, 'id')
+        server: this.server.sessions.map(session => session.id)
       };
       throw new Error(
         'No session found for id ' +

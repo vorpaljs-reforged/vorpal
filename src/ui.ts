@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 import chalk from 'chalk';
-import inquirer from 'inquirer';
+import inquirer, { QuestionCollection } from 'inquirer';
 import _ from 'lodash';
 import logUpdate from 'log-update';
 import TypedEmitter from 'typed-emitter';
@@ -18,7 +18,8 @@ interface Redraw {
 export interface KeyPressData {
   key: string;
   value?: string;
-  e: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  e?: any;
 }
 
 export type PipeFn = Function;
@@ -210,7 +211,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public prompt(options, cb) {
+  public prompt<T>(options: QuestionCollection<T>, cb: (result: T) => void) {
     let prompt;
     options = options || {};
     if (!this.parent) {
@@ -266,7 +267,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
     return mid;
   }
 
-  public setDelimiter(str) {
+  public setDelimiter(str: string) {
     const self = this;
     if (!this.parent) {
       return;
