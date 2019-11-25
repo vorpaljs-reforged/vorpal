@@ -1,6 +1,9 @@
 import { EventEmitter } from 'events';
-import _, { noop } from 'lodash';
 import os from 'os';
+
+import _, { noop } from 'lodash';
+import TypedEmitter from 'typed-emitter';
+
 import autocomplete, { AutocompleteConfigCallback } from './autocomplete';
 import { CommandInstance } from './command-instance';
 import Vorpal from './vorpal';
@@ -11,7 +14,13 @@ interface CommandResponse {
   args?: any;
 }
 
-export default class Session extends EventEmitter {
+interface Events {
+  vorpal_command_cancel: () => void;
+}
+
+type TypedEventEmitter = { new (): TypedEmitter<Events> };
+
+export default class Session extends (EventEmitter as TypedEventEmitter) {
   public _registeredCommands: number;
   public _completedCommands: number;
   public _commandSetCallback: any;
@@ -41,7 +50,9 @@ export default class Session extends EventEmitter {
    */
 
   constructor(options) {
+    // eslint-disable-next-line constructor-super
     super();
+
     options = options || {};
     this.id = options.id || this._guid();
     this.parent = options.parent || undefined;

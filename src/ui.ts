@@ -32,14 +32,14 @@ type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
 class UI extends (EventEmitter as TypedEventEmitter) {
   public _activePrompt;
-  private parent;
-  private _midPrompt: boolean;
+  public _midPrompt: boolean;
+  private parent: Vorpal;
   private _lastDelimiter: string;
   private _sigint: Function;
   private _sigintCalled: boolean;
   private _sigintCount: number;
   private _cancel: boolean;
-  public inquirer;
+  public inquirer: typeof inquirer;
   private inquirerStdout: string[];
   public _cancelled: boolean;
   public _pipeFn?: PipeFn;

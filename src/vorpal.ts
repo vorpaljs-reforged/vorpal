@@ -6,6 +6,7 @@ import _, { isFunction, isArray, isString, isObject, find, uniq, forEach } from 
 import minimist from 'minimist';
 import wrap from 'wrap-ansi';
 import TypedEmitter from 'typed-emitter';
+import { QuestionCollection } from 'inquirer';
 
 import Command, { ActionFn } from './command';
 import { CommandInstance } from './command-instance';
@@ -16,7 +17,6 @@ import Session from './session';
 import ui, { KeyPressData, PipeFn } from './ui';
 import VorpalUtil from './util';
 import commons from './vorpal-commons';
-import { QuestionCollection } from 'inquirer';
 
 interface PromptOption {
   sessionId?: string;
@@ -56,14 +56,23 @@ type PromptEventData = {
   options: QuestionCollection;
 } & PromptOption;
 
+type CommandEventData = {
+  command: string;
+  args: SessionData;
+  completed: boolean;
+  sessionId: string;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ExecCallback = (err?: Error | string | any, data?: any) => void;
 
 type QueuedCommand = {
   command: string;
   args: SessionData;
+  options?: SessionData;
   callback?: ExecCallback;
   session: Session;
+  sync?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve?: (data?: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,6 +88,7 @@ interface Events {
   'vantage-keypress-upstream': (data: KeyPressData) => void;
   'vantage-keypress-downstream': (data: KeyPressData) => void;
   'vantage-resume-downstream': (data: SessionData) => void;
+  'vantage-command-upstream': (data: CommandEventData) => void;
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
@@ -103,7 +113,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   public cmdHistory: History;
   public commands: Command[];
   private _queue: QueuedCommand[];
-  private _command?: Command;
+  private _command?: QueuedCommand;
   private _delimiter: string;
   private server: { sessions: Session[] };
   private _hooked: boolean;
@@ -664,13 +674,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * Lastly, to add some more complexity, we throw
    * command and callbacks into a queue that will
    * be unearthed and sent in due time.
-   *
-   * @param {String} cmd
-   * @param {Function} cb
-   * @return {Promise or Vorpal}
-   * @api public
    */
-
   public exec(cmd: string, args?: SessionData | ExecCallback, cb?: ExecCallback) {
     if (argsIsFn(args)) {
       cb = args;
@@ -706,22 +710,15 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Executes a Vorpal command in sync.
-   *
-   * @param {String} cmd
-   * @param {Object} args
-   * @return {*} stdout
-   * @api public
    */
-
-  public execSync(cmd, options?) {
-    const self = this;
-    let ssn = self.session;
+  public execSync(cmd: string, options?: SessionData) {
+    let ssn = this.session;
     options = options || {};
     if (options.sessionId) {
-      ssn = self.getSessionById(options.sessionId);
+      ssn = this.getSessionById(options.sessionId);
     }
 
-    const command = {
+    const command: QueuedCommand = {
       command: cmd,
       args: options,
       session: ssn,
@@ -729,7 +726,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       options
     };
 
-    return self._execQueueItem(command);
+    return this._execQueueItem(command);
   }
 
   /**
@@ -738,13 +735,10 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * when a command is inserted or completes,
    * shifts the next command in the queue
    * and sends it to `vorpal._execQueueItem`.
-   *
-   * @api private
    */
-
   public _queueHandler() {
     if (this._queue.length > 0 && this._command === undefined) {
-      const item = this._queue.shift();
+      const item = this._queue.shift() as QueuedCommand;
       this._execQueueItem(item);
     }
   }
@@ -752,18 +746,13 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   /**
    * Fires off execution of a command - either
    * calling upstream or executing locally.
-   *
-   * @param {Object} cmd
-   * @api private
    */
-
-  public _execQueueItem(cmd: CommandInstance) {
-    const self = this;
-    self._command = cmd;
+  public _execQueueItem(cmd: QueuedCommand) {
+    this._command = cmd;
     if (cmd.session.isLocal() && !cmd.session.client) {
       return this._exec(cmd);
     }
-    self._send('vantage-command-upstream', 'upstream', {
+    this._send('vantage-command-upstream', 'upstream', {
       command: cmd.command,
       args: cmd.args,
       completed: false,
@@ -774,12 +763,8 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   /**
    * Executes a vorpal API command.
    * Warning: Dragons lie beyond this point.
-   *
-   * @param {String} item
-   * @api private
    */
-
-  public _exec(item: CommandInstance) {
+  public _exec(item: QueuedCommand) {
     const self = this;
     item = item || {};
     item.command = item.command || '';

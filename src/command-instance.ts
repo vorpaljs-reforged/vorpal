@@ -1,5 +1,7 @@
 import _ from 'lodash';
-import { Command } from '.';
+import Command from './command';
+import Session from './session';
+import Vorpal from './vorpal';
 
 interface CommandInstanceParams {
   commandWrapper?: any;
@@ -22,10 +24,10 @@ export class CommandInstance {
   public args: CommandArgs;
   public commandObject: Command;
   public command: undefined;
-  public session: any;
-  public parent: any;
+  public session: Session;
+  public parent: Vorpal;
   public callback: any;
-  public downstream: any;
+  public downstream: this;
   /**
    * Initialize a new `CommandInstance` instance.
    *
@@ -49,7 +51,6 @@ export class CommandInstance {
   /**
    * Cancel running command.
    */
-
   public cancel() {
     this.session.emit('vorpal_command_cancel');
   }
@@ -57,8 +58,7 @@ export class CommandInstance {
   /**
    * Route stdout either through a piped command, or the session's stdout.
    */
-
-  public log(...args) {
+  public log(...args: string[]) {
     if (this.downstream) {
       const fn = this.downstream.commandObject._fn || _.noop;
       this.session.registerCommand();
