@@ -56,6 +56,20 @@ type PromptEventData = {
   options: QuestionCollection;
 } & PromptOption;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ExecCallback = (err?: Error | string | any, data?: any) => void;
+
+type QueuedCommand = {
+  command: string;
+  args: SessionData;
+  callback?: ExecCallback;
+  session: Session;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  resolve?: (data?: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  reject?: (error?: Error | string | any) => void;
+};
+
 interface Events {
   command_registered: (data: { command: Command; name: string }) => void;
   keypress: (data: KeyPressData) => void;
@@ -68,6 +82,10 @@ interface Events {
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
+
+function argsIsFn(args?: SessionData | ExecCallback): args is ExecCallback {
+  return typeof args === 'function';
+}
 
 export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   // @todo: do we really need these references?
@@ -84,7 +102,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   private _banner: string;
   public cmdHistory: History;
   public commands: Command[];
-  private _queue: any[];
+  private _queue: QueuedCommand[];
   private _command?: Command;
   private _delimiter: string;
   private server: { sessions: Session[] };
@@ -653,13 +671,17 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public exec(cmd, args?, cb?) {
-    cb = isFunction(args) ? args : cb;
-    args = args || {};
+  public exec(cmd: string, args?: SessionData | ExecCallback, cb?: ExecCallback) {
+    if (argsIsFn(args)) {
+      cb = args;
+      args = {};
+    } else {
+      args = args || {};
+    }
 
     const ssn = args.sessionId ? this.getSessionById(args.sessionId) : this.session;
 
-    const command = {
+    const command: QueuedCommand = {
       command: cmd,
       args,
       callback: cb,
