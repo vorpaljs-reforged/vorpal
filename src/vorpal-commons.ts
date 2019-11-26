@@ -1,20 +1,16 @@
+import _ from 'lodash';
+import Vorpal from './vorpal';
+
 /**
  * Function library for Vorpal's out-of-the-box
  * API commands. Imported into a Vorpal server
  * through vorpal.use(module).
  */
-
-/**
- * Module dependencies.
- */
-
-import _ from 'lodash';
-import { IVorpal } from './types/types';
-
-export default function(vorpal: IVorpal) {
+export default function(vorpal: Vorpal) {
   /**
    * Help for a particular command.
    */
+  vorpal.command('');
 
   vorpal
     .command('help [command...]')

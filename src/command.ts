@@ -271,12 +271,18 @@ export default class Command extends EventEmitter {
   /**
    * Defines description for given command.
    */
-  public description(str: string) {
-    if (arguments.length === 0) {
-      return this._description;
+  public description<T>(str?: T): T extends string ? this : string {
+    if (typeof str === 'string') {
+      this._description = str;
+      // Type cast as any here to use function return type
+      // https://github.com/microsoft/TypeScript/issues/24929
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this as any;
     }
-    this._description = str;
-    return this;
+    // Type cast as any here to use function return type
+    // https://github.com/microsoft/TypeScript/issues/24929
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this._description as any;
   }
 
   /**
