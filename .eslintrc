@@ -16,7 +16,8 @@
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
         "plugin:prettier/recommended",
-        "prettier/@typescript-eslint"
+        "prettier/@typescript-eslint",
+        "plugin:you-dont-need-lodash-underscore/compatible"
     ],
     "rules": {
         "prettier/prettier": [

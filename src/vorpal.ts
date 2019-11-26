@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import os from 'os';
 
 import chalk from 'chalk';
-import _, { isFunction, isArray, isString, isObject, find, uniq, forEach } from 'lodash';
+import _, { isFunction, isString, isObject } from 'lodash';
 import minimist from 'minimist';
 import wrap from 'wrap-ansi';
 import TypedEmitter from 'typed-emitter';
@@ -215,7 +215,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
     options: { use?: T | 'minimist' } = {}
   ): T extends string ? minimist.ParsedArgs : Vorpal {
     const args = argv;
-    const catchExists = !(find(this.commands, { _catch: true }) === undefined);
+    const catchExists = this.commands.find(command => command._catch) !== undefined;
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
@@ -315,7 +315,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       /* eslint-disable-next-line @typescript-eslint/no-var-requires */
       this.use(require(commands), options);
     } else {
-      commands = isArray(commands) ? commands : [commands];
+      commands = Array.isArray(commands) ? commands : [commands];
       for (const cmd of commands) {
         if (cmd.command) {
           const command = this.command(cmd.command);
@@ -323,7 +323,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
             command.description(cmd.description);
           }
           if (cmd.options) {
-            cmd.options = isArray(cmd.options) ? cmd.options : [cmd.options];
+            cmd.options = Array.isArray(cmd.options) ? cmd.options : [cmd.options];
             for (let j = 0; j < cmd.options.length; ++j) {
               command.option(cmd.options[j][0], cmd.options[j][1]);
             }
@@ -488,7 +488,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       throw new Error('vorpal.localStorage() requires a unique key to be passed in.');
     }
     const ls = new LocalStorage(id);
-    forEach(['getItem', 'setItem', 'removeItem'], method => {
+    ['getItem', 'setItem', 'removeItem'].forEach(method => {
       // @todo: setting properties on a class method here. Why?
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
@@ -537,7 +537,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
     if (this.session.isLocal() && !this.session.client && !this._command) {
       this.session.getKeypressResult(key, value, (err, result) => {
         if (!err && result !== undefined) {
-          if (isArray(result)) {
+          if (Array.isArray(result)) {
             const formatted = VorpalUtil.prettifyArray(result);
             this.ui.imprint();
             this.session.log(formatted);
@@ -1012,14 +1012,9 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Returns the instance of  given command.
-   *
-   * @param {String} cmd
-   * @return {Command}
-   * @api public
    */
-
-  public find(name) {
-    return find(this.commands, { _name: name });
+  public find(name: string) {
+    return this.commands.find(command => command._name === name);
   }
 
   /**
@@ -1123,27 +1118,29 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
 
     const counts = {};
 
-    let groups = uniq(
-      matches
-        .filter(function(cmd) {
-          return (
-            String(cmd._name)
-              .trim()
-              .split(' ').length > commandMatchLength
-          );
-        })
-        .map(function(cmd) {
-          return String(cmd._name)
-            .split(' ')
-            .slice(0, commandMatchLength)
-            .join(' ');
-        })
-        .map(function(cmd) {
-          counts[cmd] = counts[cmd] || 0;
-          counts[cmd]++;
-          return cmd;
-        })
-    ).map(function(cmd) {
+    let groups = [
+      ...new Set(
+        matches
+          .filter(function(cmd) {
+            return (
+              String(cmd._name)
+                .trim()
+                .split(' ').length > commandMatchLength
+            );
+          })
+          .map(function(cmd) {
+            return String(cmd._name)
+              .split(' ')
+              .slice(0, commandMatchLength)
+              .join(' ');
+          })
+          .map(function(cmd) {
+            counts[cmd] = counts[cmd] || 0;
+            counts[cmd]++;
+            return cmd;
+          })
+      )
+    ].map(function(cmd) {
       const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
         counts[cmd] === 1 ? '' : 's'
       }.`;
@@ -1297,7 +1294,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       throw new Error('vorpal.getSessionById was called with no ID passed.');
     }
 
-    let ssn = find(this.server.sessions, { id });
+    let ssn = this.server.sessions.find(session => session.id === id);
     ssn = this.session.id === id ? this.session : ssn;
     if (!ssn) {
       const sessions = {
