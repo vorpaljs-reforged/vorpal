@@ -73,6 +73,7 @@ type QueuedCommand = {
   callback?: ExecCallback;
   session: Session;
   sync?: boolean;
+  pipes?: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve?: (data?: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -765,7 +766,6 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * Warning: Dragons lie beyond this point.
    */
   public _exec(item: QueuedCommand) {
-    const self = this;
     item = item || {};
     item.command = item.command || '';
     const modeCommand = item.command;
@@ -781,7 +781,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       throw new Error('Fatal Error: No session was passed into command for execution: ' + item);
     }
 
-    if (item.command === undefined) {
+    if (typeof item.command === 'undefined') {
       throw new Error('vorpal._exec was called with an undefined command.');
     }
 
@@ -802,20 +802,20 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       cmd.session.log(pickedMatch.helpInformation());
     }
 
-    function callback(cmd, err?, msg?, argus?) {
+    const callback = (cmd, err?, msg?, argus?) => {
       // Resume the prompt if we had to cancel
       // an active prompt, due to programmatic
       // execution.
       if (promptCancelled) {
-        self._prompt();
+        this._prompt();
       }
       if (cmd.sync) {
         // If we want the command to be fatal,
         // throw a real error. Otherwise, silently
         // return the error.
-        delete self._command;
+        delete this._command;
         if (err) {
-          if (cmd.options && (cmd.options.fatal === true || self._fatal === true)) {
+          if (cmd.options && (cmd.options.fatal === true || this._fatal === true)) {
             throw new Error(err);
           }
           return err;
@@ -823,18 +823,18 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         return msg;
       } else if (cmd.callback) {
         if (argus) {
-          cmd.callback.apply(self, argus);
+          cmd.callback.apply(this, argus);
         } else {
-          cmd.callback.call(self, err, msg);
+          cmd.callback.call(this, err, msg);
         }
       } else if (!err && cmd.resolve) {
         cmd.resolve(msg);
       } else if (err && cmd.reject) {
         cmd.reject(msg);
       }
-      delete self._command;
-      self._queueHandler();
-    }
+      delete this._command;
+      this._queueHandler();
+    };
 
     if (match) {
       item.fn = match._fn;
@@ -848,11 +848,11 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         };
       const delimiter = match._delimiter || String(item.command) + ':';
 
-      item.args = self.util.buildCommandArgs(
+      item.args = this.util.buildCommandArgs(
         matchArgs,
         match,
         item,
-        self.isCommandArgKeyPairNormalized
+        this.isCommandArgKeyPairNormalized
       );
 
       // If we get a string back, it's a validation error.
@@ -865,13 +865,13 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       // Build the piped commands.
       let allValid = true;
       for (let j = 0; j < item.pipes.length; ++j) {
-        const commandParts = self.util.matchCommand(item.pipes[j], self.commands);
+        const commandParts = this.util.matchCommand(item.pipes[j], this.commands);
         if (!commandParts.command) {
-          item.session.log(self._commandHelp(item.pipes[j]));
+          item.session.log(this._commandHelp(item.pipes[j]));
           allValid = false;
           break;
         }
-        commandParts.args = self.util.buildCommandArgs(commandParts.args, commandParts.command);
+        commandParts.args = this.util.buildCommandArgs(commandParts.args, commandParts.command);
         if (isString(commandParts.args) || !isObject(commandParts.args)) {
           throwHelp(item, commandParts.args, commandParts.command);
           allValid = false;
@@ -908,11 +908,11 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         item.fn = init;
         delete item.validate;
 
-        self.cmdHistory.enterMode();
+        this.cmdHistory.enterMode();
         item.session.modeDelimiter(delimiter);
       } else if (item.session._mode) {
         if (String(modeCommand).trim() === 'exit') {
-          self._exitMode({ sessionId: item.session.id });
+          this._exitMode({ sessionId: item.session.id });
           return callback(item);
         }
         // This executes when actually in a 'mode'

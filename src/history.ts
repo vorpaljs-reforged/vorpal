@@ -21,7 +21,7 @@ export default class History {
   // Histctr moves based on number of times 'up' (+= ctr)
   //  or 'down' (-= ctr) was pressed in traversing
   // command history.
-  public _hist = [];
+  public _hist: string[] = [];
   public _histCtr = 0;
 
   // When in a 'mode', we reset the
@@ -109,10 +109,8 @@ export default class History {
 
   /**
    * A new command was submitted. Called when enter is pressed and the prompt is not empty.
-   *
-   * @param cmd
    */
-  public newCommand(cmd) {
+  public newCommand(cmd: string) {
     // Always reset history when new command is executed.
     this._histCtr = 0;
 

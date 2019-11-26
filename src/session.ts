@@ -7,6 +7,7 @@ import TypedEmitter from 'typed-emitter';
 import autocomplete, { AutocompleteConfigCallback } from './autocomplete';
 import { CommandInstance } from './command-instance';
 import Vorpal from './vorpal';
+import History from './history';
 
 interface CommandResponse {
   error?: Error;
@@ -37,8 +38,8 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   public _delimiter: string;
   public _modeDelimiter: any;
   public _tabCount: number;
-  public cmdHistory: any;
-  public _mode: any;
+  public cmdHistory: History;
+  public _mode?: string;
   public _histCtr: number;
   public cancelCommands: any;
   /**
@@ -232,9 +233,8 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     }
   }
 
-  public history(str) {
-    const exceptions = [];
-    if (str && exceptions.indexOf(String(str).toLowerCase()) === -1) {
+  public history(str?: string) {
+    if (str) {
       this.cmdHistory.newCommand(str);
     }
   }

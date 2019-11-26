@@ -62,8 +62,9 @@ export default class Command extends EventEmitter {
   public _mode = false;
   public _catch = false;
   public _name: string;
+  public _aliases: string[] = [];
+  public _parse?: ParseFn;
 
-  private _aliases: string[] = [];
   private _args: Arg[] = [];
   private _relay = false;
   private _hidden = false;
@@ -81,7 +82,6 @@ export default class Command extends EventEmitter {
   private _usage?: string;
   private _fn?: ActionFn;
   private _validate?: ValidateFn;
-  private _parse?: ParseFn;
 
   // Index signature used to store options.
   // Must be any to remain compatible with other class properties.
