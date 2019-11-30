@@ -17,10 +17,22 @@ import Vorpal from './vorpal';
 
 export interface Args {
   [key: string]: string | string[] | object | undefined;
-  options: {
+  options?: {
     [key: string]: string | string[] | boolean | undefined;
   };
 }
+
+interface SD {
+  sessionId?: string;
+}
+
+let x: Args = {
+  sessionId: 'fe'
+};
+
+const s: SD & Args = {};
+
+x = s;
 
 export interface Arg {
   required: boolean;
@@ -32,7 +44,15 @@ export interface HasOptions {
   [option: string]: string;
 }
 
-export type ActionFn = (args: Args) => Promise<void>;
+export type ActionReturnValue = void;
+
+export type ActionReturnType = ActionReturnValue | Promise<ActionReturnValue>;
+
+export type ActionCallback = () => void;
+
+export type ActionFn = {
+  (args: Args, cb?: ActionCallback): ActionReturnType;
+};
 
 export type ValidateFn = (args: Args) => boolean | string;
 
@@ -40,9 +60,9 @@ export type CancelFn = () => void;
 
 export type DoneFn = () => void;
 
-export type InitFn = () => void;
+export type InitFn = ActionFn;
 
-export type Types = { [key in 'string' | 'boolean']?: ReadonlyArray<string> };
+export type Types = { [key in 'string' | 'boolean']?: string[] };
 
 export type HelpFn = Function;
 
@@ -64,24 +84,24 @@ export default class Command extends EventEmitter {
   public _name: string;
   public _aliases: string[] = [];
   public _parse?: ParseFn;
+  public _cancel?: CancelFn;
+  public _fn?: ActionFn;
+  public _validate?: ValidateFn;
+  public _init?: InitFn;
+  public _delimiter?: string;
+  public _types?: Types;
+  public _args: Arg[] = [];
+  public _allowUnknownOptions = false;
+  public _help?: HelpFn;
 
-  private _args: Arg[] = [];
   private _relay = false;
   private _hidden = false;
   private _parent: Vorpal;
   private _description?: string;
-  private _delimiter?: string;
-  private _help?: HelpFn;
-  private _types?: Types;
-  private _init?: InitFn;
   private _after?: AfterFn;
-  private _allowUnknownOptions = false;
   private _autocomplete?: AutocompleteConfig;
   private _done?: DoneFn;
-  private _cancel?: CancelFn;
   private _usage?: string;
-  private _fn?: ActionFn;
-  private _validate?: ValidateFn;
 
   // Index signature used to store options.
   // Must be any to remain compatible with other class properties.
@@ -455,7 +475,7 @@ export default class Command extends EventEmitter {
     // If the user entered args in a weird order,
     // properly sequence them.
     if (this._args.length > 1) {
-      this._args = this._args.sort(function(argu1, argu2) {
+      this._args = this._args.sort(function (argu1, argu2) {
         if (argu1.required && !argu2.required) {
           return -1;
         } else if (argu2.required && !argu1.required) {

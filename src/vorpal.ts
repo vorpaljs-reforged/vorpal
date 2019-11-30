@@ -8,14 +8,22 @@ import wrap from 'wrap-ansi';
 import TypedEmitter from 'typed-emitter';
 import { QuestionCollection } from 'inquirer';
 
-import Command, { ActionFn } from './command';
+import Command, {
+  ActionFn,
+  CancelFn,
+  ValidateFn,
+  InitFn,
+  Args,
+  ActionReturnValue,
+  ActionReturnType
+} from './command';
 import { CommandInstance } from './command-instance';
 import History from './history';
 import intercept, { InterceptFn } from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
 import ui, { KeyPressData, PipeFn } from './ui';
-import VorpalUtil from './util';
+import Util, { CommandMatch } from './util';
 import commons from './vorpal-commons';
 
 interface PromptOption {
@@ -58,7 +66,7 @@ type PromptEventData = {
 
 type CommandEventData = {
   command: string;
-  args: SessionData;
+  args: string | Args;
   completed: boolean;
   sessionId: string;
 };
@@ -66,14 +74,22 @@ type CommandEventData = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ExecCallback = (err?: Error | string | any, data?: any) => void;
 
-type QueuedCommand = {
+type ExecSyncOptions = {
+  fatal?: boolean;
+};
+
+export type QueuedCommand = {
   command: string;
-  args: SessionData;
-  options?: SessionData;
+  args: string | Args;
+  options?: ExecSyncOptions & SessionData;
   callback?: ExecCallback;
   session: Session;
   sync?: boolean;
-  pipes?: string[];
+  pipes?: (string | CommandMatch)[];
+  fn?: ActionFn;
+  _cancel?: CancelFn;
+  validate?: ValidateFn;
+  commandObject?: Command;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve?: (data?: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,7 +110,7 @@ interface Events {
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
-function argsIsFn(args?: SessionData | ExecCallback): args is ExecCallback {
+function argsIsFn(args?: Args | ExecCallback): args is ExecCallback {
   return typeof args === 'function';
 }
 
@@ -103,7 +119,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   public chalk: typeof chalk;
   public lodash: typeof _;
   public ui: typeof ui;
-  public util: typeof VorpalUtil;
+  public util: typeof Util;
   public Session: typeof Session;
 
   public parent?: Vorpal;
@@ -176,7 +192,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
     this._hooked = false;
 
     // Expose common utilities, like padding.
-    this.util = VorpalUtil;
+    this.util = Util;
 
     this.Session = Session;
 
@@ -538,7 +554,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       this.session.getKeypressResult(key, value, (err, result) => {
         if (!err && result !== undefined) {
           if (Array.isArray(result)) {
-            const formatted = VorpalUtil.prettifyArray(result);
+            const formatted = Util.prettifyArray(result);
             this.ui.imprint();
             this.session.log(formatted);
           } else {
@@ -676,7 +692,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * command and callbacks into a queue that will
    * be unearthed and sent in due time.
    */
-  public exec(cmd: string, args?: SessionData | ExecCallback, cb?: ExecCallback) {
+  public exec(cmd: string, args?: Args | ExecCallback, cb?: ExecCallback) {
     if (argsIsFn(args)) {
       cb = args;
       args = {};
@@ -684,7 +700,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       args = args || {};
     }
 
-    const ssn = args.sessionId ? this.getSessionById(args.sessionId) : this.session;
+    const ssn = args.sessionId ? this.getSessionById(String(args.sessionId)) : this.session;
 
     const command: QueuedCommand = {
       command: cmd,
@@ -712,7 +728,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   /**
    * Executes a Vorpal command in sync.
    */
-  public execSync(cmd: string, options?: SessionData) {
+  public execSync(cmd: string, options?: Args & ExecSyncOptions & SessionData) {
     let ssn = this.session;
     options = options || {};
     if (options.sessionId) {
@@ -794,15 +810,22 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
     const match = commandData.match;
     const matchArgs = commandData.matchArgs;
 
-    function throwHelp(cmd, msg, alternativeMatch?) {
+    function throwHelp(cmd: QueuedCommand, msg?: string, alternativeMatch?: Command) {
       if (msg) {
         cmd.session.log(msg);
       }
       const pickedMatch = alternativeMatch || match;
-      cmd.session.log(pickedMatch.helpInformation());
+      pickedMatch && cmd.session.log(pickedMatch.helpInformation());
     }
 
-    const callback = (cmd, err?, msg?, argus?) => {
+    const callback = (
+      cmd: QueuedCommand,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      err?: any,
+      msg?: string | ActionReturnType,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      argus?: any
+    ) => {
       // Resume the prompt if we had to cancel
       // an active prompt, due to programmatic
       // execution.
@@ -841,15 +864,14 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       item._cancel = match._cancel;
       item.validate = match._validate;
       item.commandObject = match;
-      const init =
-        match._init ||
-        function(arrgs, cb) {
-          cb();
-        };
+      const defaultInit: InitFn = (arrgs, cb) => {
+        cb && cb();
+      };
+      const init = match._init || defaultInit;
       const delimiter = match._delimiter || String(item.command) + ':';
 
       item.args = this.util.buildCommandArgs(
-        matchArgs,
+        String(matchArgs),
         match,
         item,
         this.isCommandArgKeyPairNormalized
@@ -865,18 +887,22 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       // Build the piped commands.
       let allValid = true;
       for (let j = 0; j < item.pipes.length; ++j) {
-        const commandParts = this.util.matchCommand(item.pipes[j], this.commands);
+        const commandParts = this.util.matchCommand(String(item.pipes[j]), this.commands);
         if (!commandParts.command) {
           item.session.log(this._commandHelp(item.pipes[j]));
           allValid = false;
           break;
         }
-        commandParts.args = this.util.buildCommandArgs(commandParts.args, commandParts.command);
+        commandParts.args = this.util.buildCommandArgs(
+          String(commandParts.args),
+          commandParts.command
+        );
         if (isString(commandParts.args) || !isObject(commandParts.args)) {
           throwHelp(item, commandParts.args, commandParts.command);
           allValid = false;
           break;
         }
+        // TODO refactor re-assignment of types here
         item.pipes[j] = commandParts;
       }
       // If invalid piped commands, return.
@@ -885,14 +911,17 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       }
 
       // If `--help` or `/?` is passed, do help.
-      if (item.args.options.help && isFunction(match._help)) {
+      // TODO remove non-null assertion or change Args type
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      if (item.args.options!.help && isFunction(match._help)) {
         // If the command has a custom help function, run it
         // as the actual "command". In this way it can go through
         // the whole cycle and expect a callback.
         item.fn = match._help;
         delete item.validate;
         delete item._cancel;
-      } else if (item.args.options.help) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      } else if (item.args.options!.help) {
         // Otherwise, throw the standard help.
         throwHelp(item, '');
         return callback(item);
@@ -928,15 +957,17 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         let response;
         let error;
         try {
-          response = item.fn.call(
-            new CommandInstance({
-              downstream: undefined,
-              commandWrapper: item,
-              commandObject: item.commandObject,
-              args: item.args
-            }),
-            item.args
-          );
+          response =
+            item.fn &&
+            item.fn.call(
+              new CommandInstance({
+                downstream: undefined,
+                commandWrapper: item,
+                commandObject: item.commandObject,
+                args: item.args
+              }),
+              typeof item.args === 'string' ? {} : item.args
+            );
         } catch (e) {
           error = e;
         }
@@ -949,6 +980,12 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
 
       // Build the instances for each pipe.
       item.pipes = item.pipes.map(function(pipe) {
+        if (typeof pipe === 'string') {
+          throw new Error('pipe should be object by now');
+        }
+        if (!pipe.command) {
+          throw new Error('pipe.command not set');
+        }
         return new CommandInstance({
           commandWrapper: item,
           command: pipe.command._name,
@@ -961,8 +998,12 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       // `downstream` object of each parent to its
       // child command.
       for (let k = item.pipes.length - 1; k > -1; --k) {
+        const pipe = item.pipes[k];
         const downstream = item.pipes[k + 1];
-        item.pipes[k].downstream = downstream;
+        if (typeof pipe === 'string' || typeof downstream === 'string') {
+          throw new Error('pipe should be object by now');
+        }
+        pipe.downstream = downstream;
       }
 
       item.session.execCommandSet(item, function(wrapper, err, data, argus) {
@@ -1100,7 +1141,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         );
       })
       .map(cmd => {
-        const args = cmd._args.map(arg => VorpalUtil.humanReadableArgName(arg)).join(' ');
+        const args = cmd._args.map(arg => Util.humanReadableArgName(arg)).join(' ');
 
         return [
           cmd._name +
@@ -1141,7 +1182,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
           })
       )
     ].map(function(cmd) {
-      const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
+      const prefix = `    ${Util.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
         counts[cmd] === 1 ? '' : 's'
       }.`;
       return prefix;
@@ -1157,11 +1198,11 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         : '\n  Commands:\n\n' +
           commands
             .map(function(cmd) {
-              const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
+              const prefix = '    ' + Util.pad(cmd[0], width) + '  ';
               const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
               for (let i = 0; i < suffixArr.length; ++i) {
                 if (i !== 0) {
-                  suffixArr[i] = VorpalUtil.pad('', width + 6) + suffixArr[i];
+                  suffixArr[i] = Util.pad('', width + 6) + suffixArr[i];
                 }
               }
               const suffix = suffixArr.join('\n');
@@ -1184,7 +1225,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
     const header = [];
 
     if (this._banner) {
-      header.push(VorpalUtil.padRow(this._banner), '');
+      header.push(Util.padRow(this._banner), '');
     }
 
     // Only show under specific conditions
@@ -1195,12 +1236,12 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         title += ' v' + this._version;
       }
 
-      header.push(VorpalUtil.padRow(title));
+      header.push(Util.padRow(title));
 
       if (this._description) {
         const descWidth = process.stdout.columns * 0.75; // Only 75% of the screen
 
-        header.push(VorpalUtil.padRow(wrap(this._description, descWidth)));
+        header.push(Util.padRow(wrap(this._description, descWidth)));
       }
     }
 

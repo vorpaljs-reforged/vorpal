@@ -2,24 +2,28 @@ import _, { forEach, range, some, isFunction, find, map } from 'lodash';
 import minimist from 'minimist';
 import strip from 'strip-ansi';
 
-import Command, { Arg } from './command';
+import Command, { Arg, Args } from './command';
+import { QueuedCommand } from 'vorpal';
 
-interface Options {
-  options: { [key: string]: any };
-}
+export type CommandMatch = {
+  command?: Command;
+  args?: string | Args;
+  downstream?: CommandMatch;
+};
 
 /**
  * Parses command arguments from multiple
  * sources.
  */
 function parseArgs(str: string, opts?: minimist.Opts) {
-  const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi; // !FIXME: wtf this regex is supposed to do?
+  // TODO figure out what this regex does and add comment
+  const reg = /"(.*?)"|'(.*?)'|`(.*?)`|([^\s"]+)/gi;
   const array = [];
   let match;
   do {
     match = reg.exec(str);
     if (match !== null) {
-      // TODO: check why, array is overwritten after
+      // TODO check why, array is overwritten after
       array.push(match[1] || match[2] || match[3] || match[4]);
     }
   } while (match !== null);
@@ -35,7 +39,7 @@ function parseArgs(str: string, opts?: minimist.Opts) {
  * and if there is a match, parse the
  * results.
  */
-function matchCommand(cmd: string, cmds: Command[]) {
+function matchCommand(cmd: string, cmds: Command[]): CommandMatch {
   const parts = String(cmd)
     .trim()
     .split(' ');
@@ -188,8 +192,13 @@ function parseCommand(command: string, commands: Command[]) {
   };
 }
 
-function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNormalized: boolean) {
-  let args: Options = { options: {} };
+function buildCommandArgs(
+  passedArgs: string,
+  cmd: Command,
+  execCommand?: QueuedCommand,
+  isCommandArgKeyPairNormalized?: boolean
+) {
+  let args: Args = { options: {} };
 
   if (isCommandArgKeyPairNormalized) {
     // Normalize all foo="bar" with "foo='bar'"
@@ -206,7 +215,7 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
   // registered for this command. These are
   // simply commands that don't have required
   // or optional args.
-  const booleans = [];
+  const booleans: string[] = [];
   cmd.options.forEach(opt => {
     if (!opt.required && !opt.optional) {
       if (opt.short) booleans.push(opt.short);
@@ -238,13 +247,13 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
   // Use minimist to parse the args.
   const parsedArgs = parseArgs(passedArgs, types);
 
-  function validateArg(arg, cmdArg) {
+  function validateArg(arg: string, cmdArg: Arg) {
     return !(arg === undefined && cmdArg.required === true);
   }
 
   // Builds varidiac args and options.
   let valid = true;
-  const remainingArgs = _.clone(parsedArgs._);
+  const remainingArgs = [...parsedArgs._];
   for (let l = 0; l < 10; ++l) {
     // !FIXME : why 10 limit?
     const matchArg = cmd._args[l];
@@ -283,7 +292,9 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
       return `\n  Missing required value for option ${o.long || o.short}. Showing Help:`;
     }
     if (exist !== undefined) {
-      args.options[long || short] = exist;
+      // Options is explicitly set on first line of function
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      args.options![long || short] = exist;
     }
   }
 
@@ -291,7 +302,7 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
   // exist in the options list.
   // If the command allows unknown options,
   // adds it, otherwise throws help.
-  const passedOpts = _.difference(_.keys(parsedArgs), ['_', 'help']);
+  const passedOpts = _.difference(Object.keys(parsedArgs), ['_', 'help']);
   for (const opt of passedOpts) {
     const optionFound = _.find(
       cmd.options,
@@ -301,8 +312,12 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
         `-${opt}` === expected.short
     );
     if (optionFound === undefined) {
-      if (!cmd._allowUnknownOptions) return `\n  Invalid option: '${opt}'. Showing Help:`;
-      args.options[opt] = parsedArgs[opt];
+      if (!cmd._allowUnknownOptions) {
+        return `\n  Invalid option: '${opt}'. Showing Help:`;
+      }
+      // Options is explicitly set on first line of function
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      args.options![opt] = parsedArgs[opt];
     }
   }
 
@@ -315,8 +330,11 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
 
   // Looks for a help arg and throws help if any.
   if (parsedArgs.help || parsedArgs._.indexOf('/?') > -1) {
-    args.options.help = true;
+    // Options is explicitly set on first line of function
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    args.options!.help = true;
   }
+
   return args;
 }
 
@@ -326,6 +344,24 @@ function buildCommandArgs(passedArgs, cmd, execCommand, isCommandArgKeyPairNorma
 function humanReadableArgName(arg: Arg): string {
   const nameOutput = arg.name + (arg.variadic === true ? '...' : '');
   return arg.required ? `<${nameOutput}>` : `[${nameOutput}]`;
+}
+
+/**
+ * Pads a value with with space or
+ * a specified delimiter to match a
+ * given width.
+ *
+ * @param {String} str
+ * @param {Number} width
+ * @param {String} delimiter
+ * @return {String}
+ * @api private
+ */
+function pad(str: string | string[], width: number, delimiter = ' '): string {
+  width = Math.floor(width);
+  str = Array.isArray(str) ? str.join() : str;
+  const len = Math.max(0, width - strip(str).length);
+  return str + Array(len + 1).join(delimiter);
 }
 
 /**
@@ -365,24 +401,6 @@ function prettifyArray(arr: string[] = []): string {
     lines.push(line);
   }
   return lines.join('\n');
-}
-
-/**
- * Pads a value with with space or
- * a specified delimiter to match a
- * given width.
- *
- * @param {String} str
- * @param {Number} width
- * @param {String} delimiter
- * @return {String}
- * @api private
- */
-function pad(str: string | string[], width: number, delimiter = ' '): string {
-  width = Math.floor(width);
-  str = Array.isArray(str) ? str.join() : str;
-  const len = Math.max(0, width - strip(str).length);
-  return str + Array(len + 1).join(delimiter);
 }
 
 /**
