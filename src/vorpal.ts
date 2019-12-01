@@ -14,7 +14,7 @@ import History from './history';
 import intercept, { InterceptFn } from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import ui, { KeyPressData, PipeFn } from './ui';
+import ui, { KeyPressData, PipeFn, SigIntFn } from './ui';
 import Util, { CommandMatch } from './util';
 import commons from './vorpal-commons';
 
@@ -97,10 +97,13 @@ export type QueuedCommand = {
   reject?: (error?: Error | string | any) => void;
 };
 
+export type HelpFn = (command: string) => string;
+
 interface Events {
   command_registered: (data: { command: Command; name: string }) => void;
   keypress: (data: KeyPressData) => void;
   client_prompt_submit: (data: string) => void;
+  mode_exit: (data: string) => void;
   'vantage-prompt-upstream': (data: PromptEventData) => void;
   'vantage-prompt-downstream': (data: PromptEventData) => void;
   'vantage-keypress-upstream': (data: KeyPressData) => void;
@@ -138,7 +141,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   public session: Session;
   private isCommandArgKeyPairNormalized: boolean;
   private executables?: boolean;
-  public _help: any;
+  public _help?: HelpFn;
   public _fatal?: boolean;
 
   constructor() {
@@ -786,7 +789,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
     item = item || {};
     item.command = item.command || '';
     const modeCommand = item.command;
-    item.command = item.session._mode ? item.session._mode : item.command;
+    item.command = item.session._mode ? String(item.session._mode) : item.command;
 
     let promptCancelled = false;
     if (this.ui._midPrompt) {
@@ -883,7 +886,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       for (let j = 0; j < item.pipes.length; ++j) {
         const commandParts = this.util.matchCommand(String(item.pipes[j]), this.commands);
         if (!commandParts.command) {
-          item.session.log(this._commandHelp(item.pipes[j]));
+          item.session.log(this._commandHelp(String(item.pipes[j])));
           allValid = false;
           break;
         }
@@ -1014,11 +1017,8 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * Exits out of a give 'mode' one is in.
    * Reverts history and delimiter back to
    * regular vorpal usage.
-   *
-   * @api private
    */
-
-  public _exitMode(options) {
+  public _exitMode(options: SessionData) {
     const ssn = this.getSessionById(options.sessionId);
     ssn._mode = false;
     this.cmdHistory.exitMode();
@@ -1030,13 +1030,8 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * Registers a custom handler for SIGINT.
    * Vorpal exits with 0 by default
    * on a sigint.
-   *
-   * @param {Function} fn
-   * @return {Vorpal}
-   * @api public
    */
-
-  public sigint(fn) {
+  public sigint(fn: SigIntFn) {
     if (isFunction(fn)) {
       ui.sigint(fn);
     } else {
@@ -1054,37 +1049,28 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Registers custom help.
-   *
-   * @param {Function} fn
-   * @return {Vorpal}
-   * @api public
    */
-
-  public help(fn) {
+  public help(fn: HelpFn) {
     this._help = fn;
   }
 
   /**
    * Returns help string for a given command.
-   *
-   * @param {String} command
-   * @api private
    */
-
-  public _commandHelp(command) {
+  public _commandHelp(command: string) {
     if (!this.commands.length) {
       return '';
     }
 
-    if (this._help !== undefined && isFunction(this._help)) {
+    if (this._help !== undefined && typeof this._help === 'function') {
       return this._help(command);
     }
 
-    let matches = [];
+    let matches: Command[] = [];
     const singleMatches = [];
 
-    command = command ? String(command).trim() : undefined;
-    for (const _command of this.commands) {
+    command = String(command).trim();
+    this.commands.forEach(_command => {
       const parts = String(_command._name).split(' ');
       if (parts.length === 1 && parts[0] === command && !_command._hidden && !_command._catch) {
         singleMatches.push(command);
@@ -1097,7 +1083,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
           break;
         }
       }
-    }
+    });
 
     const invalidString =
       command && matches.length === 0 && singleMatches.length === 0
@@ -1151,7 +1137,9 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       return Math.max(max, commandX[0].length);
     }, 0);
 
-    const counts = {};
+    const counts: {
+      [key: string]: number;
+    } = {};
 
     let groups = [
       ...new Set(

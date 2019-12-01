@@ -39,7 +39,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   public _modeDelimiter: any;
   public _tabCount: number;
   public cmdHistory: History;
-  public _mode?: string;
+  public _mode?: boolean | string;
   public _histCtr: number;
   public cancelCommands: any;
   /**

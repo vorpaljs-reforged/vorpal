@@ -93,15 +93,14 @@ export default class Command extends EventEmitter {
   public _args: Arg[] = [];
   public _allowUnknownOptions = false;
   public _help?: HelpFn;
-
-  private _relay = false;
-  private _hidden = false;
-  private _parent: Vorpal;
-  private _description?: string;
-  private _after?: AfterFn;
-  private _autocomplete?: AutocompleteConfig;
-  private _done?: DoneFn;
-  private _usage?: string;
+  public _relay = false;
+  public _hidden = false;
+  public _parent: Vorpal;
+  public _description?: string;
+  public _after?: AfterFn;
+  public _autocomplete?: AutocompleteConfig;
+  public _done?: DoneFn;
+  public _usage?: string;
 
   // Index signature used to store options.
   // Must be any to remain compatible with other class properties.
