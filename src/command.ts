@@ -14,6 +14,7 @@ import Option from './option';
 import { AutocompleteConfig } from './autocomplete';
 import util from './util';
 import Vorpal from './vorpal';
+import { CommandInstance } from 'command-instance';
 
 export interface Args {
   [key: string]: string | string[] | object | undefined;
@@ -21,18 +22,6 @@ export interface Args {
     [key: string]: string | string[] | boolean | undefined;
   };
 }
-
-interface SD {
-  sessionId?: string;
-}
-
-let x: Args = {
-  sessionId: 'fe'
-};
-
-const s: SD & Args = {};
-
-x = s;
 
 export interface Arg {
   required: boolean;
@@ -51,7 +40,7 @@ export type ActionReturnType = ActionReturnValue | Promise<ActionReturnValue>;
 export type ActionCallback = () => void;
 
 export type ActionFn = {
-  (args: Args, cb?: ActionCallback): ActionReturnType;
+  (this: CommandInstance, args: Args, cb?: ActionCallback): ActionReturnType;
 };
 
 export type ValidateFn = (args: Args) => boolean | string;

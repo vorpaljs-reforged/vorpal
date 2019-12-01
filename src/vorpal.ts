@@ -113,6 +113,15 @@ interface Events {
   'vantage-resume-downstream': (data: SessionData) => void;
   'vantage-close-downstream': (data: SessionData) => void;
   'vantage-command-upstream': (data: CommandEventData) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  'vantage-ssn-stdout-downstream': (data: SessionData & { value: any }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  'vantage-delimiter-downstream': (data: SessionData & { value: any }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  'vantage-mode-delimiter-downstream': (data: SessionData & { value: any }) => void;
+  client_command_cancelled: (data: { command: string }) => void;
+  client_command_error: (data: { command: string; error: Error }) => void;
+  client_command_executed: (data: { command: string }) => void;
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };

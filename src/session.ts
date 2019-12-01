@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-ignore */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { EventEmitter } from 'events';
 import os from 'os';
 
@@ -19,14 +21,14 @@ interface Events {
   vorpal_command_cancel: () => void;
 }
 
-type TypedEventEmitter = { new (): TypedEmitter<Events> };
+type TypedEventEmitter = { new(): TypedEmitter<Events> };
 
 export default class Session extends (EventEmitter as TypedEventEmitter) {
-  public _registeredCommands: number;
-  public _completedCommands: number;
+  public _registeredCommands = 0;
+  public _completedCommands = 0;
   public _commandSetCallback: any;
   public id: string;
-  public vorpal;
+  public vorpal?: any;
   public parent: Vorpal;
   public client?: Vorpal; // @todo: actually, never?
   public server?: Vorpal; // @todo: actually, never?
@@ -40,7 +42,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   public _tabCount: number;
   public cmdHistory: History;
   public _mode?: boolean | string;
-  public _histCtr: number;
+  public _histCtr?: number;
   public cancelCommands: any;
   /**
    * Initialize a new `Session` instance.
@@ -50,7 +52,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  constructor(options) {
+  constructor(options: any) {
     // eslint-disable-next-line constructor-super
     super();
 
@@ -98,13 +100,13 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @return {Session}
    * @api public
    */
-  public _log(...args) {
+  public _log(...args: any) {
     if (this.isLocal()) {
       this.parent.ui.log(...args);
     } else {
       // If it's an error, expose the stack. Otherwise
       // we get a helpful '{}'.
-      const value = [];
+      const value: any = [];
       for (const arg of args) {
         args.push(arg && arg.stack ? 'Error: ' + arg.message : arg);
       }
@@ -136,7 +138,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public prompt(options, cb) {
+  public prompt(options: any, cb: any) {
     options = options || {};
     options.sessionId = this.id;
     return this.parent.prompt(options, cb);
@@ -187,7 +189,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public modeDelimiter(str) {
+  public modeDelimiter(str: any) {
     if (str === undefined) {
       return this._modeDelimiter;
     }
@@ -223,7 +225,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     }
     if (keyMatch) {
       if (['up', 'down'].includes(key)) {
-        cb(undefined, this.getHistory(key));
+        cb(undefined, this.getHistory(key as 'up' | 'down'));
       } else if (key === 'tab') {
         this.getAutocomplete(value, cb);
       }
@@ -258,7 +260,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public help(command) {
+  public help(command: string) {
     this.log(this.parent._commandHelp(command || ''));
   }
 
@@ -271,7 +273,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public match(str, arr) {
+  public match(str: string, arr: any) {
     return this._autocomplete(str, arr);
   }
 
@@ -280,21 +282,22 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    */
   public execCommandSet(wrapper: QueuedCommand, callback: InternalExecCallback) {
     let response: CommandResponse = {};
-    let res;
+    // eslint-disable-next-line prefer-const
+    let res: any;
     this._registeredCommands = 1;
     this._completedCommands = 0;
 
     // Create the command instance for the first
     // command and hook it up to the pipe chain.
     const commandInstance = new CommandInstance({
-      downstream: wrapper.pipes[0],
+      downstream: wrapper.pipes && wrapper.pipes[0],
       commandObject: wrapper.commandObject,
       commandWrapper: wrapper
     });
 
     wrapper.commandInstance = commandInstance;
 
-    function sendDones(itm) {
+    function sendDones(itm: any) {
       if (itm.commandObject && itm.commandObject._done) {
         itm.commandObject._done.call(itm);
       }
@@ -305,7 +308,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
 
     // Called when command is cancelled
     this.cancelCommands = () => {
-      const callCancel = function(commandInstanceInner) {
+      const callCancel = function (commandInstanceInner: any) {
         if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
           commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
         }
@@ -360,7 +363,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
       sendDones(commandInstance);
     };
 
-    const onCompletion = (wrapperInner, err, data?, argus?) => {
+    const onCompletion: InternalExecCallback = (wrapperInner, err, data?, argus?) => {
       response = {
         error: err,
         data,
@@ -372,6 +375,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     let valid;
     if (_.isFunction(wrapper.validate)) {
       try {
+        // @ts-ignore
         valid = wrapper.validate.call(commandInstance, wrapper.args);
       } catch (e) {
         // Complete with error on validation error
@@ -390,7 +394,9 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     }
 
     // Call the root command.
-    res = wrapper.fn.call(commandInstance, wrapper.args, function(...argus) {
+    // @ts-ignore
+    res = wrapper.fn.call(commandInstance, wrapper.args, function (...argus) {
+      // @ts-ignore
       onCompletion(wrapper, argus[0], argus[1], argus);
     });
 
@@ -398,10 +404,10 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     // returns a promise, handle accordingly.
     if (res && _.isFunction(res.then)) {
       res
-        .then(function(data) {
+        .then(function (data: any) {
           onCompletion(wrapper, undefined, data);
         })
-        .catch(function(err) {
+        .catch(function (err: any) {
           onCompletion(wrapper, true, err);
         });
     }
@@ -456,7 +462,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api private
    */
 
-  private getHistory(direction) {
+  private getHistory(direction?: 'up' | 'down') {
     let history;
     if (direction === 'up') {
       history = this.cmdHistory.getPreviousHistory();
