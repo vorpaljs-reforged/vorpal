@@ -10,6 +10,8 @@ import {
   Input
 } from './autocomplete';
 import Session from './session';
+import Vorpal from 'vorpal';
+import Command from 'command';
 
 /**
  * Tracks how many times tab was pressed
@@ -22,7 +24,7 @@ import Session from './session';
  */
 export function handleTabCounts(this: Session, match: AutocompleteMatch, freezeTabs: boolean) {
   let result: AutocompleteMatch;
-  if (_.isArray(match)) {
+  if (Array.isArray(match)) {
     this._tabCount += 1;
     if (this._tabCount > 1) {
       result = match.length === 0 ? undefined : match;
@@ -37,24 +39,14 @@ export function handleTabCounts(this: Session, match: AutocompleteMatch, freezeT
 /**
  * Looks for a potential exact match
  * based on given data.
- *
- * @param {String} ctx
- * @param {Array} data
- * @param {Object} options
- * @return {String}
- * @api private
  */
-export function getMatch(
-  ctx: string,
-  data: string[],
-  options?: AutocompleteOptions
-): AutocompleteMatch {
+export function getMatch(ctx: string, data: string[], options?: AutocompleteOptions) {
   // Look for a command match, eliminating and then
   // re-introducing leading spaces.
   const len = ctx.length;
   const trimmed = ctx.trimLeft();
   const match = autocomplete.match(trimmed, data.slice(), options);
-  if (_.isArray(match)) {
+  if (Array.isArray(match)) {
     return match;
   }
   const prefix = new Array(len - trimmed.length + 1).join(' ');
@@ -66,13 +58,9 @@ export function getMatch(
 /**
  * Takes the input object and assembles
  * the final result to display on the screen.
- *
- * @param {Object} input
- * @return {AutocompleteMatch}
- * @api private
  */
-export function assembleInput(input: Input): AutocompleteMatch {
-  if (_.isArray(input.context)) {
+export function assembleInput(input: Input) {
+  if (Array.isArray(input.context)) {
     return input.context;
   }
   const result = (input.prefix || '') + (input.context || '') + (input.suffix || '');
@@ -99,10 +87,10 @@ export function filterData(str = '', data: string[]) {
     .split(' ');
 
   return data
-    .filter(function(item) {
+    .filter(function (item) {
       return strip(item).slice(0, ctx.length) === ctx;
     })
-    .map(function(item) {
+    .map(function (item) {
       let parts = String(item)
         .trim()
         .split(' ');
@@ -133,13 +121,8 @@ export function getSuffix(suffix: string) {
  * string and breaks it into its
  * integral parts for analysis and
  * modification.
- *
- * @param {String} str
- * @param {Number} idx
- * @return {Object}
- * @api private
  */
-export function parseInput(str = '', idx: number): Input {
+export function parseInput(str = '', idx: number) {
   const raw = String(str);
   const sliced = raw.slice(0, idx);
   const sections = sliced.split('|');
@@ -153,7 +136,7 @@ export function parseInput(str = '', idx: number): Input {
     prefix,
     suffix,
     context
-  };
+  } as Input;
 }
 
 /**
@@ -163,10 +146,6 @@ export function parseInput(str = '', idx: number): Input {
  * including assigning its role
  * such as being an option
  * parameter, etc.
- *
- * @param {Object} input
- * @return {Object}
- * @api private
  */
 export function parseMatchSection(input: Input<string>) {
   const parts = (input.context || '').split(' ');
@@ -175,7 +154,7 @@ export function parseMatchSection(input: Input<string>) {
   if (beforeLast.slice(0, 1) === '-') {
     input.option = beforeLast;
   }
-  input.context = last;
+  input.context = last || '';
   input.prefix = (input.prefix || '') + parts.join(' ') + ' ';
   return input;
 }
@@ -206,14 +185,14 @@ export function getCommandNames(cmds: ICommand[]): string[] {
  * @return {Object}
  * @api private
  */
-export function getMatchObject(this: IVorpal, input: Input<string>, commandNames: string[]) {
+export function getMatchObject(this: Session, input: Input, commandNames: string[]) {
   const len = input.context.length;
   const trimmed = String(input.context).trimLeft();
   let prefix = new Array(len - trimmed.length + 1).join(' ');
-  let match: string;
-  let suffix;
+  let match: string | undefined;
+  let suffix = '';
 
-  commandNames.forEach(function(cmd) {
+  commandNames.forEach(function (cmd) {
     const nextChar = trimmed.substr(cmd.length, 1);
     if (trimmed.substr(0, cmd.length) === cmd && String(cmd).trim() !== '' && nextChar === ' ') {
       match = cmd;
@@ -222,12 +201,12 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
     }
   });
 
-  let matchObject: ICommand = match
-    ? _.find(this.parent.commands, { _name: String(match).trim() })
+  let matchObject: Command | undefined = match
+    ? this.parent.commands.find(command => command._name === String(match).trim())
     : undefined;
 
   if (!matchObject) {
-    this.parent.commands.forEach(function(cmd) {
+    this.parent.commands.forEach(function (cmd) {
       if ((cmd._aliases || []).indexOf(String(match).trim()) > -1) {
         matchObject = cmd;
       }
@@ -236,7 +215,9 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
   }
 
   if (!matchObject) {
-    matchObject = this.parent.commands.find(cmd => !_.isNil(cmd._catch));
+    matchObject = this.parent.commands.find(
+      cmd => cmd._catch !== null && typeof cmd._catch !== 'undefined'
+    );
     if (matchObject) {
       suffix = input.context;
     }
@@ -268,18 +249,18 @@ function handleDataFormat(
     const cbk =
       config.length < 2
         ? // eslint-disable-next-line @typescript-eslint/no-empty-function
-          function() {}
-        : function(err, resp: string[]) {
-            cb(resp || []);
-          };
+        function () { }
+        : function (err, resp: string[]) {
+          cb(resp || []);
+        };
     const res = config(str, cbk);
 
     if (res instanceof Promise) {
       res
-        .then(function(resp) {
+        .then(function (resp) {
           cb(resp);
         })
-        .catch(function(err) {
+        .catch(function (err) {
           cb(err);
         });
     } else if (config.length < 2) {
@@ -295,13 +276,8 @@ function handleDataFormat(
  * the applicable data by calling its autocompletion
  * instructions, whether it is the command's
  * autocompletion or one of its options.
- *
- * @param {Object} input
- * @param {Function} cb
- * @return {Array}
- * @api private
  */
-export function getMatchData(input: Input<string>, cb: AutocompleteCallback) {
+export function getMatchData(input: Input, cb: AutocompleteCallback<string[]>) {
   const string = input.context;
   const cmd = input.match;
   const midOption =

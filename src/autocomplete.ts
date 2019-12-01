@@ -18,7 +18,7 @@ export interface Input<T extends AutocompleteMatch = AutocompleteMatch> {
   raw: string;
   prefix: string;
   suffix: string;
-  context: T;
+  context: T; // Is string when match is a Command, string[] otherwise
   match?: Command;
   option?: string;
 }
@@ -27,9 +27,9 @@ export interface AutocompleteOptions {
   ignoreSlashes?: boolean;
 }
 
-export type AutocompleteMatch = string | string[] | undefined;
+export type AutocompleteMatch = string | string[];
 
-export type AutocompleteCallback = (data: AutocompleteMatch) => unknown;
+export type AutocompleteCallback<T = AutocompleteMatch> = (data: T) => unknown;
 
 export type AutocompleteConfigCallback = (error: Error | undefined, arr: AutocompleteMatch) => void;
 
@@ -78,8 +78,8 @@ const autocomplete = {
     input = getMatchObject.call(this, input, commands);
 
     if (input.match) {
-      input = parseMatchSection.call(this, input);
-      getMatchData.call(this, input, function(data: string[]) {
+      input = parseMatchSection.call(this, input as Input<string>);
+      getMatchData.call(this, input, function(data) {
         const dataMatch = getMatch(input.context as string, data);
         if (dataMatch) {
           input.context = dataMatch;
@@ -98,7 +98,7 @@ const autocomplete = {
    * Independent / stateless auto-complete function.
    * Parses an array of strings for the best match.
    */
-  match(str: string, arr: string[] = [], options: AutocompleteOptions = {}): AutocompleteMatch {
+  match(str: string, arr: string[] = [], options: AutocompleteOptions = {}) {
     arr.sort();
     const arrX = clone(arr);
     let strX = String(str);
@@ -107,7 +107,7 @@ const autocomplete = {
 
     if (options.ignoreSlashes !== true) {
       const parts = strX.split('/');
-      strX = parts.pop();
+      strX = parts.pop() || '';
       prefix = parts.join('/');
       prefix = parts.length > 0 ? prefix + '/' : prefix;
     }
