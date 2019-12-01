@@ -132,16 +132,11 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   /**
    * Maps to vorpal.prompt for a session
    * context.
-   *
-   * @param {Object} options
-   * @param {Function} cb
-   * @api public
    */
-
-  public prompt(options: any, cb: any) {
+  public prompt(...[options, userCallback]: Parameters<Vorpal['prompt']>) {
     options = options || {};
     options.sessionId = this.id;
-    return this.parent.prompt(options, cb);
+    return this.parent.prompt(options, userCallback);
   }
 
   /**
