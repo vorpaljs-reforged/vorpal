@@ -4,12 +4,10 @@
  * through vorpal.use(module).
  */
 
-/**
- * Module dependencies.
- */
-
 import _ from 'lodash';
+import command from './command';
 import {IVorpal} from './types/types';
+import {isFunction} from './utils';
 
 export default function(vorpal: IVorpal) {
   /**
@@ -22,11 +20,11 @@ export default function(vorpal: IVorpal) {
     .action(function(this: IVorpal, args, cb) {
       if (args.command) {
         args.command = args.command.join(' ');
-        const commandWithName = _.find(this.parent.commands, {
-          _name: String(args.command).trim()
-        });
+        const commandWithName = this.parent.commands.find(
+          command => command._name === String(args.command).trim()
+        );
         if (commandWithName && !commandWithName._hidden) {
-          if (_.isFunction(commandWithName._help)) {
+          if (isFunction(commandWithName._help)) {
             commandWithName._help(args.command, str => {
               this.log(str);
               cb();

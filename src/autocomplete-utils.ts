@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import strip from 'strip-ansi';
 import autocomplete from './autocomplete';
 import {
@@ -10,6 +9,7 @@ import {
   Input
 } from './types/autocomplete';
 import {ICommand, IVorpal} from './types/types';
+import {isFunction} from './utils';
 
 /**
  * Tracks how many times tab was pressed
@@ -22,7 +22,7 @@ import {ICommand, IVorpal} from './types/types';
  */
 export function handleTabCounts(match: AutocompleteMatch, freezeTabs: boolean): AutocompleteMatch {
   let result;
-  if (_.isArray(match)) {
+  if (Array.isArray(match)) {
     this._tabCount += 1;
     if (this._tabCount > 1) {
       result = match.length === 0 ? undefined : match;
@@ -54,7 +54,7 @@ export function getMatch(
   const len = ctx.length;
   const trimmed = ctx.trimLeft();
   const match = autocomplete.match(trimmed, data.slice(), options);
-  if (_.isArray(match)) {
+  if (Array.isArray(match)) {
     return match;
   }
   const prefix = new Array(len - trimmed.length + 1).join(' ');
@@ -72,7 +72,7 @@ export function getMatch(
  * @api private
  */
 export function assembleInput(input: Input): AutocompleteMatch {
-  if (_.isArray(input.context)) {
+  if (Array.isArray(input.context)) {
     return input.context;
   }
   const result = (input.prefix || '') + (input.context || '') + (input.suffix || '');
@@ -184,14 +184,15 @@ export function parseMatchSection(input: Input<string>) {
  * Compile all available commands and aliases
  * in alphabetical order.
  *
- * @param {Array} cmds
+ * @param {Array} commands
  * @return {Array}
  * @api private
  */
-export function getCommandNames(cmds: ICommand[]): string[] {
-  const commands = _.map(cmds, '_name').concat(..._.map(cmds, '_aliases'));
-  commands.sort();
-  return commands;
+export function getCommandNames(commands: ICommand[]): string[] {
+  return commands
+    .map(command => command._name)
+    .concat(...commands.map(command => command._aliases))
+    .sort();
 }
 
 /**
@@ -223,11 +224,11 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
   });
 
   let matchObject: ICommand = match
-    ? _.find(this.parent.commands, {_name: String(match).trim()})
+    ? this.parent.commands.find(command => command._name === String(match).trim())
     : undefined;
 
   if (!matchObject) {
-    this.parent.commands.forEach(function(cmd) {
+    this.parent.commands.forEach(cmd => {
       if ((cmd._aliases || []).indexOf(String(match).trim()) > -1) {
         matchObject = cmd;
       }
@@ -236,7 +237,7 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
   }
 
   if (!matchObject) {
-    matchObject = this.parent.commands.find(cmd => !_.isNil(cmd._catch));
+    matchObject = this.parent.commands.find(cmd => cmd._catch != null);
     if (matchObject) {
       suffix = input.context;
     }
@@ -262,9 +263,9 @@ function handleDataFormat(
   cb: AutocompleteCallback
 ) {
   let data: string[] = [];
-  if (_.isArray(config)) {
+  if (Array.isArray(config)) {
     data = config;
-  } else if (_.isFunction(config)) {
+  } else if (isFunction(config)) {
     const cbk =
       config.length < 2
         ? // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -336,6 +337,6 @@ export function getMatchData(input: Input<string>, cb: AutocompleteCallback) {
   }
 
   const conf = cmd._autocomplete;
-  const confFn = conf && !_.isArray(conf) && conf.data ? conf.data : conf;
+  const confFn = conf && !Array.isArray(conf) && conf.data ? conf.data : conf;
   handleDataFormat(string, confFn, cb);
 }

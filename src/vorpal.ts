@@ -4,7 +4,7 @@
 
 import chalk from 'chalk';
 import {EventEmitter} from 'events';
-import _ from 'lodash';
+import {uniq} from 'lodash';
 import minimist from 'minimist';
 import os from 'os';
 import wrap from 'wrap-ansi';
@@ -16,7 +16,17 @@ import LocalStorage from './local-storage';
 import Session from './session';
 import {IVorpal} from './types/types';
 import ui from './ui';
-import VorpalUtil from './util';
+import * as VorpalUtils from './utils';
+import {
+  humanReadableArgName,
+  isFunction,
+  isObject,
+  pad,
+  padRow,
+  prettifyArray,
+  isString,
+  isDefined
+} from './utils';
 import commons from './vorpal-commons';
 
 interface PromptOption {
@@ -35,7 +45,6 @@ interface DataSession {
 
 export default class Vorpal extends EventEmitter implements IVorpal {
   public chalk;
-  public lodash: _.LoDashStatic;
   public parent: Vorpal;
   private _version: string;
   private _title: string;
@@ -91,9 +100,6 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     // Expose chalk as a convenience.
     this.chalk = chalk;
 
-    // Expose lodash as a convenience.
-    this.lodash = _;
-
     // Exposed through vorpal.delimiter(str).
     this._delimiter = 'local@' + String(os.hostname()).split('.')[0] + '~$ ';
     ui.setDelimiter(this._delimiter);
@@ -108,7 +114,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     this._hooked = false;
 
     // Expose common utilities, like padding.
-    this.util = VorpalUtil;
+    this.util = VorpalUtils;
 
     this.Session = Session;
 
@@ -150,7 +156,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     options = options || {};
     const args = argv;
     let result: Vorpal | minimist.ParsedArgs = this;
-    const catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
+    const catchExists = this.commands.find(command => isDefined(command._catch));
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
@@ -259,13 +265,13 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     if (!commands) {
       return this;
     }
-    if (_.isFunction(commands)) {
+    if (isFunction(commands)) {
       commands.call(this, this, options);
-    } else if (_.isString(commands)) {
+    } else if (isString(commands)) {
       /* eslint-disable-next-line @typescript-eslint/no-var-requires */
       return this.use(require(commands), options);
     } else {
-      commands = _.isArray(commands) ? commands : [commands];
+      commands = Array.isArray(commands) ? commands : [commands];
       for (const cmd of commands) {
         if (cmd.command) {
           const command = this.command(cmd.command);
@@ -273,7 +279,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
             command.description(cmd.description);
           }
           if (cmd.options) {
-            cmd.options = _.isArray(cmd.options) ? cmd.options : [cmd.options];
+            cmd.options = Array.isArray(cmd.options) ? cmd.options : [cmd.options];
             for (let j = 0; j < cmd.options.length; ++j) {
               command.option(cmd.options[j][0], cmd.options[j][1]);
             }
@@ -356,7 +362,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public mode(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, {mode: true}));
+    return this.command(name, desc, Object.assign(opts || {}, {mode: true}));
   }
 
   /**
@@ -371,7 +377,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public catch(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, {catch: true}));
+    return this.command(name, desc, Object.assign(opts || {}, {catch: true}));
   }
 
   /**
@@ -385,7 +391,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public default(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, {catch: true}));
+    return this.command(name, desc, Object.assign(opts || {}, {catch: true}));
   }
 
   /**
@@ -489,7 +495,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       throw new Error('vorpal.localStorage() requires a unique key to be passed in.');
     }
     const ls = new LocalStorage(id);
-    _.forEach(['getItem', 'setItem', 'removeItem'], method => {
+    ['getItem', 'setItem', 'removeItem'].forEach(method => {
       this.localStorage[method] = ls[method].bind(ls);
     });
     return this;
@@ -548,8 +554,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     if (this.session.isLocal() && !this.session.client && !this._command) {
       this.session.getKeypressResult(key, value, function(err, result) {
         if (!err && result !== undefined) {
-          if (_.isArray(result)) {
-            const formatted = VorpalUtil.prettifyArray(result);
+          if (Array.isArray(result)) {
+            const formatted = prettifyArray(result);
             self.ui.imprint();
             self.session.log(formatted);
           } else {
@@ -702,7 +708,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public exec(cmd, args?, cb?) {
-    cb = _.isFunction(args) ? args : cb;
+    cb = isFunction(args) ? args : cb;
     args = args || {};
 
     const ssn = args.sessionId ? this.getSessionById(args.sessionId) : this.session;
@@ -898,7 +904,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
       // If we get a string back, it's a validation error.
       // Show help and return.
-      if (_.isString(item.args) || !_.isObject(item.args)) {
+      if (isString(item.args) || !isObject(item.args)) {
         throwHelp(item, item.args);
         return callback(item, undefined, item.args);
       }
@@ -913,7 +919,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
           break;
         }
         commandParts.args = self.util.buildCommandArgs(commandParts.args, commandParts.command);
-        if (_.isString(commandParts.args) || !_.isObject(commandParts.args)) {
+        if (isString(commandParts.args) || !isObject(commandParts.args)) {
           throwHelp(item, commandParts.args, commandParts.command);
           allValid = false;
           break;
@@ -926,7 +932,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       }
 
       // If `--help` or `/?` is passed, do help.
-      if (item.args.options.help && _.isFunction(match._help)) {
+      if (item.args.options.help && isFunction(match._help)) {
         // If the command has a custom help function, run it
         // as the actual "command". In this way it can go through
         // the whole cycle and expect a callback.
@@ -1043,7 +1049,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public sigint(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       ui.sigint(fn);
     } else {
       throw new Error('vorpal.sigint must be passed in a valid function.');
@@ -1060,7 +1066,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public find(name) {
-    return _.find(this.commands, {_name: name});
+    return this.commands.find(command => command._name === name);
   }
 
   /**
@@ -1087,7 +1093,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       return '';
     }
 
-    if (this._help !== undefined && _.isFunction(this._help)) {
+    if (this._help !== undefined && isFunction(this._help)) {
       return this._help(command);
     }
 
@@ -1146,7 +1152,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         );
       })
       .map(cmd => {
-        const args = cmd._args.map(arg => VorpalUtil.humanReadableArgName(arg)).join(' ');
+        const args = cmd._args.map(arg => humanReadableArgName(arg)).join(' ');
 
         return [
           cmd._name +
@@ -1164,7 +1170,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
     const counts = {};
 
-    let groups = _.uniq(
+    let groups = uniq(
       matches
         .filter(function(cmd) {
           return (
@@ -1185,7 +1191,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
           return cmd;
         })
     ).map(function(cmd) {
-      const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
+      const prefix = `    ${pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
         counts[cmd] === 1 ? '' : 's'
       }.`;
       return prefix;
@@ -1201,11 +1207,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         : '\n  Commands:\n\n' +
           commands
             .map(function(cmd) {
-              const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
+              const prefix = '    ' + pad(cmd[0], width) + '  ';
               const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
               for (let i = 0; i < suffixArr.length; ++i) {
                 if (i !== 0) {
-                  suffixArr[i] = VorpalUtil.pad('', width + 6) + suffixArr[i];
+                  suffixArr[i] = pad('', width + 6) + suffixArr[i];
                 }
               }
               const suffix = suffixArr.join('\n');
@@ -1228,7 +1234,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     const header = [];
 
     if (this._banner) {
-      header.push(VorpalUtil.padRow(this._banner), '');
+      header.push(padRow(this._banner), '');
     }
 
     // Only show under specific conditions
@@ -1239,12 +1245,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         title += ' v' + this._version;
       }
 
-      header.push(VorpalUtil.padRow(title));
+      header.push(padRow(title));
 
       if (this._description) {
         const descWidth = process.stdout.columns * 0.75; // Only 75% of the screen
 
-        header.push(VorpalUtil.padRow(wrap(this._description, descWidth)));
+        header.push(padRow(wrap(this._description, descWidth)));
       }
     }
 
@@ -1324,12 +1330,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    */
 
   public getSessionById(id: string) {
-    if (_.isObject(id)) {
+    if (isObject(id)) {
       throw new Error(
         'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'
       );
     }
-    let ssn = _.find(this.server.sessions, {id});
+    let ssn = this.server.sessions.find(session => isDefined(session.id));
     ssn = this.session.id === id ? this.session : ssn;
     if (!id) {
       throw new Error('vorpal.getSessionById was called with no ID passed.');
@@ -1337,7 +1343,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     if (!ssn) {
       const sessions = {
         local: this.session.id,
-        server: _.map(this.server.sessions, 'id')
+        server: this.server.sessions.map(session => session.id)
       };
       throw new Error(
         'No session found for id ' +

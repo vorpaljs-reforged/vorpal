@@ -52,3 +52,11 @@ export interface ICommand extends EventEmitter {
   parse(fn);
   after(fn): ICommand;
 }
+
+// The entire command, with arguments and options, entered in the command line
+export type InputCommand = string;
+
+export interface IMatchParts {
+  args: string;
+  command?: ICommand;
+}

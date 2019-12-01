@@ -1,9 +1,4 @@
-/**
- * Module dependencies.
- */
-
-import _ from 'lodash';
-import util from './util';
+import {isFunction, noop} from './utils';
 
 interface CommandInstanceParams {
   commandWrapper?: any;
@@ -56,7 +51,7 @@ export class CommandInstance {
 
   public log(...args) {
     if (this.downstream) {
-      const fn = this.downstream.commandObject._fn || _.noop;
+      const fn = this.downstream.commandObject._fn || noop;
       this.session.registerCommand();
       this.downstream.args.stdin = args;
       const onComplete = (err: Error | undefined) => {
@@ -71,7 +66,7 @@ export class CommandInstance {
       };
 
       const validate = this.downstream.commandObject._validate;
-      if (_.isFunction(validate)) {
+      if (isFunction(validate)) {
         try {
           validate.call(this.downstream, this.downstream.args);
         } catch (e) {
@@ -83,7 +78,7 @@ export class CommandInstance {
       }
 
       const res = fn.call(this.downstream, this.downstream.args, onComplete);
-      if (res && _.isFunction(res.then)) {
+      if (res && isFunction(res.then)) {
         res.then(onComplete, onComplete);
       }
     } else {

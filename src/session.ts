@@ -1,14 +1,8 @@
-/**
- * Module dependencies.
- */
-
 import {EventEmitter} from 'events';
-import _ from 'lodash';
 import os from 'os';
 import autocomplete from './autocomplete';
-import Command from './command';
 import {CommandInstance} from './command-instance';
-import util from './util';
+import {isFunction, noop} from './utils';
 import Vorpal from './vorpal';
 
 interface CommandResponse {
@@ -205,10 +199,11 @@ export default class Session extends EventEmitter {
    *
    * @param {String} key
    * @param {String} value
+   * @param {Function} cb
    * @return {Function}
    * @api private
    */
-  private getKeypressResult(key: string, value, cb = _.noop) {
+  private getKeypressResult(key: string, value, cb = noop) {
     const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
     if (key !== 'tab') {
       this._tabCount = 0;
@@ -310,7 +305,7 @@ export default class Session extends EventEmitter {
     // Called when command is cancelled
     this.cancelCommands = function() {
       const callCancel = function(commandInstanceInner) {
-        if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
+        if (isFunction(commandInstanceInner.commandObject._cancel)) {
           commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
         }
 
@@ -322,7 +317,7 @@ export default class Session extends EventEmitter {
       callCancel(wrapper.commandInstance);
 
       // Check if there is a cancel method on the promise
-      if (res && _.isFunction(res.cancel)) {
+      if (res && isFunction(res.cancel)) {
         res.cancel(wrapper.commandInstance);
       }
 
@@ -374,7 +369,7 @@ export default class Session extends EventEmitter {
     }
 
     let valid;
-    if (_.isFunction(wrapper.validate)) {
+    if (isFunction(wrapper.validate)) {
       try {
         valid = wrapper.validate.call(commandInstance, wrapper.args);
       } catch (e) {
@@ -400,7 +395,7 @@ export default class Session extends EventEmitter {
 
     // If the command as declared by the user
     // returns a promise, handle accordingly.
-    if (res && _.isFunction(res.then)) {
+    if (res && isFunction(res.then)) {
       res
         .then(function(data) {
           onCompletion(wrapper, undefined, data);
