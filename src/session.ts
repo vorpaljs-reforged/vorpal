@@ -6,7 +6,7 @@ import TypedEmitter from 'typed-emitter';
 
 import autocomplete, { AutocompleteConfigCallback } from './autocomplete';
 import { CommandInstance } from './command-instance';
-import Vorpal from './vorpal';
+import Vorpal, { QueuedCommand, InternalExecCallback } from './vorpal';
 import History from './history';
 
 interface CommandResponse {
@@ -99,7 +99,6 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
   public _log(...args) {
-    const self = this;
     if (this.isLocal()) {
       this.parent.ui.log(...args);
     } else {
@@ -109,8 +108,8 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
       for (const arg of args) {
         args.push(arg && arg.stack ? 'Error: ' + arg.message : arg);
       }
-      self.parent._send('vantage-ssn-stdout-downstream', 'downstream', {
-        sessionId: self.id,
+      this.parent._send('vantage-ssn-stdout-downstream', 'downstream', {
+        sessionId: this.id,
         value
       });
     }
@@ -278,16 +277,10 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Gets a new command set ready.
-   *
-   * @return {session}
-   * @api public
    */
-
-  public execCommandSet(wrapper, callback) {
-    const self = this;
+  public execCommandSet(wrapper: QueuedCommand, callback: InternalExecCallback) {
     let response: CommandResponse = {};
-    var res; /* eslint-disable-line no-var */
-    const cbk = callback;
+    let res;
     this._registeredCommands = 1;
     this._completedCommands = 0;
 
@@ -311,7 +304,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     }
 
     // Called when command is cancelled
-    this.cancelCommands = function() {
+    this.cancelCommands = () => {
       const callCancel = function(commandInstanceInner) {
         if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
           commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
@@ -329,24 +322,24 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
         res.cancel(wrapper.commandInstance);
       }
 
-      self.removeListener('vorpal_command_cancel', self.cancelCommands);
-      self.cancelCommands = undefined;
-      self._commandSetCallback = undefined;
-      self._registeredCommands = 0;
-      self._completedCommands = 0;
-      self.parent.emit('client_command_cancelled', { command: wrapper.command });
+      this.removeListener('vorpal_command_cancel', this.cancelCommands);
+      this.cancelCommands = undefined;
+      this._commandSetCallback = undefined;
+      this._registeredCommands = 0;
+      this._completedCommands = 0;
+      this.parent.emit('client_command_cancelled', { command: wrapper.command });
 
-      cbk(wrapper);
+      callback(wrapper);
     };
 
-    this.on('vorpal_command_cancel', self.cancelCommands);
+    this.on('vorpal_command_cancel', this.cancelCommands);
 
     // Gracefully handles all instances of the command completing.
     this._commandSetCallback = () => {
       const err = response.error;
       const data = response.data;
       const argus = response.args;
-      if (self.isLocal() && err) {
+      if (this.isLocal() && err) {
         let stack;
         if (data && data.stack) {
           stack = data.stack;
@@ -355,26 +348,26 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
         } else {
           stack = err;
         }
-        self.log(stack);
-        self.parent.emit('client_command_error', { command: wrapper.command, error: err });
-      } else if (self.isLocal()) {
-        self.parent.emit('client_command_executed', { command: wrapper.command });
+        this.log(stack);
+        this.parent.emit('client_command_error', { command: wrapper.command, error: err });
+      } else if (this.isLocal()) {
+        this.parent.emit('client_command_executed', { command: wrapper.command });
       }
 
-      self.removeListener('vorpal_command_cancel', self.cancelCommands);
-      self.cancelCommands = undefined;
-      cbk(wrapper, err, data, argus);
+      this.removeListener('vorpal_command_cancel', this.cancelCommands);
+      this.cancelCommands = undefined;
+      callback(wrapper, err, data, argus);
       sendDones(commandInstance);
     };
 
-    function onCompletion(wrapperInner, err, data?, argus?) {
+    const onCompletion = (wrapperInner, err, data?, argus?) => {
       response = {
         error: err,
         data,
         args: argus
       };
-      self.completeCommand();
-    }
+      this.completeCommand();
+    };
 
     let valid;
     if (_.isFunction(wrapper.validate)) {

@@ -8,15 +8,7 @@ import wrap from 'wrap-ansi';
 import TypedEmitter from 'typed-emitter';
 import { QuestionCollection } from 'inquirer';
 
-import Command, {
-  ActionFn,
-  CancelFn,
-  ValidateFn,
-  InitFn,
-  Args,
-  ActionReturnValue,
-  ActionReturnType
-} from './command';
+import Command, { ActionFn, CancelFn, ValidateFn, InitFn, Args, ActionReturnType } from './command';
 import { CommandInstance } from './command-instance';
 import History from './history';
 import intercept, { InterceptFn } from './intercept';
@@ -73,6 +65,15 @@ type CommandEventData = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ExecCallback = (err?: Error | string | any, data?: any) => void;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type InternalExecCallback<E = any, D = string | ActionReturnType> = (
+  cmd: QueuedCommand,
+  err?: E,
+  msg?: D,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  argus?: any
+) => E | D | void;
 
 type ExecSyncOptions = {
   fatal?: boolean;
@@ -818,14 +819,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
       pickedMatch && cmd.session.log(pickedMatch.helpInformation());
     }
 
-    const callback = (
-      cmd: QueuedCommand,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      err?: any,
-      msg?: string | ActionReturnType,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      argus?: any
-    ) => {
+    const callback: InternalExecCallback = (cmd, err, msg, argus) => {
       // Resume the prompt if we had to cancel
       // an active prompt, due to programmatic
       // execution.
