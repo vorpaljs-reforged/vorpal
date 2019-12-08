@@ -1,10 +1,6 @@
-/**
- * Module dependencies.
- */
-
 import chalk from 'chalk';
 import {EventEmitter} from 'events';
-import {uniq} from 'lodash';
+import {uniq, isUndefined, isFunction, isObject, isString} from 'lodash';
 import minimist from 'minimist';
 import os from 'os';
 import wrap from 'wrap-ansi';
@@ -17,16 +13,7 @@ import Session from './session';
 import {IVorpal} from './types/types';
 import ui from './ui';
 import * as VorpalUtils from './utils';
-import {
-  humanReadableArgName,
-  isFunction,
-  isObject,
-  pad,
-  padRow,
-  prettifyArray,
-  isString,
-  isDefined
-} from './utils';
+import {humanReadableArgName, pad, padRow, prettifyArray} from './utils';
 import commons from './vorpal-commons';
 
 interface PromptOption {
@@ -156,7 +143,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     options = options || {};
     const args = argv;
     let result: Vorpal | minimist.ParsedArgs = this;
-    const catchExists = this.commands.find(command => isDefined(command._catch));
+    const catchExists = this.commands.find(command => !isUndefined(command._catch));
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
@@ -1335,7 +1322,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'
       );
     }
-    let ssn = this.server.sessions.find(session => isDefined(session.id));
+    let ssn = this.server.sessions.find(session => !isUndefined(session.id));
     ssn = this.session.id === id ? this.session : ssn;
     if (!id) {
       throw new Error('vorpal.getSessionById was called with no ID passed.');

@@ -4,10 +4,8 @@
  * through vorpal.use(module).
  */
 
-import _ from 'lodash';
-import command from './command';
+import {isFunction} from 'lodash';
 import {IVorpal} from './types/types';
-import {isFunction} from './utils';
 
 export default function(vorpal: IVorpal) {
   /**

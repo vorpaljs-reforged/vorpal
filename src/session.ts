@@ -1,8 +1,8 @@
 import {EventEmitter} from 'events';
 import os from 'os';
+import {noop, isFunction} from 'lodash';
 import autocomplete from './autocomplete';
 import {CommandInstance} from './command-instance';
-import {isFunction, noop} from './utils';
 import Vorpal from './vorpal';
 
 interface CommandResponse {

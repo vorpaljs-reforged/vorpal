@@ -1,16 +1,9 @@
 import {EventEmitter} from 'events';
+import {camelCase, isFunction, isUndefined, isEmpty, isBoolean} from 'lodash';
 import Option from './option';
 import {IAutocompleteConfig} from './types/autocomplete';
 import {ICommand, IVorpal} from './types/types';
-import {
-  camelCase,
-  humanReadableArgName,
-  isBoolean,
-  isEmpty,
-  isFunction,
-  isUndefined,
-  pad
-} from './utils';
+import {humanReadableArgName, pad} from './utils';
 
 export interface Arg {
   required: boolean;

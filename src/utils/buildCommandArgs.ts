@@ -1,10 +1,8 @@
-import {clone} from 'lodash';
+import {clone, isUndefined, isObject} from 'lodash';
 
 import Command from '../command';
 import {CommandInstance} from '../command-instance';
 import Session from '../session';
-import {isDefined} from './isDefined';
-import {isObject} from './isObject';
 import {parseArgs} from './parseArgs';
 
 const PAIR_NORMALIZE_PATTERN = /(['"]?)(\w+)=(?:(['"])((?:(?!\3).)*)\3|(\S+))\1/g;
@@ -90,7 +88,7 @@ export function buildCommandArgs(
 
     if (matchArg) {
       // Can be a falsy value
-      if (isDefined(passedArg)) {
+      if (!isUndefined(passedArg)) {
         if (matchArg.variadic) {
           args[matchArg.name] = remainingArgs;
         } else {
@@ -109,13 +107,13 @@ export function buildCommandArgs(
     const long = String(option.long || '')
       .replace(/--no-/g, '')
       .replace(/^-*/g, '');
-    const exists = isDefined(parsedArgs[long]) ? parsedArgs[long] : parsedArgs[short];
+    const exists = !isUndefined(parsedArgs[long]) ? parsedArgs[long] : parsedArgs[short];
     const existsNotSet = exists === true || exists === false;
 
     if (existsNotSet && option.required !== 0) {
       return `\n  Missing required value for option ${option.long || option.short}. Showing Help:`;
     }
-    if (isDefined(exists)) {
+    if (!isUndefined(exists)) {
       args.options[long || short] = exists;
     }
   }

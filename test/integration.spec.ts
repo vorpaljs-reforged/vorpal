@@ -1,7 +1,7 @@
-import {noop} from '../src/utils';
-import Vorpal from '../src/vorpal';
-import commands from './util/server';
 import * as fs from 'fs';
+import {noop} from 'lodash';
+import commands from './util/server';
+import Vorpal from '../src/vorpal';
 import intercept from '../src/intercept';
 
 describe('integration tests:', () => {

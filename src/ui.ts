@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import {EventEmitter} from 'events';
 import inquirer from 'inquirer';
 import logUpdate from 'log-update';
-import {isFunction, isUndefined, noop} from './utils';
+import {noop, isFunction, isUndefined} from 'lodash';
 
 interface Redraw {
   (str: string): UI;

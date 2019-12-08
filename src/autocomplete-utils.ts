@@ -1,4 +1,5 @@
 import strip from 'strip-ansi';
+import {isFunction} from 'lodash';
 import autocomplete from './autocomplete';
 import {
   AutocompleteCallback,
@@ -9,7 +10,6 @@ import {
   Input
 } from './types/autocomplete';
 import {ICommand, IVorpal} from './types/types';
-import {isFunction} from './utils';
 
 /**
  * Tracks how many times tab was pressed

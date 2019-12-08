@@ -1,4 +1,4 @@
-import {isFunction, noop} from './utils';
+import {noop, isFunction} from 'lodash';
 
 interface CommandInstanceParams {
   commandWrapper?: any;
