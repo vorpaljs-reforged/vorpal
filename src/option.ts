@@ -1,6 +1,3 @@
-/**
- * Expose `Option`.
- */
 export default class Option {
   public required: number;
   public optional: number;
@@ -11,14 +8,8 @@ export default class Option {
 
   /**
    * Initialize a new `Option` instance.
-   *
-   * @param {String} _flags
-   * @param {String} description
-   * @param {Autocomplete} autocomplete
-   * @return {Option}
-   * @api public
    */
-  constructor(_flags: string, public description: string = '', public autocomplete) {
+  constructor(_flags: string, public description: string = '', public autocomplete: Function) {
     this.required = _flags.includes('<') ? _flags.indexOf('<') : 0;
     this.optional = _flags.includes('[') ? _flags.indexOf('[') : 0;
     this.bool = !_flags.includes('-no-');
@@ -33,39 +24,26 @@ export default class Option {
 
   /**
    * Return option name.
-   *
-   * @return {String}
-   * @api private
    */
-
   public name() {
     if (this.long !== undefined) {
       return this.long.replace('--', '').replace('no-', '');
     }
-    return this.short.replace('-', '');
+    return this.short && this.short.replace('-', '');
   }
 
   /**
    * Check if `arg` matches the short or long flag.
-   *
-   * @param {String} arg
-   * @return {Boolean}
-   * @api private
    */
-
-  public is(arg) {
+  public is(arg: string) {
     return arg === this.short || arg === this.long;
   }
 
   /**
    * Assigned flag to either long or short.
-   *
-   * @param {String} flag
-   * @api private
    */
-
-  public assignFlag(flag) {
-    if (flag.startsWith('--')) {
+  public assignFlag(flag?: string) {
+    if (flag && flag.startsWith('--')) {
       this.long = flag;
     } else {
       this.short = flag;
