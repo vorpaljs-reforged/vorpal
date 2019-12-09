@@ -1,29 +1,22 @@
 import _ from 'lodash';
 import strip from 'strip-ansi';
-import autocomplete from './autocomplete';
+import autocomplete, { AutocompleteConfig, AutocompleteConfigCallback } from './autocomplete';
 import {
   AutocompleteCallback,
   AutocompleteConfigFn,
   AutocompleteMatch,
   AutocompleteOptions,
-  AutocompleteConfig,
   Input
 } from './autocomplete';
 import Session from './session';
-import Vorpal from 'vorpal';
 import Command from 'command';
 
 /**
  * Tracks how many times tab was pressed
  * based on whether the UI changed.
- *
- * @param {AutocompleteMatch} match
- * @param {Boolean} freezeTabs
- * @return {String} result
- * @api private
  */
 export function handleTabCounts(this: Session, match: AutocompleteMatch, freezeTabs: boolean) {
-  let result: AutocompleteMatch;
+  let result: AutocompleteMatch | undefined;
   if (Array.isArray(match)) {
     this._tabCount += 1;
     if (this._tabCount > 1) {
@@ -71,26 +64,21 @@ export function assembleInput(input: Input) {
  * Reduces an array of possible
  * matches to list based on a given
  * string.
- *
- * @param {String} str
- * @param {Array} data
- * @return {Array}
- * @api private
  */
 export function filterData(str = '', data: string[]) {
   data = data || [];
   let ctx = String(str).trim();
   const slashParts = ctx.split('/');
-  ctx = slashParts.pop();
+  ctx = slashParts.pop() || '';
   const wordParts = String(ctx)
     .trim()
     .split(' ');
 
   return data
-    .filter(function (item) {
+    .filter(function(item) {
       return strip(item).slice(0, ctx.length) === ctx;
     })
-    .map(function (item) {
+    .map(function(item) {
       let parts = String(item)
         .trim()
         .split(' ');
@@ -162,12 +150,8 @@ export function parseMatchSection(input: Input<string>) {
 /**
  * Compile all available commands and aliases
  * in alphabetical order.
- *
- * @param {Array} cmds
- * @return {Array}
- * @api private
  */
-export function getCommandNames(cmds: ICommand[]): string[] {
+export function getCommandNames(cmds: Command[]): string[] {
   const commands = _.map(cmds, '_name').concat(..._.map(cmds, '_aliases'));
   commands.sort();
   return commands;
@@ -179,20 +163,15 @@ export function getCommandNames(cmds: ICommand[]): string[] {
  * on to that command and return it,
  * fixing the overall input context
  * at the same time.
- *
- * @param {Object} input
- * @param {Array} commandNames
- * @return {Object}
- * @api private
  */
 export function getMatchObject(this: Session, input: Input, commandNames: string[]) {
   const len = input.context.length;
   const trimmed = String(input.context).trimLeft();
-  let prefix = new Array(len - trimmed.length + 1).join(' ');
+  let prefix: AutocompleteMatch = new Array(len - trimmed.length + 1).join(' ');
+  let suffix: AutocompleteMatch = '';
   let match: string | undefined;
-  let suffix = '';
 
-  commandNames.forEach(function (cmd) {
+  commandNames.forEach(function(cmd) {
     const nextChar = trimmed.substr(cmd.length, 1);
     if (trimmed.substr(0, cmd.length) === cmd && String(cmd).trim() !== '' && nextChar === ' ') {
       match = cmd;
@@ -206,7 +185,7 @@ export function getMatchObject(this: Session, input: Input, commandNames: string
     : undefined;
 
   if (!matchObject) {
-    this.parent.commands.forEach(function (cmd) {
+    this.parent.commands.forEach(function(cmd) {
       if ((cmd._aliases || []).indexOf(String(match).trim()) > -1) {
         matchObject = cmd;
       }
@@ -239,28 +218,29 @@ export function getMatchObject(this: Session, input: Input, commandNames: string
 
 function handleDataFormat(
   str: AutocompleteMatch,
-  config: IAutocompleteConfig | AutocompleteConfigFn,
+  config: AutocompleteConfig | AutocompleteConfigFn,
   cb: AutocompleteCallback
 ) {
   let data: string[] = [];
-  if (_.isArray(config)) {
+  if (Array.isArray(config)) {
     data = config;
-  } else if (_.isFunction(config)) {
-    const cbk =
+  } else if (typeof config === 'function') {
+    const cbk: AutocompleteConfigCallback =
       config.length < 2
         ? // eslint-disable-next-line @typescript-eslint/no-empty-function
-        function () { }
-        : function (err, resp: string[]) {
-          cb(resp || []);
-        };
+          function() {}
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          function(err: any, resp: AutocompleteMatch) {
+            cb(resp || []);
+          };
     const res = config(str, cbk);
 
     if (res instanceof Promise) {
       res
-        .then(function (resp) {
+        .then(function(resp) {
           cb(resp);
         })
-        .catch(function (err) {
+        .catch(function(err) {
           cb(err);
         });
     } else if (config.length < 2) {
@@ -277,7 +257,7 @@ function handleDataFormat(
  * instructions, whether it is the command's
  * autocompletion or one of its options.
  */
-export function getMatchData(input: Input, cb: AutocompleteCallback<string[]>) {
+export function getMatchData(input: Input, cb: AutocompleteCallback<AutocompleteMatch>) {
   const string = input.context;
   const cmd = input.match;
   const midOption =
@@ -285,6 +265,10 @@ export function getMatchData(input: Input, cb: AutocompleteCallback<string[]>) {
       .trim()
       .slice(0, 1) === '-';
   const afterOption = input.option !== undefined;
+
+  if (!cmd) {
+    return;
+  }
 
   if (midOption === true && !cmd._allowUnknownOptions) {
     const results = [];
@@ -302,16 +286,16 @@ export function getMatchData(input: Input, cb: AutocompleteCallback<string[]>) {
   }
 
   if (afterOption === true) {
-    const opt = strip(input.option).trim();
+    const opt = strip(input.option || '').trim();
     const match = cmd.options.find(o => o.short === opt || o.long === opt);
     if (match) {
       const config = match.autocomplete;
-      handleDataFormat(string, config, cb);
+      config && handleDataFormat(string, config, cb);
       return;
     }
   }
 
   const conf = cmd._autocomplete;
-  const confFn = conf && !_.isArray(conf) && conf.data ? conf.data : conf;
-  handleDataFormat(string, confFn, cb);
+  const confFn = conf && !Array.isArray(conf) && conf.data ? conf.data : conf;
+  confFn && handleDataFormat(string, confFn, cb);
 }

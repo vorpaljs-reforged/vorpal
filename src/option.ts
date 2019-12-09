@@ -1,3 +1,5 @@
+import { AutocompleteConfig } from './autocomplete';
+
 export default class Option {
   public required: number;
   public optional: number;
@@ -9,7 +11,11 @@ export default class Option {
   /**
    * Initialize a new `Option` instance.
    */
-  constructor(_flags: string, public description: string = '', public autocomplete: Function) {
+  constructor(
+    _flags: string,
+    public description: string = '',
+    public autocomplete?: AutocompleteConfig
+  ) {
     this.required = _flags.includes('<') ? _flags.indexOf('<') : 0;
     this.optional = _flags.includes('[') ? _flags.indexOf('[') : 0;
     this.bool = !_flags.includes('-no-');
@@ -29,7 +35,7 @@ export default class Option {
     if (this.long !== undefined) {
       return this.long.replace('--', '').replace('no-', '');
     }
-    return this.short && this.short.replace('-', '');
+    return (this.short && this.short.replace('-', '')) || '';
   }
 
   /**

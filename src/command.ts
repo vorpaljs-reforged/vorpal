@@ -1,13 +1,4 @@
-import {
-  camelCase,
-  isBoolean,
-  isUndefined,
-  isArray,
-  isEmpty,
-  includes,
-  isFunction,
-  isNil
-} from 'lodash';
+import { camelCase, isBoolean, isEmpty } from 'lodash';
 
 import { EventEmitter } from 'events';
 import Option from './option';
@@ -137,7 +128,7 @@ export default class Command extends EventEmitter {
     // and conditionally invoke the callback
     this.on(optionName, val => {
       // unassigned or bool
-      if (isBoolean(this[name]) && isUndefined(this[name])) {
+      if (isBoolean(this[name]) && typeof this[name] === 'undefined') {
         // if no value, bool true, and we have a default, then use it!
         if (val === null) {
           this[name] = option.bool ? defaultValue || true : false;
@@ -250,7 +241,7 @@ export default class Command extends EventEmitter {
    */
   public alias(...aliases: string[]) {
     for (const alias of aliases) {
-      if (isArray(alias)) {
+      if (Array.isArray(alias)) {
         for (const subalias of alias) {
           this.alias(subalias);
         }
@@ -258,7 +249,7 @@ export default class Command extends EventEmitter {
       }
       this._parent.commands.forEach(cmd => {
         if (!isEmpty(cmd._aliases)) {
-          if (includes(cmd._aliases, alias)) {
+          if (cmd._aliases.includes(alias)) {
             const msg =
               'Duplicate alias "' +
               alias +
@@ -370,7 +361,7 @@ export default class Command extends EventEmitter {
       (this.commands.length ? ' [command]' : '') +
       (this._args.length ? ` ${args.join(' ')}` : '');
 
-    if (isNil(str)) {
+    if (str === null || typeof str === 'undefined') {
       return this._usage || usage;
     }
 
@@ -403,7 +394,7 @@ export default class Command extends EventEmitter {
    * Adds a custom handling for the --help flag.
    */
   public help(fn: HelpFn) {
-    if (isFunction(fn)) {
+    if (typeof fn === 'function') {
       this._help = fn;
     }
     return this;
@@ -414,7 +405,7 @@ export default class Command extends EventEmitter {
    * is executed.
    */
   public parse(fn: ParseFn) {
-    if (isFunction(fn)) {
+    if (typeof fn === 'function') {
       this._parse = fn;
     }
     return this;
@@ -424,7 +415,7 @@ export default class Command extends EventEmitter {
    * Adds a command to be executed after command completion.
    */
   public after(fn: AfterFn) {
-    if (isFunction(fn)) {
+    if (typeof fn === 'function') {
       this._after = fn;
     }
     return this;

@@ -59,7 +59,7 @@ const autocomplete = {
 
     const end = (innerStr: AutocompleteMatch) => {
       const res = handleTabCounts.call(this, innerStr, freezeTabs);
-      cb(undefined, res);
+      cb(undefined, res || '');
     };
 
     const evaluateTabs = (innerInput: Input) => {
@@ -80,13 +80,13 @@ const autocomplete = {
     if (input.match) {
       input = parseMatchSection.call(this, input as Input<string>);
       getMatchData.call(this, input, function(data) {
-        const dataMatch = getMatch(input.context as string, data);
+        const dataMatch = getMatch(input.context as string, data as string[]);
         if (dataMatch) {
           input.context = dataMatch;
           evaluateTabs(input);
           end(assembleInput(input));
         } else {
-          end(filterData(input.context as string, data));
+          end(filterData(input.context as string, data as string[]));
         }
       });
     } else {
