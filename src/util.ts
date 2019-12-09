@@ -2,12 +2,13 @@ import _, { forEach, range, some, isFunction, find, map } from 'lodash';
 import minimist from 'minimist';
 import strip from 'strip-ansi';
 
-import Command, { Arg, Args } from './command';
+import Command, { Arg } from './command';
 import { QueuedCommand } from 'vorpal';
+import { CommandArgs } from './command-instance';
 
 export type CommandMatch = {
   command?: Command;
-  args?: string | Args;
+  args?: string | CommandArgs;
   downstream?: CommandMatch;
 };
 
@@ -198,7 +199,7 @@ function buildCommandArgs(
   execCommand?: QueuedCommand,
   isCommandArgKeyPairNormalized?: boolean
 ) {
-  let args: Args = { options: {} };
+  let args: CommandArgs = { options: {} };
 
   if (isCommandArgKeyPairNormalized) {
     // Normalize all foo="bar" with "foo='bar'"

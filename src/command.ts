@@ -14,14 +14,7 @@ import Option from './option';
 import { AutocompleteConfig } from './autocomplete';
 import util from './util';
 import Vorpal from './vorpal';
-import { CommandInstance } from 'command-instance';
-
-export interface Args {
-  [key: string]: string | string[] | object | undefined;
-  options?: {
-    [key: string]: string | string[] | boolean | undefined;
-  };
-}
+import { CommandInstance, CommandArgs } from 'command-instance';
 
 export interface Arg {
   required: boolean;
@@ -40,10 +33,10 @@ export type ActionReturnType = ActionReturnValue | Promise<ActionReturnValue>;
 export type ActionCallback = () => void;
 
 export type ActionFn = {
-  (this: CommandInstance, args: Args, cb?: ActionCallback): ActionReturnType;
+  (this: CommandInstance, args: CommandArgs, cb?: ActionCallback): ActionReturnType;
 };
 
-export type ValidateFn = (args: Args) => boolean | string;
+export type ValidateFn = (args: CommandArgs) => boolean | string;
 
 export type CancelFn = () => void;
 

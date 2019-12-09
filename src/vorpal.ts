@@ -8,8 +8,8 @@ import wrap from 'wrap-ansi';
 import TypedEmitter from 'typed-emitter';
 import { QuestionCollection } from 'inquirer';
 
-import Command, { ActionFn, CancelFn, ValidateFn, InitFn, Args, ActionReturnType } from './command';
-import { CommandInstance } from './command-instance';
+import Command, { ActionFn, CancelFn, ValidateFn, InitFn, ActionReturnType } from './command';
+import { CommandInstance, CommandArgs } from './command-instance';
 import History from './history';
 import intercept, { InterceptFn } from './intercept';
 import LocalStorage from './local-storage';
@@ -58,7 +58,7 @@ type PromptEventData = {
 
 type CommandEventData = {
   command: string;
-  args: string | Args;
+  args: string | CommandArgs;
   completed: boolean;
   sessionId: string;
 };
@@ -82,12 +82,13 @@ type ExecSyncOptions = {
 export type QueuedCommand = {
   command: string;
   commandInstance?: CommandInstance;
-  args: string | Args;
+  args: string | CommandArgs;
   options?: ExecSyncOptions & SessionData;
   callback?: ExecCallback;
   session: Session;
   sync?: boolean;
-  pipes?: (string | CommandMatch)[];
+  // TODO factor out this union type
+  pipes?: (string | CommandMatch | CommandInstance)[];
   fn?: ActionFn;
   _cancel?: CancelFn;
   validate?: ValidateFn;
@@ -126,8 +127,14 @@ interface Events {
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
-function argsIsFn(args?: Args | ExecCallback): args is ExecCallback {
+function argsIsFn(args?: CommandArgs | ExecCallback): args is ExecCallback {
   return typeof args === 'function';
+}
+
+function isCommandInstance(obj: CommandMatch | CommandInstance): obj is CommandInstance {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+  // @ts-ignore
+  return typeof obj.commandWrapper !== 'undefined';
 }
 
 export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
@@ -708,7 +715,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
    * command and callbacks into a queue that will
    * be unearthed and sent in due time.
    */
-  public exec(cmd: string, args?: Args | ExecCallback, cb?: ExecCallback) {
+  public exec(cmd: string, args?: CommandArgs | ExecCallback, cb?: ExecCallback) {
     if (argsIsFn(args)) {
       cb = args;
       args = {};
@@ -744,7 +751,7 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
   /**
    * Executes a Vorpal command in sync.
    */
-  public execSync(cmd: string, options?: Args & ExecSyncOptions & SessionData) {
+  public execSync(cmd: string, options?: CommandArgs & ExecSyncOptions & SessionData) {
     let ssn = this.session;
     options = options || {};
     if (options.sessionId) {
@@ -966,17 +973,15 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         let response;
         let error;
         try {
-          response =
-            item.fn &&
-            item.fn.call(
-              new CommandInstance({
-                downstream: undefined,
-                commandWrapper: item,
-                commandObject: item.commandObject,
-                args: item.args
-              }),
-              typeof item.args === 'string' ? {} : item.args
-            );
+          if (item.fn) {
+            const commandInstance = new CommandInstance({
+              downstream: undefined,
+              commandWrapper: item,
+              commandObject: item.commandObject,
+              args: typeof item.args === 'string' ? {} : item.args
+            });
+            response = item.fn.call(commandInstance, commandInstance.args);
+          }
         } catch (e) {
           error = e;
         }
@@ -992,14 +997,18 @@ export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
         if (typeof pipe === 'string') {
           throw new Error('pipe should be object by now');
         }
+        if (isCommandInstance(pipe)) {
+          throw new Error('pipe is a CommandInstance');
+        }
         if (!pipe.command) {
           throw new Error('pipe.command not set');
         }
+
         return new CommandInstance({
           commandWrapper: item,
           command: pipe.command._name,
           commandObject: pipe.command,
-          args: pipe.args
+          args: typeof pipe.args === 'object' ? pipe.args : {}
         });
       });
 

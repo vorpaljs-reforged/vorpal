@@ -1,28 +1,27 @@
 import _ from 'lodash';
 import Command from './command';
 import Session from './session';
-import Vorpal from './vorpal';
+import Vorpal, { QueuedCommand } from './vorpal';
 
 interface CommandInstanceParams {
-  commandWrapper: CommandInstance;
+  commandWrapper: CommandInstance | QueuedCommand;
   args: CommandArgs;
   commandObject: Command;
   command?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  downstream: CommandInstance | any;
+  downstream?: CommandInstance;
 }
 
-interface CommandArgs {
+export interface CommandArgs {
   [key: string]: string | string[] | object | undefined;
-  options: {
+  options?: {
     [key: string]: string | string[] | boolean | undefined;
   };
 }
 
 export class CommandInstance {
-  public commandWrapper: CommandInstance;
+  public commandWrapper: CommandInstance | QueuedCommand;
   public args: CommandArgs;
   public commandObject: Command;
   public command?: string;
@@ -30,7 +29,7 @@ export class CommandInstance {
   public parent: Vorpal;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public callback: any;
-  public downstream: this;
+  public downstream?: CommandInstance;
 
   /**
    * Initialize a new `CommandInstance` instance.
@@ -67,7 +66,7 @@ export class CommandInstance {
         if (this.session.isLocal() && err) {
           this.session.log(String(err.stack || err));
           this.session.parent.emit('client_command_error', {
-            command: this.downstream.command || '',
+            command: (this.downstream && this.downstream.command) || '',
             error: err
           });
         }
