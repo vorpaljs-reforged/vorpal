@@ -6,7 +6,7 @@ import Vorpal from './vorpal';
  * API commands. Imported into a Vorpal server
  * through vorpal.use(module).
  */
-export default function(vorpal: Vorpal) {
+export default function (vorpal: Vorpal) {
   /**
    * Help for a particular command.
    */
@@ -15,9 +15,9 @@ export default function(vorpal: Vorpal) {
   vorpal
     .command('help [command...]')
     .description('Provides help for a given command.')
-    .action(function(this: IVorpal, args, cb) {
+    .action(function (args, cb) {
       if (args.command) {
-        args.command = args.command.join(' ');
+        args.command = (args.command as string[]).join(' ');
         const commandWithName = _.find(this.parent.commands, {
           _name: String(args.command).trim()
         });
@@ -25,7 +25,7 @@ export default function(vorpal: Vorpal) {
           if (_.isFunction(commandWithName._help)) {
             commandWithName._help(args.command, str => {
               this.log(str);
-              cb();
+              cb && cb();
             });
             return;
           }
@@ -34,9 +34,9 @@ export default function(vorpal: Vorpal) {
           this.log(this.parent._commandHelp(args.command));
         }
       } else {
-        this.log(this.parent._commandHelp(args.command));
+        this.log(this.parent._commandHelp(args.command as string));
       }
-      cb();
+      cb && cb();
     });
 
   /**
@@ -47,7 +47,7 @@ export default function(vorpal: Vorpal) {
     .command('exit')
     .alias('quit')
     .description('Exits application.')
-    .action(function(args) {
+    .action(function (args) {
       args.options = args.options || {};
       args.options.sessionId = this.session.id;
       this.parent.exit(args.options);

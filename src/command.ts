@@ -30,7 +30,8 @@ export type ActionReturnValue = void;
 
 export type ActionReturnType = ActionReturnValue | Promise<ActionReturnValue>;
 
-export type ActionCallback = () => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ActionCallback = (...args: any[]) => void;
 
 export type ActionFn = {
   (this: CommandInstance, args: CommandArgs, cb?: ActionCallback): ActionReturnType;
@@ -46,7 +47,13 @@ export type InitFn = ActionFn;
 
 export type Types = { [key in 'string' | 'boolean']?: string[] };
 
-export type HelpFn = Function;
+export type HelpFn = {
+  (
+    this: Command | CommandInstance,
+    args: CommandArgs | string,
+    cb?: ActionCallback
+  ): ActionReturnType;
+};
 
 export type ParseFn = Function;
 
