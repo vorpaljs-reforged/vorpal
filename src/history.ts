@@ -1,5 +1,3 @@
-'use strict';
-
 import _ from 'lodash';
 import { LocalStorage } from 'node-localstorage';
 import os from 'os';
@@ -28,7 +26,7 @@ export default class History {
   // history and store it in a cache until
   // exiting the 'mode', at which point we
   // resume the original history.
-  public _histCache = [];
+  public _histCache: string[] = [];
   public _histCtrCache = 0;
 
   /**
@@ -40,9 +38,13 @@ export default class History {
       return;
     }
 
+    if (!this._localStorage) {
+      return;
+    }
+
     // Load history from local storage
-    const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey));
-    if (_.isArray(persistedHistory)) {
+    const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey) || 'null');
+    if (Array.isArray(persistedHistory)) {
       Array.prototype.push.apply(this._hist, persistedHistory);
     }
   }
@@ -83,8 +85,6 @@ export default class History {
 
   /**
    * Get next history. Called when down is pressed.
-   *
-   * @return {String}
    */
   public getNextHistory() {
     this._histCtr--;
@@ -100,8 +100,6 @@ export default class History {
 
   /**
    * Peek into history, without changing state
-   *
-   * @return {String}
    */
   public peek(depth = 0) {
     return this._hist[this._hist.length - 1 - depth];
@@ -111,6 +109,10 @@ export default class History {
    * A new command was submitted. Called when enter is pressed and the prompt is not empty.
    */
   public newCommand(cmd: string) {
+    if (!this._localStorage) {
+      return;
+    }
+
     // Always reset history when new command is executed.
     this._histCtr = 0;
 
@@ -165,6 +167,10 @@ export default class History {
    * (Currently only used in unit test)
    */
   public clear() {
+    if (!this._localStorage) {
+      return;
+    }
+
     if (this._storageKey) {
       this._localStorage.removeItem(this._storageKey);
     }
