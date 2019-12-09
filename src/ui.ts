@@ -29,7 +29,7 @@ interface Events {
   vorpal_ui_keypress: (data: KeyPressData) => void;
 }
 
-type TypedEventEmitter = { new(): TypedEmitter<Events> };
+type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
 class UI extends (EventEmitter as TypedEventEmitter) {
   public _activePrompt;
@@ -150,12 +150,12 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
     for (const promptType of prompts) {
       // Add method to Inquirer to get type of prompt.
-      inquirer.prompt.prompts[promptType].prototype.getType = function () {
+      inquirer.prompt.prompts[promptType].prototype.getType = function() {
         return promptType;
       };
 
       // Hook in to steal Inquirer's keypress.
-      inquirer.prompt.prompts[promptType].prototype.onKeypress = function (e) {
+      inquirer.prompt.prompts[promptType].prototype.onKeypress = function(e) {
         // Inquirer seems to have a bug with release v0.10.1
         // (not 0.10.0 though) that triggers keypresses for
         // the previous prompt in addition to the current one.
@@ -170,7 +170,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
       // Add hook to render method.
       const render = inquirer.prompt.prompts[promptType].prototype.render;
-      inquirer.prompt.prompts[promptType].prototype.render = function (...args) {
+      inquirer.prompt.prompts[promptType].prototype.render = function(...args) {
         self._activePrompt = this;
         return render.apply(this, args);
       };
@@ -270,11 +270,11 @@ class UI extends (EventEmitter as TypedEventEmitter) {
     }
     str = String(str).trim() + ' ';
     this._lastDelimiter = str;
-    inquirer.prompt.prompts.password.prototype.getQuestion = function () {
+    inquirer.prompt.prompts.password.prototype.getQuestion = function() {
       self._activePrompt = this;
       return this.opt.message;
     };
-    inquirer.prompt.prompts.input.prototype.getQuestion = function () {
+    inquirer.prompt.prompts.input.prototype.getQuestion = function() {
       self._activePrompt = this;
       let message = this.opt.message;
       if ((this.opt.default || this.opt.default === false) && this.status !== 'answered') {
@@ -536,7 +536,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public redraw: Redraw = function (str) {
+  public redraw: Redraw = function(str) {
     logUpdate(str);
     return this;
   };
@@ -556,7 +556,7 @@ const ui = new UI();
  * @api public
  */
 
-ui.redraw.clear = function () {
+ui.redraw.clear = function() {
   logUpdate.clear();
   return ui;
 };
@@ -569,7 +569,7 @@ ui.redraw.clear = function () {
  * @api public
  */
 
-ui.redraw.done = function () {
+ui.redraw.done = function() {
   logUpdate.done();
   ui.refresh();
   return ui;
@@ -604,6 +604,6 @@ if (!global.__vorpal.ui.exists) {
   global.__vorpal.ui.exists = true;
   global.__vorpal.ui.exports = ui;
 }
-// TODO : check this is still needed in TS?
+// TODO check this is still needed in TS?
 
 export default global.__vorpal.ui.exports as typeof ui;

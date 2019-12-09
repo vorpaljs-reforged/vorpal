@@ -63,10 +63,10 @@ export default class Command extends EventEmitter {
   public commands: Command[] = [];
   public options: Option[] = [];
 
-  // @todo: can this be removed (in favour of _parent)?
+  // TODO can this be removed (in favour of _parent)?
   public parent?: Vorpal;
 
-  // @todo: these were set to private but are accessed from outside this class
+  // TODO these were set to private but are accessed from outside this class
   public _noHelp?: boolean;
   public _mode = false;
   public _catch = false;
@@ -305,7 +305,7 @@ export default class Command extends EventEmitter {
 
   /**
    * Returns the commands arguments as string.
-   * @todo: this actually returns void
+   * TODO this actually returns void
    */
   public arguments(description: string) {
     return this._parseExpectedArgs(description.split(/ +/));
@@ -328,7 +328,7 @@ export default class Command extends EventEmitter {
     }
     const usage = ['', `  Usage:  ${cmdName} ${this.usage()}`, ''];
 
-    // @todo: why is this here?
+    // TODO why is this here?
     const cmds: never[] = [];
 
     const help = String(this.optionHelp().replace(/^/gm, '    '));

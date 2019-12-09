@@ -22,7 +22,7 @@ export default function(callback: InterceptFn) {
   }
 
   process.stdout.write = (function(write) {
-    // @todo: figure out a way to create a function assignable to type of process.stdout.write
+    // TODO figure out a way to create a function assignable to type of process.stdout.write
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return function(...args: any) {
       args[0] = interceptor(args[0]);

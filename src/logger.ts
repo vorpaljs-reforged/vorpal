@@ -1,8 +1,4 @@
-/**
- * Module dependencies.
- */
-
-import _ from 'lodash';
+// TODO where is this even used?
 import { inspect } from 'util';
 import util from './util';
 
@@ -48,17 +44,17 @@ function trimTo(str: string, amt: number) {
 
 /**
  * Initialize a new `Logger` instance.
- *
- * @return {Logger}
- * @api public
  */
-function Logger(cons) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function Logger(this: any, cons: typeof console) {
   const logger = cons || console;
-  const log = function(...args) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const log = function(...args: any[]) {
     logger.log(...args);
   };
 
-  log.cols = function(...args) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  log.cols = function(...args: any[]) {
     const width = process.stdout.columns;
     let pads = 0;
     let padsWidth = 0;
@@ -71,7 +67,7 @@ function Logger(cons) {
         padsWidth += arg;
         pads++;
       }
-      if (_.isArray(arg) && typeof arg[0] === 'number') {
+      if (Array.isArray(arg) && typeof arg[0] === 'number') {
         padsWidth += arg[0];
         pads++;
       }
@@ -80,7 +76,7 @@ function Logger(cons) {
     cols = args.length - pads;
     colsWidth = Math.floor((width - padsWidth) / cols);
 
-    const lines = [];
+    const lines: string[] = [];
 
     const go = function() {
       let str = '';
@@ -88,7 +84,7 @@ function Logger(cons) {
       for (let i = 0; i < input.length; ++i) {
         if (typeof input[i] === 'number') {
           str += util.pad('', input[i], ' ');
-        } else if (_.isArray(input[i]) && typeof input[i][0] === 'number') {
+        } else if (Array.isArray(input[i]) && typeof input[i][0] === 'number') {
           str += util.pad('', input[i][0], input[i][1]);
         } else {
           const chosenWidth = colsWidth + 0;
@@ -130,9 +126,5 @@ function Logger(cons) {
 
   return this.log;
 }
-
-/**
- * Expose `logger`.
- */
 
 export default Logger;

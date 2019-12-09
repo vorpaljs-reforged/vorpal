@@ -30,8 +30,8 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   public id: string;
   public vorpal?: any;
   public parent: Vorpal;
-  public client?: Vorpal; // @todo: actually, never?
-  public server?: Vorpal; // @todo: actually, never?
+  public client?: Vorpal; // TODO actually, never?
+  public server?: Vorpal; // TODO actually, never?
   public authenticating: any;
   public user: any;
   public host: any;
