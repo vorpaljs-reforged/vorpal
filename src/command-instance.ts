@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import Command from './command';
+import Command, { ActionFn } from './command';
 import Session from './session';
 import Vorpal, { QueuedCommand } from './vorpal';
 
@@ -85,7 +85,7 @@ export class CommandInstance {
         }
       }
 
-      const res = fn.call(this.downstream, this.downstream.args, onComplete);
+      const res = (fn as ActionFn).call(this.downstream, this.downstream.args, onComplete);
       if (typeof res !== 'undefined' && typeof res.then === 'function') {
         res.then(onComplete, onComplete);
       }
