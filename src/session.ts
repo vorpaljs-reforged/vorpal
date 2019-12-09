@@ -38,7 +38,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   public address: any;
   public _isLocal: any;
   public _delimiter: string;
-  public _modeDelimiter: any;
+  public _modeDelimiter?: string;
   public _tabCount: number;
   public cmdHistory: History;
   public _mode?: boolean | string;
@@ -184,7 +184,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * @api public
    */
 
-  public modeDelimiter(str: any) {
+  public modeDelimiter(str: string | false) {
     if (str === undefined) {
       return this._modeDelimiter;
     }
@@ -207,11 +207,6 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
   /**
    * Returns the result of a keypress
    * string, depending on the type.
-   *
-   * @param {String} key
-   * @param {String} value
-   * @return {Function}
-   * @api private
    */
   public getKeypressResult(key: string, value?: string, cb: AutocompleteConfigCallback = noop) {
     const keyMatch = ['up', 'down', 'tab'].includes(key);
@@ -285,9 +280,10 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     // Create the command instance for the first
     // command and hook it up to the pipe chain.
     const commandInstance = new CommandInstance({
-      downstream: wrapper.pipes && wrapper.pipes[0],
-      commandObject: wrapper.commandObject,
-      commandWrapper: wrapper
+      downstream: (wrapper.pipes && wrapper.pipes[0]) as any,
+      commandObject: wrapper.commandObject as any,
+      commandWrapper: wrapper,
+      args: {}
     });
 
     wrapper.commandInstance = commandInstance;
@@ -451,12 +447,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
    * Returns the appropriate command history
    * string based on an 'Up' or 'Down' arrow
    * key pressed by the user.
-   *
-   * @param {String} direction
-   * @return {String}
-   * @api private
    */
-
   private getHistory(direction?: 'up' | 'down') {
     let history;
     if (direction === 'up') {
@@ -464,7 +455,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     } else if (direction === 'down') {
       history = this.cmdHistory.getNextHistory();
     }
-    return history;
+    return history || '';
   }
 
   /**

@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/ban-ts-ignore */
 import { EventEmitter } from 'events';
-
 import chalk from 'chalk';
 import inquirer, { QuestionCollection } from 'inquirer';
+import Prompt from 'inquirer/lib/prompts/base';
 import _ from 'lodash';
 import logUpdate from 'log-update';
 import TypedEmitter from 'typed-emitter';
 
-import Vorpal from 'vorpal';
+import Vorpal from './vorpal';
 
 interface Redraw {
   (str: string): UI;
@@ -14,7 +15,7 @@ interface Redraw {
   done?: Function;
 }
 
-export interface KeyPressData {
+export interface KeyPressEvent {
   key: string;
   value?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,34 +27,34 @@ export type PipeFn = Function;
 export type SigIntFn = () => void;
 
 interface Events {
-  vorpal_ui_keypress: (data: KeyPressData) => void;
+  vorpal_ui_keypress: (data: KeyPressEvent) => void;
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
 class UI extends (EventEmitter as TypedEventEmitter) {
-  public _activePrompt;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public _activePrompt?: Prompt | any;
   public _midPrompt: boolean;
-  private parent: Vorpal;
-  private _lastDelimiter: string;
+  private parent?: Vorpal;
+  private _lastDelimiter?: string;
   private _sigint: Function;
   private _sigintCalled: boolean;
   private _sigintCount: number;
-  private _cancel: boolean;
+  private _cancel?: boolean;
   public inquirer: typeof inquirer;
   private inquirerStdout: string[];
   public _cancelled: boolean;
   public _pipeFn?: PipeFn;
-  private _log: (...args) => void;
-  // FIXME §here: more to add
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _log: (...args: any[]) => void;
+  // TODO more to add
 
   /**
    * Sets intial variables and registers
    * listeners. This is called once in a
    * process thread regardless of how many
    * instances of Vorpal have been generated.
-   *
-   * @api private
    */
   constructor() {
     // eslint-disable-next-line constructor-super
@@ -93,9 +94,10 @@ class UI extends (EventEmitter as TypedEventEmitter) {
     // Custom function on sigint event.
     this._sigintCalled = false;
     this._sigintCount = 0;
+
     this._sigint = () => {
       if (this._sigintCount > 1) {
-        this.parent.emit('vorpal_exit');
+        this.parent && this.parent.emit('vorpal_exit');
         process.exit(0);
       } else {
         const text = this.input();
@@ -155,7 +157,10 @@ class UI extends (EventEmitter as TypedEventEmitter) {
       };
 
       // Hook in to steal Inquirer's keypress.
-      inquirer.prompt.prompts[promptType].prototype.onKeypress = function(e) {
+      inquirer.prompt.prompts[promptType].prototype.onKeypress = function(
+        this: Prompt,
+        e: KeyPressEvent
+      ) {
         // Inquirer seems to have a bug with release v0.10.1
         // (not 0.10.0 though) that triggers keypresses for
         // the previous prompt in addition to the current one.
@@ -164,13 +169,14 @@ class UI extends (EventEmitter as TypedEventEmitter) {
           return;
         }
         self._activePrompt = this;
-        self.parent.emit('client_keypress', e);
+        self.parent && self.parent.emit('client_keypress', e);
         self._keypressHandler(e, this);
       };
 
       // Add hook to render method.
       const render = inquirer.prompt.prompts[promptType].prototype.render;
-      inquirer.prompt.prompts[promptType].prototype.render = function(...args) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      inquirer.prompt.prompts[promptType].prototype.render = function(...args: any[]) {
         self._activePrompt = this;
         return render.apply(this, args);
       };
@@ -201,22 +207,22 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Creates an inquirer prompt on the TTY.
-   *
-   * @param {Object} options
-   * @param {Function} cb
-   * @api public
    */
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public prompt<T>(options: QuestionCollection<T>, cb: (result: T) => void) {
     let prompt;
     options = options || {};
     if (!this.parent) {
       return prompt;
     }
+    // @ts-ignore
     if (options.delimiter) {
-      this.setDelimiter(options.delimiter);
+      // @ts-ignore
+      this.setDelimiter(options.delimiter as string);
     }
+    // @ts-ignore
     if (options.message) {
+      // @ts-ignore
       this.setDelimiter(options.message);
     }
     if (this._midPrompt) {
@@ -252,18 +258,15 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Returns a boolean as to whether user
-   * is mid another pr ompt.
-   *
-   * @return {Boolean}
-   * @api public
+   * is mid another prompt.
    */
-
   public midPrompt() {
     const mid = this._midPrompt === true && this.parent !== undefined;
     return mid;
   }
 
   public setDelimiter(str: string) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     if (!this.parent) {
       return;
@@ -288,13 +291,9 @@ class UI extends (EventEmitter as TypedEventEmitter) {
   /**
    * Event handler for keypresses - deals with command history
    * and tabbed auto-completion.
-   *
-   * @param {Event} e
-   * @param {Prompt} prompt
-   * @api private
    */
-
-  public _keypressHandler(e, prompt) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public _keypressHandler(e: KeyPressEvent, prompt: Prompt | any) {
     // Remove tab characters from user input.
     prompt.rl.line = prompt.rl.line.replace(/\t+/, '');
 
@@ -312,6 +311,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
     message += addition;
     prompt.screen.render(message);
 
+    // @ts-ignore
     const key = (e.key || {}).name;
     const value = prompt ? String(line) : undefined;
     this.emit('vorpal_ui_keypress', { key, value, e });
@@ -321,7 +321,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * Pauses active prompt, returning
    * the value of what had been typed so far.
    */
-  public pause() {
+  public pause(): string | false | undefined {
     if (!this.parent) {
       return false;
     }
@@ -412,7 +412,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
     if (this.midPrompt()) {
       const data = this.pause();
       this._log(...args);
-      if (!_.isUndefined(data) && data !== false) {
+      if (typeof data !== 'undefined' && data !== false) {
         this.resume(data);
       } else {
         this._log("Log got back 'false' as data. This shouldn't happen.", data);
@@ -425,12 +425,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Submits a given prompt.
-   *
-   * @param {String} value
-   * @return {UI}
-   * @api public
    */
-
   public submit() {
     if (this._activePrompt) {
       // this._activePrompt.screen.onClose();
@@ -444,13 +439,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
   /**
    * Does a literal, one-time write to the
    * *current* prompt delimiter.
-   *
-   * @param {String} str
-   * @return {UI}
-   * @api public
    */
-
-  public delimiter(str?) {
+  public delimiter(str?: string) {
     if (!this._activePrompt) {
       return this;
     }
@@ -467,13 +457,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
    * Re-writes the input of an Inquirer prompt.
    * If no string is passed, it gets the current
    * input.
-   *
-   * @param {String} str
-   * @return {String}
-   * @api public
    */
-
-  public input(str?) {
+  public input(str?: string) {
     if (!this._activePrompt) {
       return undefined;
     }
@@ -495,11 +480,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Logs the current delimiter and typed data.
-   *
-   * @return {UI}
-   * @api public
    */
-
   public imprint() {
     if (!this.parent) {
       return this;
@@ -512,12 +493,7 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Redraws the inquirer prompt with a new string.
-   *
-   * @param {String} str
-   * @return {UI}
-   * @api private
    */
-
   public refresh() {
     if (!this.parent || !this._activePrompt) {
       return this;
@@ -530,13 +506,8 @@ class UI extends (EventEmitter as TypedEventEmitter) {
 
   /**
    * Writes over existing logging.
-   *
-   * @param {String} str
-   * @return {UI}
-   * @api public
    */
-
-  public redraw: Redraw = function(str) {
+  public redraw: Redraw = function(this: UI, str: string) {
     logUpdate(str);
     return this;
   };

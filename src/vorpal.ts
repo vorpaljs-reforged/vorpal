@@ -14,7 +14,7 @@ import History from './history';
 import intercept, { InterceptFn } from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import ui, { KeyPressData, PipeFn, SigIntFn } from './ui';
+import ui, { KeyPressEvent, PipeFn, SigIntFn } from './ui';
 import Util, { CommandMatch } from './util';
 import commons from './vorpal-commons';
 
@@ -103,14 +103,14 @@ export type HelpFn = (command: string) => string;
 
 interface Events {
   command_registered: (data: { command: Command; name: string }) => void;
-  keypress: (data: KeyPressData) => void;
+  keypress: (data: KeyPressEvent) => void;
   client_prompt_submit: (data: string) => void;
   mode_exit: (data: string) => void;
   vorpal_exit: () => void;
   'vantage-prompt-upstream': (data: PromptEventData) => void;
   'vantage-prompt-downstream': (data: PromptEventData) => void;
-  'vantage-keypress-upstream': (data: KeyPressData) => void;
-  'vantage-keypress-downstream': (data: KeyPressData) => void;
+  'vantage-keypress-upstream': (data: KeyPressEvent) => void;
+  'vantage-keypress-downstream': (data: KeyPressEvent) => void;
   'vantage-resume-downstream': (data: SessionData) => void;
   'vantage-close-downstream': (data: SessionData) => void;
   'vantage-command-upstream': (data: CommandEventData) => void;
@@ -123,6 +123,7 @@ interface Events {
   client_command_cancelled: (data: { command: string }) => void;
   client_command_error: (data: { command: string; error: Error }) => void;
   client_command_executed: (data: { command: string }) => void;
+  client_keypress: (data: KeyPressEvent) => void;
 }
 
 type TypedEventEmitter = { new (): TypedEmitter<Events> };
