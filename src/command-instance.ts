@@ -1,37 +1,42 @@
-/**
- * Module dependencies.
- */
-
 import _ from 'lodash';
-import util from './util';
+import Command, { ActionFn } from './command';
+import Session from './session';
+import Vorpal, { QueuedCommand } from './vorpal';
 
 interface CommandInstanceParams {
-  commandWrapper?: any;
-  args?: any;
-  commandObject?: any;
-  command?: any;
+  commandWrapper: CommandInstance | QueuedCommand;
+  args: CommandArgs;
+  commandObject: Command;
+  command?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   callback?: any;
-  downstream?: any;
+  downstream?: CommandInstance;
 }
+
+export interface CommandArgs {
+  [key: string]: string | string[] | object | undefined;
+  options?: {
+    [key: string]: string | string[] | boolean | undefined;
+  };
+}
+
 export class CommandInstance {
-  public commandWrapper: any;
-  public args: any;
-  public commandObject: any;
-  public command: any;
-  public session: any;
-  public parent: any;
+  public commandWrapper: CommandInstance | QueuedCommand;
+  public args: CommandArgs;
+  public commandObject: Command;
+  public command?: string;
+  public session: Session;
+  public parent: Vorpal;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public callback: any;
-  public downstream: any;
+  public downstream?: CommandInstance;
+
   /**
    * Initialize a new `CommandInstance` instance.
-   *
-   * @param {Object} params
-   * @return {CommandInstance}
-   * @api public
    */
+  constructor(params: CommandInstanceParams) {
+    const { command, commandObject, args, commandWrapper, callback, downstream } = params;
 
-  constructor(params: CommandInstanceParams = {}) {
-    const {command, commandObject, args, commandWrapper, callback, downstream} = params;
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
@@ -45,7 +50,6 @@ export class CommandInstance {
   /**
    * Cancel running command.
    */
-
   public cancel() {
     this.session.emit('vorpal_command_cancel');
   }
@@ -53,17 +57,16 @@ export class CommandInstance {
   /**
    * Route stdout either through a piped command, or the session's stdout.
    */
-
-  public log(...args) {
+  public log(...args: string[]) {
     if (this.downstream) {
       const fn = this.downstream.commandObject._fn || _.noop;
       this.session.registerCommand();
       this.downstream.args.stdin = args;
-      const onComplete = (err: Error | undefined) => {
+      const onComplete = (err?: Error | void) => {
         if (this.session.isLocal() && err) {
-          this.session.log(err.stack || err);
+          this.session.log(String(err.stack || err));
           this.session.parent.emit('client_command_error', {
-            command: this.downstream.command,
+            command: (this.downstream && this.downstream.command) || '',
             error: err
           });
         }
@@ -77,13 +80,13 @@ export class CommandInstance {
         } catch (e) {
           // Log error without piping to downstream on validation error.
           this.session.log(e.toString());
-          onComplete(null);
+          onComplete();
           return;
         }
       }
 
-      const res = fn.call(this.downstream, this.downstream.args, onComplete);
-      if (res && _.isFunction(res.then)) {
+      const res = (fn as ActionFn).call(this.downstream, this.downstream.args, onComplete);
+      if (typeof res !== 'undefined' && typeof res.then === 'function') {
         res.then(onComplete, onComplete);
       }
     } else {
@@ -91,19 +94,19 @@ export class CommandInstance {
     }
   }
 
-  public prompt(a, b, c) {
-    return this.session.prompt(a, b, c);
+  public prompt(...args: Parameters<Session['prompt']>) {
+    return this.session.prompt(...args);
   }
 
-  public delimiter(a, b, c) {
-    return this.session.delimiter(a, b, c);
+  public delimiter(...args: Parameters<Session['delimiter']>) {
+    return this.session.delimiter(...args);
   }
 
-  public help(a, b, c) {
-    return this.session.help(a, b, c);
+  public help(...args: Parameters<Session['help']>) {
+    return this.session.help(...args);
   }
 
-  public match(a, b, c) {
-    return this.session.match(a, b, c);
+  public match(...args: Parameters<Session['match']>) {
+    return this.session.match(...args);
   }
 }

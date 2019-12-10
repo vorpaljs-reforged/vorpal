@@ -1,66 +1,174 @@
-/**
- * Module dependencies.
- */
+import { EventEmitter } from 'events';
+import os from 'os';
 
 import chalk from 'chalk';
-import {EventEmitter} from 'events';
-import _ from 'lodash';
+import _, { isFunction, isString, isObject } from 'lodash';
 import minimist from 'minimist';
-import os from 'os';
 import wrap from 'wrap-ansi';
-import Command from './command';
-import {CommandInstance} from './command-instance';
+import TypedEmitter from 'typed-emitter';
+import { QuestionCollection } from 'inquirer';
+
+import Command, { ActionFn, CancelFn, ValidateFn, InitFn, ActionReturnType } from './command';
+import { CommandInstance, CommandArgs } from './command-instance';
 import History from './history';
-import intercept from './intercept';
+import intercept, { InterceptFn } from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import {IVorpal} from './types/types';
-import ui from './ui';
-import VorpalUtil from './util';
+import ui, { KeyPressEvent, PipeFn, SigIntFn } from './ui';
+import Util, { CommandMatch } from './util';
 import commons from './vorpal-commons';
 
 interface PromptOption {
   sessionId?: string;
   message?: string;
 }
-interface DataSession {
+
+interface SessionData {
   sessionId?: string;
-  command?: string;
-  args?;
-  options?: PromptOption;
-  value?: any;
-  key?: string;
-  completed?: boolean;
 }
 
-export default class Vorpal extends EventEmitter implements IVorpal {
-  public chalk;
-  public lodash: _.LoDashStatic;
-  public parent: Vorpal;
+// interface DataSession {
+//   sessionId?: string;
+//   command?: string;
+//   args?: any;
+//   options?: PromptOption;
+//   value?: any;
+//   key?: string;
+//   completed?: boolean;
+// }
+
+type UseCommandShape = {
+  command?: string;
+  description?: string;
+  action?: ActionFn;
+  options: [string, string] | [string, string][];
+};
+
+interface CommandOptions {
+  mode?: boolean;
+  catch?: boolean;
+  noHelp?: boolean;
+}
+
+type PromptEventData = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+  options: QuestionCollection;
+} & PromptOption;
+
+type CommandEventData = {
+  command: string;
+  args: string | CommandArgs;
+  completed: boolean;
+  sessionId: string;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ExecCallback = (err?: Error | string | any, data?: any) => void;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type InternalExecCallback<E = any, D = string | ActionReturnType> = (
+  cmd: QueuedCommand,
+  err?: E,
+  msg?: D,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  argus?: any
+) => E | D | void;
+
+type ExecSyncOptions = {
+  fatal?: boolean;
+};
+
+export type QueuedCommand = {
+  command: string;
+  commandInstance?: CommandInstance;
+  args: string | CommandArgs;
+  options?: ExecSyncOptions & SessionData;
+  callback?: ExecCallback;
+  session: Session;
+  sync?: boolean;
+  // TODO factor out this union type
+  pipes?: (string | CommandMatch | CommandInstance)[];
+  fn?: ActionFn;
+  _cancel?: CancelFn;
+  validate?: ValidateFn;
+  commandObject?: Command;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  resolve?: (data?: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  reject?: (error?: Error | string | any) => void;
+};
+
+export type HelpFn = (command: string) => string;
+
+interface Events {
+  command_registered: (data: { command: Command; name: string }) => void;
+  keypress: (data: KeyPressEvent) => void;
+  client_prompt_submit: (data: string) => void;
+  mode_exit: (data: string) => void;
+  vorpal_exit: () => void;
+  'vantage-prompt-upstream': (data: PromptEventData) => void;
+  'vantage-prompt-downstream': (data: PromptEventData) => void;
+  'vantage-keypress-upstream': (data: KeyPressEvent) => void;
+  'vantage-keypress-downstream': (data: KeyPressEvent) => void;
+  'vantage-resume-downstream': (data: SessionData) => void;
+  'vantage-close-downstream': (data: SessionData) => void;
+  'vantage-command-upstream': (data: CommandEventData) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  'vantage-ssn-stdout-downstream': (data: SessionData & { value: any }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  'vantage-delimiter-downstream': (data: SessionData & { value: any }) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  'vantage-mode-delimiter-downstream': (data: SessionData & { value: any }) => void;
+  client_command_cancelled: (data: { command: string }) => void;
+  client_command_error: (data: { command: string; error: Error }) => void;
+  client_command_executed: (data: { command: string }) => void;
+  client_keypress: (data: KeyPressEvent) => void;
+}
+
+type TypedEventEmitter = { new (): TypedEmitter<Events> };
+
+function argsIsFn(args?: CommandArgs | ExecCallback): args is ExecCallback {
+  return typeof args === 'function';
+}
+
+function isCommandInstance(obj: CommandMatch | CommandInstance): obj is CommandInstance {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+  // @ts-ignore
+  return typeof obj.commandWrapper !== 'undefined';
+}
+
+export default class Vorpal extends (EventEmitter as TypedEventEmitter) {
+  // @todo: do we really need these references?
+  public chalk: typeof chalk;
+  public lodash: typeof _;
+  public ui: typeof ui;
+  public util: typeof Util;
+  public Session: typeof Session;
+
+  public parent?: Vorpal;
   private _version: string;
   private _title: string;
   private _description: string;
   private _banner: string;
   public cmdHistory: History;
   public commands: Command[];
-  private _queue: any[];
-  private _command: any;
-  public ui: any;
+  private _queue: QueuedCommand[];
+  private _command?: QueuedCommand;
   private _delimiter: string;
-  private server: {sessions: any[]};
+  private server: { sessions: Session[] };
   private _hooked: boolean;
-  public util: any;
-  public Session: typeof Session;
-  public session: any;
+  public session: Session;
   private isCommandArgKeyPairNormalized: boolean;
-  private executables: boolean;
-  public _help: any;
-  public _fatal: boolean;
+  private executables?: boolean;
+  public _help?: HelpFn;
+  public _fatal?: boolean;
 
   constructor() {
+    // eslint-disable-next-line constructor-super
     super();
-    // Program version
-    // Exposed through vorpal.version(str);
+
+    // Program version, exposed through vorpal.version(str);
     this._version = '';
 
     // Program title
@@ -108,12 +216,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     this._hooked = false;
 
     // Expose common utilities, like padding.
-    this.util = VorpalUtil;
+    this.util = Util;
 
     this.Session = Session;
 
     // Active vorpal server session.
-    this.session = new this.Session({
+    this.session = new Session({
       local: true,
       user: 'local',
       parent: this,
@@ -128,9 +236,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Extension to `constructor`.
-   * @api private
    */
-
   public _init() {
     ui.on('vorpal_ui_keypress', data => {
       this.emit('keypress', data);
@@ -143,87 +249,74 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Parses `process.argv` and executes
    * a Vorpal command based on it.
-   * @api public
    */
-
-  public parse(argv, options) {
-    options = options || {};
+  public parse<T>(
+    argv: string[],
+    options: { use?: T | 'minimist' } = {}
+  ): T extends string ? minimist.ParsedArgs : Vorpal {
     const args = argv;
-    let result: Vorpal | minimist.ParsedArgs = this;
-    const catchExists = !(_.find(this.commands, {_catch: true}) === undefined);
+    const catchExists = this.commands.find(command => command._catch) !== undefined;
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
       if (options.use === 'minimist') {
-        result = minimist(args);
-      } else {
-        // Wrap the spaced args back in quotes.
-        for (let i = 0; i < args.length; ++i) {
-          if (i === 0) {
-            continue;
-          }
-          if (args[i].indexOf(' ') > -1) {
-            args[i] = `"${args[i]}"`;
-          }
-        }
-        this.exec(args.join(' '), function(err) {
-          if (err !== undefined && err !== null) {
-            throw new Error(err);
-          }
-          process.exit(0);
-        });
+        // Type cast as any here to use function return type
+        // https://github.com/microsoft/TypeScript/issues/24929
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return minimist(args) as any;
       }
+
+      // Wrap the spaced args back in quotes.
+      for (let i = 0; i < args.length; ++i) {
+        if (i === 0) {
+          continue;
+        }
+        if (args[i].indexOf(' ') > -1) {
+          args[i] = `"${args[i]}"`;
+        }
+      }
+      this.exec(args.join(' '), function(err?: string) {
+        if (err !== undefined && err !== null) {
+          throw new Error(err);
+        }
+        process.exit(0);
+      });
     }
-    return result;
+
+    // Type cast as any here to use function return type
+    // https://github.com/microsoft/TypeScript/issues/24929
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this as any;
   }
+
   /**
    * Sets version of your application's API.
-   *
-   * @param {String} version
-   * @return {Vorpal}
-   * @api public
    */
-
-  public version(version) {
+  public version(version: string) {
     this._version = version;
     return this;
   }
 
   /**
    * Sets the title of your application.
-   *
-   * @param {String} title
-   * @return {Vorpal}
-   * @api public
    */
-
-  public title(title) {
+  public title(title: string) {
     this._title = title;
     return this;
   }
 
   /**
    * Sets the description of your application.
-   *
-   * @param {String} description
-   * @return {Vorpal}
-   * @api public
    */
-
-  public description(description) {
+  public description(description: string) {
     this._description = description;
     return this;
   }
 
   /**
    * Sets the banner of your application.
-   *
-   * @param {String} banner
-   * @return {Vorpal}
-   * @api public
    */
-
-  public banner(banner) {
+  public banner(banner: string) {
     this._banner = banner;
     return this;
   }
@@ -231,13 +324,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Sets the permanent delimiter for this
    * Vorpal server instance.
-   *
-   * @param {String} str
-   * @return {Vorpal}
-   * @api public
    */
-
-  public delimiter(str) {
+  public delimiter(str: string) {
     this._delimiter = str;
     if (this.session.isLocal() && !this.session.client) {
       this.session.delimiter(str);
@@ -249,23 +337,25 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Imports a library of Vorpal API commands
    * from another Node module as an extension
    * of Vorpal.
-   *
-   * @param {Array} commands
-   * @return {Vorpal}
-   * @api public
    */
-
-  public use(commands, options?) {
+  public use(
+    commands?:
+      | string
+      | ((vorpal: Vorpal, options?: {}) => void)
+      | UseCommandShape
+      | UseCommandShape[],
+    options?: {}
+  ) {
     if (!commands) {
       return this;
     }
-    if (_.isFunction(commands)) {
+    if (isFunction(commands)) {
       commands.call(this, this, options);
-    } else if (_.isString(commands)) {
+    } else if (isString(commands)) {
       /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-      return this.use(require(commands), options);
+      this.use(require(commands), options);
     } else {
-      commands = _.isArray(commands) ? commands : [commands];
+      commands = Array.isArray(commands) ? commands : [commands];
       for (const cmd of commands) {
         if (cmd.command) {
           const command = this.command(cmd.command);
@@ -273,7 +363,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
             command.description(cmd.description);
           }
           if (cmd.options) {
-            cmd.options = _.isArray(cmd.options) ? cmd.options : [cmd.options];
+            cmd.options = Array.isArray(cmd.options) ? cmd.options : [cmd.options];
             for (let j = 0; j < cmd.options.length; ++j) {
               command.option(cmd.options[j][0], cmd.options[j][1]);
             }
@@ -289,22 +379,20 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Registers a new command in the vorpal API.
-   *
-   * @param {String} name
-   * @param {String} desc
-   * @param {Object} opts
-   * @return {Command}
-   * @api public
    */
-
-  public command(name, desc?, opts?) {
-    opts = opts || {};
+  public command(name: string, desc?: string, opts: CommandOptions = {}) {
     name = String(name);
 
     const args = name.match(/(\[[^\]]*\]|<[^>]*>)/g) || [];
 
     const cmdNameRegExp = /^([^[<]*)/;
-    const cmdName = cmdNameRegExp.exec(name)[0].trim();
+    const cmdNameMatches = cmdNameRegExp.exec(name);
+
+    if (cmdNameMatches === null || cmdNameMatches.length === 0) {
+      throw new Error('Could not find a command name');
+    }
+
+    const cmdName = cmdNameMatches[0].trim();
 
     const cmd = new Command(cmdName, this);
 
@@ -340,63 +428,37 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       );*/
     }
 
-    this.emit('command_registered', {command: cmd, name});
+    this.emit('command_registered', { command: cmd, name });
 
     return cmd;
   }
 
   /**
    * Registers a new 'mode' command in the vorpal API.
-   *
-   * @param {String} name
-   * @param {String} desc
-   * @param {Object} opts
-   * @return {Command}
-   * @api public
    */
-
-  public mode(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, {mode: true}));
+  public mode(name: string, desc?: string, opts: CommandOptions = {}) {
+    return this.command(name, desc, { ...opts, mode: true });
   }
 
   /**
    * Registers a 'catch' command in the vorpal API.
    * This is executed when no command matches are found.
-   *
-   * @param {String} name
-   * @param {String} desc
-   * @param {Object} opts
-   * @return {Command}
-   * @api public
    */
-
-  public catch(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, {catch: true}));
+  public catch(name: string, desc?: string, opts: CommandOptions = {}) {
+    return this.command(name, desc, { ...opts, catch: true });
   }
 
   /**
    * An alias to the `catch` command.
-   *
-   * @param {String} name
-   * @param {String} desc
-   * @param {Object} opts
-   * @return {Command}
-   * @api public
    */
-
-  public default(name, desc, opts) {
-    return this.command(name, desc, _.extend(opts || {}, {catch: true}));
+  public default(name: string, desc?: string, opts: CommandOptions = {}) {
+    return this.catch(name, desc, opts);
   }
 
   /**
    * Delegates to ui.log.
-   *
-   * @param {String} log
-   * @return {Vorpal}
-   * @api public
    */
-
-  public log(...args) {
+  public log(...args: string[]) {
     this.ui.log(...args);
     return this;
   }
@@ -405,13 +467,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Intercepts all logging through `vorpal.log`
    * and runs it through the function declared by
    * `vorpal.pipe()`.
-   *
-   * @param {Function} fn
-   * @return {Vorpal}
-   * @api public
    */
-
-  public pipe(fn) {
+  public pipe(fn: PipeFn) {
     if (this.ui) {
       this.ui._pipeFn = fn;
     }
@@ -421,12 +478,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * If Vorpal is the local terminal,
    * hook all stdout, through a fn.
-   *
-   * @return {Vorpal}
-   * @api private
    */
-
-  public hook(fn) {
+  public hook(fn: InterceptFn) {
     if (fn !== undefined) {
       this._hook(fn);
     } else {
@@ -437,11 +490,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Unhooks stdout capture.
-   *
-   * @return {Vorpal}
-   * @api public
+   * @todo: this looks very strange. If _hooked is truthy, this just calls itself recursively?
    */
-
   public _unhook() {
     if (this._hooked && this._unhook !== undefined) {
       this._unhook();
@@ -452,13 +502,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Hooks all stdout through a given function.
-   *
-   * @param {Function} fn
-   * @return {Vorpal}
-   * @api public
    */
-
-  public _hook(fn) {
+  public _hook(fn: InterceptFn) {
     if (this._hooked && this._unhook !== undefined) {
       this._unhook();
     }
@@ -469,27 +514,24 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Set id for command line history
-   * @param id
-   * @return {Vorpal}
-   * @api public
    */
-  public history(id) {
+  public history(id: string) {
     this.cmdHistory.setId(id);
     return this;
   }
 
   /**
    * Set id for local storage
-   * @param id
-   * @return {Vorpal}
-   * @api public
    */
-  public localStorage(id) {
+  public localStorage(id: string) {
     if (id === undefined) {
       throw new Error('vorpal.localStorage() requires a unique key to be passed in.');
     }
     const ls = new LocalStorage(id);
-    _.forEach(['getItem', 'setItem', 'removeItem'], method => {
+    ['getItem', 'setItem', 'removeItem'].forEach(method => {
+      // @todo: setting properties on a class method here. Why?
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // @ts-ignore
       this.localStorage[method] = ls[method].bind(ls);
     });
     return this;
@@ -498,11 +540,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Set the path to where command line history is persisted.
    * Must be called before vorpal.history
-   * @param path
-   * @return {Vorpal}
-   * @api public
    */
-  public historyStoragePath(path) {
+  public historyStoragePath(path: string) {
     this.cmdHistory.setStoragePath(path);
     return this;
   }
@@ -510,11 +549,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Hook the tty prompt to this given instance
    * of vorpal.
-   *
-   * @return {Vorpal}
-   * @api public
    */
-
   public show() {
     ui.attach(this);
     return this;
@@ -537,23 +572,17 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Listener for a UI keypress. Either
    * handles the keypress locally or sends
    * it upstream.
-   *
-   * @param {String} key
-   * @param {String} value
-   * @api private
    */
-
-  public _onKeypress(key, value) {
-    const self = this;
+  public _onKeypress(key: string, value?: string) {
     if (this.session.isLocal() && !this.session.client && !this._command) {
-      this.session.getKeypressResult(key, value, function(err, result) {
+      this.session.getKeypressResult(key, value, (err, result) => {
         if (!err && result !== undefined) {
-          if (_.isArray(result)) {
-            const formatted = VorpalUtil.prettifyArray(result);
-            self.ui.imprint();
-            self.session.log(formatted);
+          if (Array.isArray(result)) {
+            const formatted = Util.prettifyArray(result);
+            this.ui.imprint();
+            this.session.log(formatted);
           } else {
-            self.ui.input(result);
+            this.ui.input(result);
           }
         }
       });
@@ -565,22 +594,20 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       });
     }
   }
+
   /**
    * For use in vorpal API commands, sends
    * a prompt command downstream to the local
    * terminal. Executes a prompt and returns
    * the response upstream to the API command.
-   *
-   * @param {Object} options
-   * @param {Function} userCallback
-   * @return {Vorpal}
-   * @api public
    */
-
-  public prompt(options: PromptOption = {}, userCallback) {
+  public prompt<T>(
+    options: QuestionCollection<T> & PromptOption,
+    userCallback: (result: T) => void
+  ) {
     return new Promise(resolve => {
       // Setup callback to also resolve promise.
-      const cb = response => {
+      const cb = (response: T) => {
         // Does not currently handle Inquirer validation errors.
         resolve(response);
         if (userCallback) {
@@ -595,7 +622,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         throw new Error('Vorpal.prompt was called without a passed Session ID.');
       }
 
-      const handler = data => {
+      const handler = (data: PromptEventData) => {
         const response = data.value;
         this.removeListener('vantage-prompt-upstream', handler);
         cb(response);
@@ -603,7 +630,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
       if (ssn.isLocal()) {
         ui.setDelimiter(options.message || ssn.delimiter());
-        prompt = ui.prompt(options, result => {
+        prompt = ui.prompt<T>(options, result => {
           ui.setDelimiter(ssn.delimiter());
           cb(result);
         });
@@ -622,28 +649,22 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Renders the CLI prompt or sends the
    * request to do so downstream.
-   *
-   * @param {Object} data
-   * @return {Vorpal}
-   * @api private
    */
-
-  public _prompt(data: DataSession = {}) {
-    const self = this;
+  public _prompt(data: SessionData = {}) {
     if (!data.sessionId) {
-      data.sessionId = self.session.id;
+      data.sessionId = this.session.id;
     }
-    const ssn = self.getSessionById(data.sessionId);
+    const ssn = this.getSessionById(data.sessionId);
 
     // If we somehow got to _prompt and aren't the
     // local client, send the command downstream.
     if (!ssn.isLocal()) {
-      this._send('vantage-resume-downstream', 'downstream', {sessionId: data.sessionId});
-      return self;
+      this._send('vantage-resume-downstream', 'downstream', { sessionId: data.sessionId });
+      return this;
     }
 
     if (ui.midPrompt()) {
-      return self;
+      return this;
     }
 
     const prompt = ui.prompt(
@@ -652,19 +673,19 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         name: 'command',
         message: ssn.fullDelimiter()
       },
-      function(result) {
-        if (self.ui._cancelled === true) {
-          self.ui._cancelled = false;
+      result => {
+        if (this.ui._cancelled === true) {
+          this.ui._cancelled = false;
           return;
         }
         const str = String(result.command).trim();
-        self.emit('client_prompt_submit', str);
+        this.emit('client_prompt_submit', str);
         if (str === '' || str === 'undefined') {
-          self._prompt(data);
+          this._prompt(data);
           return;
         }
-        self.exec(str, function() {
-          self._prompt(data);
+        this.exec(str, () => {
+          this._prompt(data);
         });
       }
     );
@@ -694,20 +715,18 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Lastly, to add some more complexity, we throw
    * command and callbacks into a queue that will
    * be unearthed and sent in due time.
-   *
-   * @param {String} cmd
-   * @param {Function} cb
-   * @return {Promise or Vorpal}
-   * @api public
    */
+  public exec(cmd: string, args?: CommandArgs | ExecCallback, cb?: ExecCallback) {
+    if (argsIsFn(args)) {
+      cb = args;
+      args = {};
+    } else {
+      args = args || {};
+    }
 
-  public exec(cmd, args?, cb?) {
-    cb = _.isFunction(args) ? args : cb;
-    args = args || {};
+    const ssn = args.sessionId ? this.getSessionById(String(args.sessionId)) : this.session;
 
-    const ssn = args.sessionId ? this.getSessionById(args.sessionId) : this.session;
-
-    const command = {
+    const command: QueuedCommand = {
       command: cmd,
       args,
       callback: cb,
@@ -732,22 +751,15 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Executes a Vorpal command in sync.
-   *
-   * @param {String} cmd
-   * @param {Object} args
-   * @return {*} stdout
-   * @api public
    */
-
-  public execSync(cmd, options?) {
-    const self = this;
-    let ssn = self.session;
+  public execSync(cmd: string, options?: CommandArgs & ExecSyncOptions & SessionData) {
+    let ssn = this.session;
     options = options || {};
     if (options.sessionId) {
-      ssn = self.getSessionById(options.sessionId);
+      ssn = this.getSessionById(options.sessionId);
     }
 
-    const command = {
+    const command: QueuedCommand = {
       command: cmd,
       args: options,
       session: ssn,
@@ -755,7 +767,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       options
     };
 
-    return self._execQueueItem(command);
+    return this._execQueueItem(command);
   }
 
   /**
@@ -764,13 +776,10 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * when a command is inserted or completes,
    * shifts the next command in the queue
    * and sends it to `vorpal._execQueueItem`.
-   *
-   * @api private
    */
-
   public _queueHandler() {
     if (this._queue.length > 0 && this._command === undefined) {
-      const item = this._queue.shift();
+      const item = this._queue.shift() as QueuedCommand;
       this._execQueueItem(item);
     }
   }
@@ -778,18 +787,13 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Fires off execution of a command - either
    * calling upstream or executing locally.
-   *
-   * @param {Object} cmd
-   * @api private
    */
-
-  public _execQueueItem(cmd) {
-    const self = this;
-    self._command = cmd;
+  public _execQueueItem(cmd: QueuedCommand) {
+    this._command = cmd;
     if (cmd.session.isLocal() && !cmd.session.client) {
       return this._exec(cmd);
     }
-    self._send('vantage-command-upstream', 'upstream', {
+    this._send('vantage-command-upstream', 'upstream', {
       command: cmd.command,
       args: cmd.args,
       completed: false,
@@ -800,17 +804,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
   /**
    * Executes a vorpal API command.
    * Warning: Dragons lie beyond this point.
-   *
-   * @param {String} item
-   * @api private
    */
-
-  public _exec(item) {
-    const self = this;
+  public _exec(item: QueuedCommand) {
     item = item || {};
     item.command = item.command || '';
     const modeCommand = item.command;
-    item.command = item.session._mode ? item.session._mode : item.command;
+    item.command = item.session._mode ? String(item.session._mode) : item.command;
 
     let promptCancelled = false;
     if (this.ui._midPrompt) {
@@ -822,7 +821,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       throw new Error('Fatal Error: No session was passed into command for execution: ' + item);
     }
 
-    if (item.command === undefined) {
+    if (typeof item.command === 'undefined') {
       throw new Error('vorpal._exec was called with an undefined command.');
     }
 
@@ -835,28 +834,28 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     const match = commandData.match;
     const matchArgs = commandData.matchArgs;
 
-    function throwHelp(cmd, msg, alternativeMatch?) {
+    function throwHelp(cmd: QueuedCommand, msg?: string, alternativeMatch?: Command) {
       if (msg) {
         cmd.session.log(msg);
       }
       const pickedMatch = alternativeMatch || match;
-      cmd.session.log(pickedMatch.helpInformation());
+      pickedMatch && cmd.session.log(pickedMatch.helpInformation());
     }
 
-    function callback(cmd, err?, msg?, argus?) {
+    const callback: InternalExecCallback = (cmd, err, msg, argus) => {
       // Resume the prompt if we had to cancel
       // an active prompt, due to programmatic
       // execution.
       if (promptCancelled) {
-        self._prompt();
+        this._prompt();
       }
       if (cmd.sync) {
         // If we want the command to be fatal,
         // throw a real error. Otherwise, silently
         // return the error.
-        delete self._command;
+        delete this._command;
         if (err) {
-          if (cmd.options && (cmd.options.fatal === true || self._fatal === true)) {
+          if (cmd.options && (cmd.options.fatal === true || this._fatal === true)) {
             throw new Error(err);
           }
           return err;
@@ -864,41 +863,40 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         return msg;
       } else if (cmd.callback) {
         if (argus) {
-          cmd.callback.apply(self, argus);
+          cmd.callback.apply(this, argus);
         } else {
-          cmd.callback.call(self, err, msg);
+          cmd.callback.call(this, err, msg);
         }
       } else if (!err && cmd.resolve) {
         cmd.resolve(msg);
       } else if (err && cmd.reject) {
         cmd.reject(msg);
       }
-      delete self._command;
-      self._queueHandler();
-    }
+      delete this._command;
+      this._queueHandler();
+    };
 
     if (match) {
       item.fn = match._fn;
       item._cancel = match._cancel;
       item.validate = match._validate;
       item.commandObject = match;
-      const init =
-        match._init ||
-        function(arrgs, cb) {
-          cb();
-        };
+      const defaultInit: InitFn = (arrgs, cb) => {
+        cb && cb();
+      };
+      const init = match._init || defaultInit;
       const delimiter = match._delimiter || String(item.command) + ':';
 
-      item.args = self.util.buildCommandArgs(
-        matchArgs,
+      item.args = this.util.buildCommandArgs(
+        String(matchArgs),
         match,
         item,
-        self.isCommandArgKeyPairNormalized
+        this.isCommandArgKeyPairNormalized
       );
 
       // If we get a string back, it's a validation error.
       // Show help and return.
-      if (_.isString(item.args) || !_.isObject(item.args)) {
+      if (isString(item.args) || !isObject(item.args)) {
         throwHelp(item, item.args);
         return callback(item, undefined, item.args);
       }
@@ -906,18 +904,22 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       // Build the piped commands.
       let allValid = true;
       for (let j = 0; j < item.pipes.length; ++j) {
-        const commandParts = self.util.matchCommand(item.pipes[j], self.commands);
+        const commandParts = this.util.matchCommand(String(item.pipes[j]), this.commands);
         if (!commandParts.command) {
-          item.session.log(self._commandHelp(item.pipes[j]));
+          item.session.log(this._commandHelp(String(item.pipes[j])));
           allValid = false;
           break;
         }
-        commandParts.args = self.util.buildCommandArgs(commandParts.args, commandParts.command);
-        if (_.isString(commandParts.args) || !_.isObject(commandParts.args)) {
+        commandParts.args = this.util.buildCommandArgs(
+          String(commandParts.args),
+          commandParts.command
+        );
+        if (isString(commandParts.args) || !isObject(commandParts.args)) {
           throwHelp(item, commandParts.args, commandParts.command);
           allValid = false;
           break;
         }
+        // TODO refactor re-assignment of types here
         item.pipes[j] = commandParts;
       }
       // If invalid piped commands, return.
@@ -926,14 +928,17 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       }
 
       // If `--help` or `/?` is passed, do help.
-      if (item.args.options.help && _.isFunction(match._help)) {
+      // TODO remove non-null assertion or change Args type
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      if (item.args.options!.help && isFunction(match._help)) {
         // If the command has a custom help function, run it
         // as the actual "command". In this way it can go through
         // the whole cycle and expect a callback.
         item.fn = match._help;
         delete item.validate;
         delete item._cancel;
-      } else if (item.args.options.help) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      } else if (item.args.options!.help) {
         // Otherwise, throw the standard help.
         throwHelp(item, '');
         return callback(item);
@@ -949,11 +954,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         item.fn = init;
         delete item.validate;
 
-        self.cmdHistory.enterMode();
+        this.cmdHistory.enterMode();
         item.session.modeDelimiter(delimiter);
       } else if (item.session._mode) {
         if (String(modeCommand).trim() === 'exit') {
-          self._exitMode({sessionId: item.session.id});
+          this._exitMode({ sessionId: item.session.id });
           return callback(item);
         }
         // This executes when actually in a 'mode'
@@ -969,15 +974,15 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         let response;
         let error;
         try {
-          response = item.fn.call(
-            new CommandInstance({
+          if (item.fn) {
+            const commandInstance = new CommandInstance({
               downstream: undefined,
               commandWrapper: item,
               commandObject: item.commandObject,
-              args: item.args
-            }),
-            item.args
-          );
+              args: typeof item.args === 'string' ? {} : item.args
+            });
+            response = item.fn.call(commandInstance, commandInstance.args);
+          }
         } catch (e) {
           error = e;
         }
@@ -990,11 +995,21 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
       // Build the instances for each pipe.
       item.pipes = item.pipes.map(function(pipe) {
+        if (typeof pipe === 'string') {
+          throw new Error('pipe should be object by now');
+        }
+        if (isCommandInstance(pipe)) {
+          throw new Error('pipe is a CommandInstance');
+        }
+        if (!pipe.command) {
+          throw new Error('pipe.command not set');
+        }
+
         return new CommandInstance({
           commandWrapper: item,
           command: pipe.command._name,
           commandObject: pipe.command,
-          args: pipe.args
+          args: typeof pipe.args === 'object' ? pipe.args : {}
         });
       });
 
@@ -1002,8 +1017,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       // `downstream` object of each parent to its
       // child command.
       for (let k = item.pipes.length - 1; k > -1; --k) {
+        const pipe = item.pipes[k];
         const downstream = item.pipes[k + 1];
-        item.pipes[k].downstream = downstream;
+        if (typeof pipe === 'string' || typeof downstream === 'string') {
+          throw new Error('pipe should be object by now');
+        }
+        pipe.downstream = downstream;
       }
 
       item.session.execCommandSet(item, function(wrapper, err, data, argus) {
@@ -1020,11 +1039,8 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Exits out of a give 'mode' one is in.
    * Reverts history and delimiter back to
    * regular vorpal usage.
-   *
-   * @api private
    */
-
-  public _exitMode(options) {
+  public _exitMode(options: SessionData) {
     const ssn = this.getSessionById(options.sessionId);
     ssn._mode = false;
     this.cmdHistory.exitMode();
@@ -1036,14 +1052,9 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Registers a custom handler for SIGINT.
    * Vorpal exits with 0 by default
    * on a sigint.
-   *
-   * @param {Function} fn
-   * @return {Vorpal}
-   * @api public
    */
-
-  public sigint(fn) {
-    if (_.isFunction(fn)) {
+  public sigint(fn: SigIntFn) {
+    if (isFunction(fn)) {
       ui.sigint(fn);
     } else {
       throw new Error('vorpal.sigint must be passed in a valid function.');
@@ -1053,49 +1064,35 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Returns the instance of  given command.
-   *
-   * @param {String} cmd
-   * @return {Command}
-   * @api public
    */
-
-  public find(name) {
-    return _.find(this.commands, {_name: name});
+  public find(name: string) {
+    return this.commands.find(command => command._name === name);
   }
 
   /**
    * Registers custom help.
-   *
-   * @param {Function} fn
-   * @return {Vorpal}
-   * @api public
    */
-
-  public help(fn) {
+  public help(fn: HelpFn) {
     this._help = fn;
   }
 
   /**
    * Returns help string for a given command.
-   *
-   * @param {String} command
-   * @api private
    */
-
-  public _commandHelp(command) {
+  public _commandHelp(command: string) {
     if (!this.commands.length) {
       return '';
     }
 
-    if (this._help !== undefined && _.isFunction(this._help)) {
+    if (this._help !== undefined && typeof this._help === 'function') {
       return this._help(command);
     }
 
-    let matches = [];
+    let matches: Command[] = [];
     const singleMatches = [];
 
-    command = command ? String(command).trim() : undefined;
-    for (const _command of this.commands) {
+    command = String(command).trim();
+    this.commands.forEach(_command => {
       const parts = String(_command._name).split(' ');
       if (parts.length === 1 && parts[0] === command && !_command._hidden && !_command._catch) {
         singleMatches.push(command);
@@ -1108,7 +1105,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
           break;
         }
       }
-    }
+    });
 
     const invalidString =
       command && matches.length === 0 && singleMatches.length === 0
@@ -1146,7 +1143,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         );
       })
       .map(cmd => {
-        const args = cmd._args.map(arg => VorpalUtil.humanReadableArgName(arg)).join(' ');
+        const args = cmd._args.map(arg => Util.humanReadableArgName(arg)).join(' ');
 
         return [
           cmd._name +
@@ -1162,30 +1159,34 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       return Math.max(max, commandX[0].length);
     }, 0);
 
-    const counts = {};
+    const counts: {
+      [key: string]: number;
+    } = {};
 
-    let groups = _.uniq(
-      matches
-        .filter(function(cmd) {
-          return (
-            String(cmd._name)
-              .trim()
-              .split(' ').length > commandMatchLength
-          );
-        })
-        .map(function(cmd) {
-          return String(cmd._name)
-            .split(' ')
-            .slice(0, commandMatchLength)
-            .join(' ');
-        })
-        .map(function(cmd) {
-          counts[cmd] = counts[cmd] || 0;
-          counts[cmd]++;
-          return cmd;
-        })
-    ).map(function(cmd) {
-      const prefix = `    ${VorpalUtil.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
+    let groups = [
+      ...new Set(
+        matches
+          .filter(function(cmd) {
+            return (
+              String(cmd._name)
+                .trim()
+                .split(' ').length > commandMatchLength
+            );
+          })
+          .map(function(cmd) {
+            return String(cmd._name)
+              .split(' ')
+              .slice(0, commandMatchLength)
+              .join(' ');
+          })
+          .map(function(cmd) {
+            counts[cmd] = counts[cmd] || 0;
+            counts[cmd]++;
+            return cmd;
+          })
+      )
+    ].map(function(cmd) {
+      const prefix = `    ${Util.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
         counts[cmd] === 1 ? '' : 's'
       }.`;
       return prefix;
@@ -1201,11 +1202,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         : '\n  Commands:\n\n' +
           commands
             .map(function(cmd) {
-              const prefix = '    ' + VorpalUtil.pad(cmd[0], width) + '  ';
+              const prefix = '    ' + Util.pad(cmd[0], width) + '  ';
               const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
               for (let i = 0; i < suffixArr.length; ++i) {
                 if (i !== 0) {
-                  suffixArr[i] = VorpalUtil.pad('', width + 6) + suffixArr[i];
+                  suffixArr[i] = Util.pad('', width + 6) + suffixArr[i];
                 }
               }
               const suffix = suffixArr.join('\n');
@@ -1224,11 +1225,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       .replace(/\n\n$/, '\n');
   }
 
-  public _helpHeader(hideTitle) {
+  public _helpHeader(hideTitle: boolean) {
     const header = [];
 
     if (this._banner) {
-      header.push(VorpalUtil.padRow(this._banner), '');
+      header.push(Util.padRow(this._banner), '');
     }
 
     // Only show under specific conditions
@@ -1239,12 +1240,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         title += ' v' + this._version;
       }
 
-      header.push(VorpalUtil.padRow(title));
+      header.push(Util.padRow(title));
 
       if (this._description) {
         const descWidth = process.stdout.columns * 0.75; // Only 75% of the screen
 
-        header.push(VorpalUtil.padRow(wrap(this._description, descWidth)));
+        header.push(Util.padRow(wrap(this._description, descWidth)));
       }
     }
 
@@ -1263,25 +1264,26 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    *
    * To do: Has the start of logic for vorpal sessions,
    * which I haven't fully confronted yet.
-   *
-   * @param {String} str
-   * @param {String} direction
-   * @param {String} data
-   * @param {Object} options
-   * @api private
    */
-
-  public _send(str, direction, data: DataSession = {}, options = {}) {
+  public _send<E extends keyof Events>(
+    str: E,
+    direction: 'upstream' | 'downstream',
+    data: Parameters<Events[E]>[0] & SessionData
+  ) {
     const ssn = this.getSessionById(data.sessionId);
     if (!ssn) {
       throw new Error('No Sessions logged for ID ' + data.sessionId + ' in vorpal._send.');
     }
     if (direction === 'upstream') {
       if (ssn.client) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         ssn.client.emit(str, data);
       }
     } else if (direction === 'downstream') {
       if (ssn.server) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         ssn.server.emit(str, data);
       }
     }
@@ -1296,19 +1298,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * If vorpal is not a proxy, it resolves a promise for further
    * code that assumes one is now an end user. If it ends up
    * piping the traffic through, it never resolves the promise.
-   *
-   * @param {String} str
-   * @param {String} direction
-   * @param {String} data
-   * @param {Object} options
-   * @api private
    */
-  public _proxy(str, direction, data, options) {
-    const self = this;
-    return new Promise(function(resolve) {
-      const ssn = self.getSessionById(data.sessionId);
+  public _proxy(str: keyof Events, direction: 'upstream' | 'downstream', data: SessionData) {
+    return new Promise(resolve => {
+      const ssn = this.getSessionById(data.sessionId);
       if (ssn && (!ssn.isLocal() && ssn.client)) {
-        self._send(str, direction, data, options);
+        this._send(str, direction, data);
       } else {
         resolve();
       }
@@ -1317,27 +1312,23 @@ export default class Vorpal extends EventEmitter implements IVorpal {
 
   /**
    * Returns session by id.
-   *
-   * @param {String} id
-   * @return {Session}
-   * @api public
    */
-
-  public getSessionById(id: string) {
-    if (_.isObject(id)) {
+  public getSessionById(id?: string) {
+    if (isObject(id)) {
       throw new Error(
         'vorpal.getSessionById: id ' + JSON.stringify(id) + ' should not be an object.'
       );
     }
-    let ssn = _.find(this.server.sessions, {id});
-    ssn = this.session.id === id ? this.session : ssn;
     if (!id) {
       throw new Error('vorpal.getSessionById was called with no ID passed.');
     }
+
+    let ssn = this.server.sessions.find(session => session.id === id);
+    ssn = this.session.id === id ? this.session : ssn;
     if (!ssn) {
       const sessions = {
         local: this.session.id,
-        server: _.map(this.server.sessions, 'id')
+        server: this.server.sessions.map(session => session.id)
       };
       throw new Error(
         'No session found for id ' +
@@ -1353,24 +1344,18 @@ export default class Vorpal extends EventEmitter implements IVorpal {
    * Kills a remote vorpal session. If user
    * is running on a direct terminal, will kill
    * node instance after confirmation.
-   *
-   * @param {Object} options
-   * @param {Function} cb
-   * @api private
    */
-
-  public exit(options) {
+  public exit(options: SessionData) {
     const ssn = this.getSessionById(options.sessionId);
     this.emit('vorpal_exit');
     if (ssn.isLocal()) {
       process.exit(0);
     } else {
-      ssn.server.emit('vantage-close-downstream', {sessionId: ssn.id});
+      ssn.server && ssn.server.emit('vantage-close-downstream', { sessionId: ssn.id });
     }
   }
 
   public get activeCommand() {
-    const result = this._command ? this._command.commandInstance : undefined;
-    return result;
+    return this._command ? this._command.commandInstance : undefined;
   }
 }

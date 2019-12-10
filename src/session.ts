@@ -1,15 +1,15 @@
-/**
- * Module dependencies.
- */
-
-import {EventEmitter} from 'events';
-import _ from 'lodash';
+/* eslint-disable @typescript-eslint/ban-ts-ignore */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { EventEmitter } from 'events';
 import os from 'os';
-import autocomplete from './autocomplete';
-import Command from './command';
-import {CommandInstance} from './command-instance';
-import util from './util';
-import Vorpal from './vorpal';
+
+import _, { noop } from 'lodash';
+import TypedEmitter from 'typed-emitter';
+
+import autocomplete, { AutocompleteConfigCallback } from './autocomplete';
+import { CommandInstance } from './command-instance';
+import Vorpal, { QueuedCommand, InternalExecCallback } from './vorpal';
+import History from './history';
 
 interface CommandResponse {
   error?: Error;
@@ -17,24 +17,32 @@ interface CommandResponse {
   args?: any;
 }
 
-export default class Session extends EventEmitter {
-  public _registeredCommands: number;
-  public _completedCommands: number;
+interface Events {
+  vorpal_command_cancel: () => void;
+}
+
+type TypedEventEmitter = { new (): TypedEmitter<Events> };
+
+export default class Session extends (EventEmitter as TypedEventEmitter) {
+  public _registeredCommands = 0;
+  public _completedCommands = 0;
   public _commandSetCallback: any;
-  public id: any;
-  public vorpal;
+  public id: string;
+  public vorpal?: any;
   public parent: Vorpal;
+  public client?: Vorpal; // TODO actually, never?
+  public server?: Vorpal; // TODO actually, never?
   public authenticating: any;
   public user: any;
   public host: any;
   public address: any;
   public _isLocal: any;
-  public _delimiter: any;
-  public _modeDelimiter: any;
+  public _delimiter: string;
+  public _modeDelimiter?: string;
   public _tabCount: number;
-  public cmdHistory: any;
-  public _mode: any;
-  public _histCtr: number;
+  public cmdHistory: History;
+  public _mode?: boolean | string;
+  public _histCtr?: number;
   public cancelCommands: any;
   /**
    * Initialize a new `Session` instance.
@@ -44,8 +52,10 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  constructor(options) {
+  constructor(options: any) {
+    // eslint-disable-next-line constructor-super
     super();
+
     options = options || {};
     this.id = options.id || this._guid();
     this.parent = options.parent || undefined;
@@ -90,19 +100,18 @@ export default class Session extends EventEmitter {
    * @return {Session}
    * @api public
    */
-  public _log(...args) {
-    const self = this;
+  public _log(...args: any) {
     if (this.isLocal()) {
       this.parent.ui.log(...args);
     } else {
       // If it's an error, expose the stack. Otherwise
       // we get a helpful '{}'.
-      const value = [];
+      const value: any = [];
       for (const arg of args) {
         args.push(arg && arg.stack ? 'Error: ' + arg.message : arg);
       }
-      self.parent._send('vantage-ssn-stdout-downstream', 'downstream', {
-        sessionId: self.id,
+      this.parent._send('vantage-ssn-stdout-downstream', 'downstream', {
+        sessionId: this.id,
         value
       });
     }
@@ -123,16 +132,11 @@ export default class Session extends EventEmitter {
   /**
    * Maps to vorpal.prompt for a session
    * context.
-   *
-   * @param {Object} options
-   * @param {Function} cb
-   * @api public
    */
-
-  public prompt(options, cb) {
+  public prompt(...[options, userCallback]: Parameters<Vorpal['prompt']>) {
     options = options || {};
     options.sessionId = this.id;
-    return this.parent.prompt(options, cb);
+    return this.parent.prompt(options, userCallback);
   }
 
   /**
@@ -149,15 +153,13 @@ export default class Session extends EventEmitter {
 
   /**
    * Sets the delimiter for this session.
-   *
-   * @param {String} str
-   * @return {Session}
-   * @api public
    */
-
-  public delimiter(str) {
+  public delimiter<T>(str?: T): T extends string ? this : string {
     if (str === undefined) {
-      return this._delimiter;
+      // Type cast as any here to use function return type
+      // https://github.com/microsoft/TypeScript/issues/24929
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this._delimiter as any;
     }
     this._delimiter = String(str).trim() + ' ';
     if (this.isLocal()) {
@@ -168,7 +170,10 @@ export default class Session extends EventEmitter {
         sessionId: this.id
       });
     }
-    return this;
+    // Type cast as any here to use function return type
+    // https://github.com/microsoft/TypeScript/issues/24929
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this as any;
   }
 
   /**
@@ -179,7 +184,7 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  public modeDelimiter(str) {
+  public modeDelimiter(str: string | false) {
     if (str === undefined) {
       return this._modeDelimiter;
     }
@@ -202,20 +207,15 @@ export default class Session extends EventEmitter {
   /**
    * Returns the result of a keypress
    * string, depending on the type.
-   *
-   * @param {String} key
-   * @param {String} value
-   * @return {Function}
-   * @api private
    */
-  private getKeypressResult(key: string, value, cb = _.noop) {
-    const keyMatch = ['up', 'down', 'tab'].indexOf(key) > -1;
+  public getKeypressResult(key: string, value?: string, cb: AutocompleteConfigCallback = noop) {
+    const keyMatch = ['up', 'down', 'tab'].includes(key);
     if (key !== 'tab') {
       this._tabCount = 0;
     }
     if (keyMatch) {
-      if (['up', 'down'].indexOf(key) > -1) {
-        cb(undefined, this.getHistory(key));
+      if (['up', 'down'].includes(key)) {
+        cb(undefined, this.getHistory(key as 'up' | 'down'));
       } else if (key === 'tab') {
         this.getAutocomplete(value, cb);
       }
@@ -224,26 +224,20 @@ export default class Session extends EventEmitter {
     }
   }
 
-  public history(str) {
-    const exceptions = [];
-    if (str && exceptions.indexOf(String(str).toLowerCase()) === -1) {
+  public history(str?: string) {
+    if (str) {
       this.cmdHistory.newCommand(str);
     }
   }
 
   /**
    * New autocomplete.
-   *
-   * @param {String} str
-   * @param {Function} cb
-   * @api private
    */
-
-  private getAutocomplete(str, cb) {
+  private getAutocomplete(str?: string, cb: AutocompleteConfigCallback = noop) {
     return autocomplete.exec.call(this, str, cb);
   }
 
-  public _autocomplete(str, arr) {
+  public _autocomplete(str: string, arr: string[]) {
     return autocomplete.match.call(this, str, arr);
   }
 
@@ -256,7 +250,7 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  public help(command) {
+  public help(command: string) {
     this.log(this.parent._commandHelp(command || ''));
   }
 
@@ -269,36 +263,32 @@ export default class Session extends EventEmitter {
    * @api public
    */
 
-  public match(str, arr) {
+  public match(str: string, arr: any) {
     return this._autocomplete(str, arr);
   }
 
   /**
    * Gets a new command set ready.
-   *
-   * @return {session}
-   * @api public
    */
-
-  public execCommandSet(wrapper, callback) {
-    const self = this;
+  public execCommandSet(wrapper: QueuedCommand, callback: InternalExecCallback) {
     let response: CommandResponse = {};
-    var res; /* eslint-disable-line no-var */
-    const cbk = callback;
+    // eslint-disable-next-line prefer-const
+    let res: any;
     this._registeredCommands = 1;
     this._completedCommands = 0;
 
     // Create the command instance for the first
     // command and hook it up to the pipe chain.
     const commandInstance = new CommandInstance({
-      downstream: wrapper.pipes[0],
-      commandObject: wrapper.commandObject,
-      commandWrapper: wrapper
+      downstream: (wrapper.pipes && wrapper.pipes[0]) as any,
+      commandObject: wrapper.commandObject as any,
+      commandWrapper: wrapper,
+      args: {}
     });
 
     wrapper.commandInstance = commandInstance;
 
-    function sendDones(itm) {
+    function sendDones(itm: any) {
       if (itm.commandObject && itm.commandObject._done) {
         itm.commandObject._done.call(itm);
       }
@@ -308,8 +298,8 @@ export default class Session extends EventEmitter {
     }
 
     // Called when command is cancelled
-    this.cancelCommands = function() {
-      const callCancel = function(commandInstanceInner) {
+    this.cancelCommands = () => {
+      const callCancel = function(commandInstanceInner: any) {
         if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
           commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
         }
@@ -326,24 +316,24 @@ export default class Session extends EventEmitter {
         res.cancel(wrapper.commandInstance);
       }
 
-      self.removeListener('vorpal_command_cancel', self.cancelCommands);
-      self.cancelCommands = undefined;
-      self._commandSetCallback = undefined;
-      self._registeredCommands = 0;
-      self._completedCommands = 0;
-      self.parent.emit('client_command_cancelled', {command: wrapper.command});
+      this.removeListener('vorpal_command_cancel', this.cancelCommands);
+      this.cancelCommands = undefined;
+      this._commandSetCallback = undefined;
+      this._registeredCommands = 0;
+      this._completedCommands = 0;
+      this.parent.emit('client_command_cancelled', { command: wrapper.command });
 
-      cbk(wrapper);
+      callback(wrapper);
     };
 
-    this.on('vorpal_command_cancel', self.cancelCommands);
+    this.on('vorpal_command_cancel', this.cancelCommands);
 
     // Gracefully handles all instances of the command completing.
     this._commandSetCallback = () => {
       const err = response.error;
       const data = response.data;
       const argus = response.args;
-      if (self.isLocal() && err) {
+      if (this.isLocal() && err) {
         let stack;
         if (data && data.stack) {
           stack = data.stack;
@@ -352,30 +342,31 @@ export default class Session extends EventEmitter {
         } else {
           stack = err;
         }
-        self.log(stack);
-        self.parent.emit('client_command_error', {command: wrapper.command, error: err});
-      } else if (self.isLocal()) {
-        self.parent.emit('client_command_executed', {command: wrapper.command});
+        this.log(stack);
+        this.parent.emit('client_command_error', { command: wrapper.command, error: err });
+      } else if (this.isLocal()) {
+        this.parent.emit('client_command_executed', { command: wrapper.command });
       }
 
-      self.removeListener('vorpal_command_cancel', self.cancelCommands);
-      self.cancelCommands = undefined;
-      cbk(wrapper, err, data, argus);
+      this.removeListener('vorpal_command_cancel', this.cancelCommands);
+      this.cancelCommands = undefined;
+      callback(wrapper, err, data, argus);
       sendDones(commandInstance);
     };
 
-    function onCompletion(wrapperInner, err, data?, argus?) {
+    const onCompletion: InternalExecCallback = (wrapperInner, err, data?, argus?) => {
       response = {
         error: err,
         data,
         args: argus
       };
-      self.completeCommand();
-    }
+      this.completeCommand();
+    };
 
     let valid;
     if (_.isFunction(wrapper.validate)) {
       try {
+        // @ts-ignore
         valid = wrapper.validate.call(commandInstance, wrapper.args);
       } catch (e) {
         // Complete with error on validation error
@@ -394,7 +385,9 @@ export default class Session extends EventEmitter {
     }
 
     // Call the root command.
+    // @ts-ignore
     res = wrapper.fn.call(commandInstance, wrapper.args, function(...argus) {
+      // @ts-ignore
       onCompletion(wrapper, argus[0], argus[1], argus);
     });
 
@@ -402,10 +395,10 @@ export default class Session extends EventEmitter {
     // returns a promise, handle accordingly.
     if (res && _.isFunction(res.then)) {
       res
-        .then(function(data) {
+        .then(function(data: any) {
           onCompletion(wrapper, undefined, data);
         })
-        .catch(function(err) {
+        .catch(function(err: any) {
           onCompletion(wrapper, true, err);
         });
     }
@@ -454,20 +447,15 @@ export default class Session extends EventEmitter {
    * Returns the appropriate command history
    * string based on an 'Up' or 'Down' arrow
    * key pressed by the user.
-   *
-   * @param {String} direction
-   * @return {String}
-   * @api private
    */
-
-  private getHistory(direction) {
+  private getHistory(direction?: 'up' | 'down') {
     let history;
     if (direction === 'up') {
       history = this.cmdHistory.getPreviousHistory();
     } else if (direction === 'down') {
       history = this.cmdHistory.getNextHistory();
     }
-    return history;
+    return history || '';
   }
 
   /**

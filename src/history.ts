@@ -1,9 +1,7 @@
-'use strict';
-
 import _ from 'lodash';
-import {LocalStorage} from 'node-localstorage';
+import { LocalStorage } from 'node-localstorage';
 import os from 'os';
-import {normalize, join} from 'path';
+import { normalize, join } from 'path';
 
 // Number of command histories kept in persistent storage
 const HISTORY_SIZE = 500;
@@ -15,20 +13,20 @@ export default class History {
   public _localStorage?: LocalStorage;
   public _inMode?: boolean;
 
-  public _storageKey = undefined;
+  public _storageKey?: string;
 
   // Prompt Command History
   // Histctr moves based on number of times 'up' (+= ctr)
   //  or 'down' (-= ctr) was pressed in traversing
   // command history.
-  public _hist = [];
+  public _hist: string[] = [];
   public _histCtr = 0;
 
   // When in a 'mode', we reset the
   // history and store it in a cache until
   // exiting the 'mode', at which point we
   // resume the original history.
-  public _histCache = [];
+  public _histCache: string[] = [];
   public _histCtrCache = 0;
 
   /**
@@ -40,9 +38,13 @@ export default class History {
       return;
     }
 
+    if (!this._localStorage) {
+      return;
+    }
+
     // Load history from local storage
-    const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey));
-    if (_.isArray(persistedHistory)) {
+    const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey) || 'null');
+    if (Array.isArray(persistedHistory)) {
       Array.prototype.push.apply(this._hist, persistedHistory);
     }
   }
@@ -52,7 +54,7 @@ export default class History {
    * Calls init internally to initialize
    * the history with the id.
    */
-  public setId(id) {
+  public setId(id: string) {
     // Initialize a localStorage instance with default
     // path if it is not initialized
     if (!this._localStorage) {
@@ -65,10 +67,8 @@ export default class History {
   /**
    * Initialize a local storage instance with
    * the path if not already initialized.
-   *
-   * @param path
    */
-  public setStoragePath(path) {
+  public setStoragePath(path: string) {
     if (!this._localStorage) {
       this._localStorage = new LocalStorage(path);
     }
@@ -76,8 +76,6 @@ export default class History {
 
   /**
    * Get previous history. Called when up is pressed.
-   *
-   * @return {String}
    */
   public getPreviousHistory() {
     this._histCtr++;
@@ -87,8 +85,6 @@ export default class History {
 
   /**
    * Get next history. Called when down is pressed.
-   *
-   * @return {String}
    */
   public getNextHistory() {
     this._histCtr--;
@@ -104,8 +100,6 @@ export default class History {
 
   /**
    * Peek into history, without changing state
-   *
-   * @return {String}
    */
   public peek(depth = 0) {
     return this._hist[this._hist.length - 1 - depth];
@@ -113,10 +107,12 @@ export default class History {
 
   /**
    * A new command was submitted. Called when enter is pressed and the prompt is not empty.
-   *
-   * @param cmd
    */
-  public newCommand(cmd) {
+  public newCommand(cmd: string) {
+    if (!this._localStorage) {
+      return;
+    }
+
     // Always reset history when new command is executed.
     this._histCtr = 0;
 
@@ -171,6 +167,10 @@ export default class History {
    * (Currently only used in unit test)
    */
   public clear() {
+    if (!this._localStorage) {
+      return;
+    }
+
     if (this._storageKey) {
       this._localStorage.removeItem(this._storageKey);
     }

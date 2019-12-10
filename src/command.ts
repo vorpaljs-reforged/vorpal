@@ -1,89 +1,113 @@
-/**
- * Module dependencies.
- */
+import { camelCase, isBoolean, isEmpty } from 'lodash';
 
-import {EventEmitter} from 'events';
-import _ from 'lodash';
+import { EventEmitter } from 'events';
 import Option from './option';
-import {IAutocompleteConfig} from './types/autocomplete';
-import {ICommand, IVorpal} from './types/types';
+import { AutocompleteConfig } from './autocomplete';
 import util from './util';
+import Vorpal from './vorpal';
+import { CommandInstance, CommandArgs } from 'command-instance';
+
 export interface Arg {
   required: boolean;
   name: string;
   variadic: boolean;
 }
 
-export default class Command extends EventEmitter implements ICommand {
-  public commands: ICommand[] = [];
-  public options: Option[];
-  private _args;
-  public _aliases: string[];
-  public _name;
-  private _relay;
-  public _hidden;
-  private _parent;
-  public _description;
-  public _delimiter;
-  public _mode;
-  public _catch;
-  public _help;
-  public _noHelp;
-  private _types;
-  private _init;
-  private _after;
-  public _allowUnknownOptions;
-  public _autocomplete;
-  public _done;
-  public _cancel;
-  private _usage;
-  private _fn;
-  private _validate;
-  private _parse;
-  public parent: IVorpal;
+export interface HasOptions {
+  [option: string]: string;
+}
+
+export type ActionReturnValue = void;
+
+export type ActionReturnType = ActionReturnValue | Promise<ActionReturnValue>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ActionCallback = (...args: any[]) => void;
+
+export type ActionFn = {
+  (this: CommandInstance, args: CommandArgs, cb?: ActionCallback): ActionReturnType;
+};
+
+export type ValidateFn = (args: CommandArgs) => boolean | string;
+
+export type CancelFn = () => void;
+
+export type DoneFn = () => void;
+
+export type InitFn = ActionFn;
+
+export type Types = { [key in 'string' | 'boolean']?: string[] };
+
+export type HelpFn = {
+  (
+    this: Command | CommandInstance,
+    args: CommandArgs | string,
+    cb?: ActionCallback
+  ): ActionReturnType;
+};
+
+export type ParseFn = Function;
+
+export type AfterFn = Function;
+
+export default class Command extends EventEmitter {
+  public commands: Command[] = [];
+  public options: Option[] = [];
+
+  // TODO can this be removed (in favour of _parent)?
+  public parent?: Vorpal;
+
+  // TODO these were set to private but are accessed from outside this class
+  public _noHelp?: boolean;
+  public _mode = false;
+  public _catch = false;
+  public _name: string;
+  public _aliases: string[] = [];
+  public _parse?: ParseFn;
+  public _cancel?: CancelFn;
+  public _fn?: ActionFn;
+  public _validate?: ValidateFn;
+  public _init?: InitFn;
+  public _delimiter?: string;
+  public _types?: Types;
+  public _args: Arg[] = [];
+  public _allowUnknownOptions = false;
+  public _help?: HelpFn;
+  public _relay = false;
+  public _hidden = false;
+  public _parent: Vorpal;
+  public _description?: string;
+  public _after?: AfterFn;
+  public _autocomplete?: AutocompleteConfig;
+  public _done?: DoneFn;
+  public _usage?: string;
+
+  // Index signature used to store options.
+  // Must be any to remain compatible with other class properties.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
 
   /**
    * Initialize a new `Command` instance.
-   *
-   * @param {String} name
-   * @param {Vorpal} parent
-   * @return {Command}
-   * @api public
    */
-  constructor(name, parent) {
+  constructor(name: string, parent: Vorpal) {
     super();
-    this.commands = [];
-    this.options = [];
-    this._args = [] as Arg[];
-    this._aliases = [];
     this._name = name;
-    this._relay = false;
-    this._hidden = false;
     this._parent = parent;
-    this._mode = false;
-    this._catch = false;
-    this._help = undefined;
-    this._init = undefined;
-    this._after = undefined;
-    this._allowUnknownOptions = false;
   }
 
   /**
    * Registers an option for given command.
-   *
-   * @param {String} flags
-   * @param {String} description
-   * @param {Function} fn
-   * @param {String} defaultValue
-   * @return {Command}
-   * @api public
    */
-
-  public option(flags, description, autocomplete?): Command {
+  public option(
+    flags: string,
+    description: string,
+    autocomplete?: AutocompleteConfig,
+    defaultValue?: string | boolean
+  ) {
     const option = new Option(flags, description, autocomplete);
-    const oname = option.name();
-    const name = _.camelCase(oname);
-    let defaultValue;
+    const optionName = option.name();
+    const name = camelCase(optionName);
 
     // preassign default value only for --no-*, [optional], or <required>
     if (option.bool === false || option.optional || option.required) {
@@ -102,9 +126,9 @@ export default class Command extends EventEmitter implements ICommand {
 
     // when it's passed assign the value
     // and conditionally invoke the callback
-    this.on(oname, val => {
+    this.on(optionName, val => {
       // unassigned or bool
-      if (_.isBoolean(this[name]) && _.isUndefined(this[name])) {
+      if (isBoolean(this[name]) && typeof this[name] === 'undefined') {
         // if no value, bool true, and we have a default, then use it!
         if (val === null) {
           this[name] = option.bool ? defaultValue || true : false;
@@ -122,26 +146,16 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Defines an action for a given command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public action(fn) {
+  public action(fn: ActionFn) {
     this._fn = fn;
     return this;
   }
 
   /**
    * Let's you compose other funtions to extend the command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public use(fn) {
+  public use(fn: (self: this) => this) {
     return fn(this);
   }
 
@@ -150,12 +164,8 @@ export default class Command extends EventEmitter implements ICommand {
    * before action is performed. Arguments
    * are valid if no errors are thrown from
    * the function.
-   *
-   * @param fn
-   * @returns {Command}
-   * @api public
    */
-  public validate(fn) {
+  public validate(fn: ValidateFn) {
     this._validate = fn;
     return this;
   }
@@ -163,11 +173,8 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Defines a function to be called when the
    * command is canceled.
-   *
-   * @param fn
-   * @returns {Command}
-   * @api public
-   */ public cancel(fn) {
+   */
+  public cancel(fn: CancelFn) {
     this._cancel = fn;
     return this;
   }
@@ -175,13 +182,8 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Defines a method to be called when
    * the command set has completed.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public done(fn) {
+  public done(fn: DoneFn) {
     this._done = fn;
     return this;
   }
@@ -190,26 +192,16 @@ export default class Command extends EventEmitter implements ICommand {
    * Defines tabbed auto-completion
    * for the given command. Favored over
    * deprecated command.autocompletion.
-   *
-   * @param {IAutocompleteConfig} conf
-   * @return {Command}
-   * @api public
    */
-
-  public autocomplete(conf: IAutocompleteConfig) {
+  public autocomplete(conf: AutocompleteConfig) {
     this._autocomplete = conf;
     return this;
   }
 
   /**
    * Defines an init action for a mode command.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public init(fn) {
+  public init(fn: InitFn) {
     if (this._mode !== true) {
       throw Error('Cannot call init from a non-mode action.');
     }
@@ -220,13 +212,8 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Defines a prompt delimiter for a
    * mode once entered.
-   *
-   * @param {String} delimiter
-   * @return {Command}
-   * @api public
    */
-
-  public delimiter(delimiter) {
+  public delimiter(delimiter: string) {
     this._delimiter = delimiter;
     return this;
   }
@@ -234,43 +221,35 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Sets args for static typing of options
    * using minimist.
-   *
-   * @param {Object} types
-   * @return {Command}
-   * @api public
    */
-
-  public types(types) {
-    const supported = ['string', 'boolean'];
-    for (const item of Object.keys(types)) {
-      if (supported.indexOf(item) === -1) {
-        throw new Error('An invalid type was passed into command.types(): ' + item);
-      }
-      types[item] = !_.isArray(types[item]) ? [types[item]] : types[item];
+  public types(types: Types) {
+    function isValid(item: string): item is 'string' | 'boolean' {
+      return ['string', 'boolean'].includes(item);
     }
+    Object.keys(types).forEach(key => {
+      if (!isValid(key)) {
+        throw new Error('An invalid type was passed into command.types(): ' + key);
+      }
+      types[key] = (Array.isArray(types[key]) ? types[key] : [types[key]]) as string[];
+    });
     this._types = types;
     return this;
   }
 
   /**
    * Defines an alias for a given command.
-   *
-   * @param {String} alias
-   * @return {Command}
-   * @api public
    */
-
-  public alias(...aliases) {
+  public alias(...aliases: string[]) {
     for (const alias of aliases) {
-      if (_.isArray(alias)) {
+      if (Array.isArray(alias)) {
         for (const subalias of alias) {
           this.alias(subalias);
         }
         return this;
       }
       this._parent.commands.forEach(cmd => {
-        if (!_.isEmpty(cmd._aliases)) {
-          if (_.includes(cmd._aliases, alias)) {
+        if (!isEmpty(cmd._aliases)) {
+          if (cmd._aliases.includes(alias)) {
             const msg =
               'Duplicate alias "' +
               alias +
@@ -290,58 +269,44 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Defines description for given command.
-   *
-   * @param {String} str
-   * @return {Command}
-   * @api public
    */
-
-  public description(str) {
-    if (arguments.length === 0) {
-      return this._description;
+  public description<T>(str?: T): T extends string ? this : string {
+    if (typeof str === 'string') {
+      this._description = str;
+      // Type cast as any here to use function return type
+      // https://github.com/microsoft/TypeScript/issues/24929
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this as any;
     }
-    this._description = str;
-    return this;
+    // Type cast as any here to use function return type
+    // https://github.com/microsoft/TypeScript/issues/24929
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this._description as any;
   }
 
   /**
    * Removes self from Vorpal instance.
-   *
-   * @return {Command}
-   * @api public
    */
-
   public remove() {
-    const self = this;
-    this._parent.commands = _.reject(this._parent.commands, function(command) {
-      if (command._name === self._name) {
-        return true;
-      }
+    this._parent.commands = this._parent.commands.filter(command => {
+      return command._name !== this._name;
     });
     return this;
   }
 
   /**
    * Returns the commands arguments as string.
-   *
-   * @param {String} description
-   * @return {String}
-   * @api public
+   * TODO this actually returns void
    */
-
-  public arguments(description) {
+  public arguments(description: string) {
     return this._parseExpectedArgs(description.split(/ +/));
   }
 
   /**
    * Returns the help info for given command.
-   *
-   * @return {String}
-   * @api public
    */
-
   public helpInformation() {
-    let description = [];
+    let description: string[] = [];
     const cmdName = this._name;
     let alias = '';
 
@@ -354,7 +319,8 @@ export default class Command extends EventEmitter implements ICommand {
     }
     const usage = ['', `  Usage:  ${cmdName} ${this.usage()}`, ''];
 
-    const cmds = [];
+    // TODO why is this here?
+    const cmds: never[] = [];
 
     const help = String(this.optionHelp().replace(/^/gm, '    '));
     const options = ['  Options:', '', help, ''];
@@ -370,11 +336,7 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Doesn't show command in the help menu.
-   *
-   * @return {Command}
-   * @api public
    */
-
   public hidden() {
     this._hidden = true;
     return this;
@@ -382,12 +344,7 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Allows undeclared options to be passed in with the command.
-   *
-   * @param {Boolean} [allowUnknownOptions=true]
-   * @return {Command}
-   * @api public
    */
-
   public allowUnknownOptions(allowUnknownOptions = true) {
     this._allowUnknownOptions = !!allowUnknownOptions;
     return this;
@@ -395,13 +352,8 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Returns the command usage string for help.
-   *
-   * @param {String} str
-   * @return {String}
-   * @api public
    */
-
-  public usage(str?) {
+  public usage(str?: string) {
     const args = this._args.map(arg => util.humanReadableArgName(arg));
 
     const usage =
@@ -409,7 +361,7 @@ export default class Command extends EventEmitter implements ICommand {
       (this.commands.length ? ' [command]' : '') +
       (this._args.length ? ` ${args.join(' ')}` : '');
 
-    if (_.isNil(str)) {
+    if (str === null || typeof str === 'undefined') {
       return this._usage || usage;
     }
 
@@ -420,11 +372,7 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Returns the help string for the command's options.
-   *
-   * @return {String}
-   * @api public
    */
-
   public optionHelp() {
     const width = this._largestOptionLength();
 
@@ -436,9 +384,6 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Returns the length of the longest option.
-   *
-   * @return {Number}
-   * @api private
    */
 
   private _largestOptionLength() {
@@ -447,14 +392,9 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Adds a custom handling for the --help flag.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public help(fn) {
-    if (_.isFunction(fn)) {
+  public help(fn: HelpFn) {
+    if (typeof fn === 'function') {
       this._help = fn;
     }
     return this;
@@ -463,14 +403,9 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Edits the raw command string before it
    * is executed.
-   *
-   * @param {String} str
-   * @return {String} str
-   * @api public
    */
-
-  public parse(fn) {
-    if (_.isFunction(fn)) {
+  public parse(fn: ParseFn) {
+    if (typeof fn === 'function') {
       this._parse = fn;
     }
     return this;
@@ -478,32 +413,21 @@ export default class Command extends EventEmitter implements ICommand {
 
   /**
    * Adds a command to be executed after command completion.
-   *
-   * @param {Function} fn
-   * @return {Command}
-   * @api public
    */
-
-  public after(fn) {
-    if (_.isFunction(fn)) {
+  public after(fn: AfterFn) {
+    if (typeof fn === 'function') {
       this._after = fn;
     }
     return this;
   }
 
   /**
-   * Parses and returns expected command arguments.
-   *
-   * @param {String} args
-   * @return {Array}
-   * @api private
+   * Parses and sets expected command arguments.
    */
-
-  public _parseExpectedArgs(args) {
+  public _parseExpectedArgs(args: string[]) {
     if (!args.length) {
       return;
     }
-    const self = this;
     args.forEach(arg => {
       const argDetails = {
         required: false,
@@ -523,14 +447,14 @@ export default class Command extends EventEmitter implements ICommand {
         argDetails.name = argDetails.name.slice(0, -3);
       }
       if (argDetails.name) {
-        self._args.push(argDetails);
+        this._args.push(argDetails);
       }
     });
 
     // If the user entered args in a weird order,
     // properly sequence them.
-    if (self._args.length > 1) {
-      self._args = self._args.sort(function(argu1, argu2) {
+    if (this._args.length > 1) {
+      this._args = this._args.sort(function(argu1, argu2) {
         if (argu1.required && !argu2.required) {
           return -1;
         } else if (argu2.required && !argu1.required) {

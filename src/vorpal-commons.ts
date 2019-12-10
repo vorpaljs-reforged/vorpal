@@ -1,27 +1,23 @@
+import _ from 'lodash';
+import Vorpal from './vorpal';
+
 /**
  * Function library for Vorpal's out-of-the-box
  * API commands. Imported into a Vorpal server
  * through vorpal.use(module).
  */
-
-/**
- * Module dependencies.
- */
-
-import _ from 'lodash';
-import {IVorpal} from './types/types';
-
-export default function(vorpal: IVorpal) {
+export default function(vorpal: Vorpal) {
   /**
    * Help for a particular command.
    */
+  vorpal.command('');
 
   vorpal
     .command('help [command...]')
     .description('Provides help for a given command.')
-    .action(function(this: IVorpal, args, cb) {
+    .action(function(args, cb) {
       if (args.command) {
-        args.command = args.command.join(' ');
+        args.command = (args.command as string[]).join(' ');
         const commandWithName = _.find(this.parent.commands, {
           _name: String(args.command).trim()
         });
@@ -29,7 +25,7 @@ export default function(vorpal: IVorpal) {
           if (_.isFunction(commandWithName._help)) {
             commandWithName._help(args.command, str => {
               this.log(str);
-              cb();
+              cb && cb();
             });
             return;
           }
@@ -38,9 +34,9 @@ export default function(vorpal: IVorpal) {
           this.log(this.parent._commandHelp(args.command));
         }
       } else {
-        this.log(this.parent._commandHelp(args.command));
+        this.log(this.parent._commandHelp(args.command as string));
       }
-      cb();
+      cb && cb();
     });
 
   /**

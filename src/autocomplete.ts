@@ -1,4 +1,4 @@
-import {clone} from 'lodash';
+import { clone, noop } from 'lodash';
 import strip from 'strip-ansi';
 import {
   assembleInput,
@@ -11,15 +11,36 @@ import {
   parseInput,
   parseMatchSection
 } from './autocomplete-utils';
-import {
-  AutocompleteConfigCallback,
-  AutocompleteMatch,
-  AutocompleteOptions,
-  IAutocomplete,
-  Input
-} from './types/autocomplete';
+import Command from './command';
+import Session from './session';
 
-const autocomplete: IAutocomplete = {
+export interface Input<T extends AutocompleteMatch = AutocompleteMatch> {
+  raw: string;
+  prefix: string;
+  suffix: string;
+  context: T; // Is string when match is a Command, string[] otherwise
+  match?: Command;
+  option?: string;
+}
+
+export interface AutocompleteOptions {
+  ignoreSlashes?: boolean;
+}
+
+export type AutocompleteMatch = string | string[];
+
+export type AutocompleteCallback<T = AutocompleteMatch> = (data: T) => unknown;
+
+export type AutocompleteConfigCallback = (error: Error | undefined, arr: AutocompleteMatch) => void;
+
+export type AutocompleteConfigFn = (
+  input: AutocompleteMatch,
+  callback: AutocompleteConfigCallback
+) => string[];
+
+export type AutocompleteConfig = string[] | { data: AutocompleteConfigFn };
+
+const autocomplete = {
   /**
    * Handles tabbed autocompletion.
    *
@@ -29,21 +50,16 @@ const autocomplete: IAutocomplete = {
    * - Recognizes option arguments and lists them.
    * - Supports cursor positions anywhere in the string.
    * - Supports piping.
-   *
-   * @param {String} str
-   * @param {Function} cb
-   * @return {String} cb
-   * @api public
    */
-  exec(str: string, cb: AutocompleteConfigCallback): void {
+  exec(this: Session, str?: string, cb: AutocompleteConfigCallback = noop) {
     let input = parseInput(str, this.parent.ui._activePrompt.screen.rl.cursor);
     const commands = getCommandNames(this.parent.commands);
-    const vorpalMatch = getMatch(input.context as string, commands, {ignoreSlashes: true});
+    const vorpalMatch = getMatch(input.context as string, commands, { ignoreSlashes: true });
     let freezeTabs = false;
 
     const end = (innerStr: AutocompleteMatch) => {
       const res = handleTabCounts.call(this, innerStr, freezeTabs);
-      cb(undefined, res);
+      cb(undefined, res || '');
     };
 
     const evaluateTabs = (innerInput: Input) => {
@@ -62,15 +78,15 @@ const autocomplete: IAutocomplete = {
     input = getMatchObject.call(this, input, commands);
 
     if (input.match) {
-      input = parseMatchSection.call(this, input);
-      getMatchData.call(this, input, function(data: string[]) {
-        const dataMatch = getMatch(input.context as string, data);
+      input = parseMatchSection.call(this, input as Input<string>);
+      getMatchData.call(this, input, function(data) {
+        const dataMatch = getMatch(input.context as string, data as string[]);
         if (dataMatch) {
           input.context = dataMatch;
           evaluateTabs(input);
           end(assembleInput(input));
         } else {
-          end(filterData(input.context as string, data));
+          end(filterData(input.context as string, data as string[]));
         }
       });
     } else {
@@ -81,16 +97,8 @@ const autocomplete: IAutocomplete = {
   /**
    * Independent / stateless auto-complete function.
    * Parses an array of strings for the best match.
-   *
-   * @param {String} str
-   * @param {Array} arr
-   * @param {Object} options
-   * @return {String}
-   * @api private
    */
-  match(str: string, arr: string[], options: AutocompleteOptions): AutocompleteMatch {
-    arr = arr || [];
-    options = options || {};
+  match(str: string, arr: string[] = [], options: AutocompleteOptions = {}) {
     arr.sort();
     const arrX = clone(arr);
     let strX = String(str);
@@ -99,7 +107,7 @@ const autocomplete: IAutocomplete = {
 
     if (options.ignoreSlashes !== true) {
       const parts = strX.split('/');
-      strX = parts.pop();
+      strX = parts.pop() || '';
       prefix = parts.join('/');
       prefix = parts.length > 0 ? prefix + '/' : prefix;
     }
