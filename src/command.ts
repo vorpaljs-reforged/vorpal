@@ -454,7 +454,7 @@ export default class Command extends EventEmitter {
     // If the user entered args in a weird order,
     // properly sequence them.
     if (this._args.length > 1) {
-      this._args = this._args.sort(function (argu1, argu2) {
+      this._args = this._args.sort(function(argu1, argu2) {
         if (argu1.required && !argu2.required) {
           return -1;
         } else if (argu2.required && !argu1.required) {

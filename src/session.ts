@@ -21,7 +21,7 @@ interface Events {
   vorpal_command_cancel: () => void;
 }
 
-type TypedEventEmitter = { new(): TypedEmitter<Events> };
+type TypedEventEmitter = { new (): TypedEmitter<Events> };
 
 export default class Session extends (EventEmitter as TypedEventEmitter) {
   public _registeredCommands = 0;
@@ -299,7 +299,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
 
     // Called when command is cancelled
     this.cancelCommands = () => {
-      const callCancel = function (commandInstanceInner: any) {
+      const callCancel = function(commandInstanceInner: any) {
         if (_.isFunction(commandInstanceInner.commandObject._cancel)) {
           commandInstanceInner.commandObject._cancel.call(commandInstanceInner);
         }
@@ -386,7 +386,7 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
 
     // Call the root command.
     // @ts-ignore
-    res = wrapper.fn.call(commandInstance, wrapper.args, function (...argus) {
+    res = wrapper.fn.call(commandInstance, wrapper.args, function(...argus) {
       // @ts-ignore
       onCompletion(wrapper, argus[0], argus[1], argus);
     });
@@ -395,10 +395,10 @@ export default class Session extends (EventEmitter as TypedEventEmitter) {
     // returns a promise, handle accordingly.
     if (res && _.isFunction(res.then)) {
       res
-        .then(function (data: any) {
+        .then(function(data: any) {
           onCompletion(wrapper, undefined, data);
         })
-        .catch(function (err: any) {
+        .catch(function(err: any) {
           onCompletion(wrapper, true, err);
         });
     }
