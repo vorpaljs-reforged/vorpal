@@ -1,6 +1,23 @@
 import strip from 'strip-ansi';
-import {pad} from './pad';
-import {PADDING_SIZE} from '../constants';
+import {PADDING_SIZE, PADDING} from '../../constants';
+
+/**
+ * Pads a value with a space or a specified delimiter to match a given width.
+ */
+export function pad(value: string | string[], width: number, delimiter?: string): string {
+  const str = Array.isArray(value) ? value.join() : value;
+  return str + (delimiter || ' ').repeat(Math.max(0, Math.floor(width) - strip(str).length));
+}
+
+/**
+ * Pad a row on the start and end with spaces.
+ */
+export function padRow(value: string): string {
+  return value
+    .split('\n')
+    .map(row => PADDING + row + PADDING)
+    .join('\n');
+}
 
 /**
  * Formats an array for display in a TTY in a pretty fashion.
