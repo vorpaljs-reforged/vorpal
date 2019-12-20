@@ -1,29 +1,24 @@
-import {ICommand, IMatchParts, InputCommand} from '../types/types';
+import {ICommand, InputCommand, IParsedCommand} from '../types/types';
 import {matchCommand} from './matchCommand';
 
 /**
  * Prepares a command and all its parts for execution.
  */
-export function parseCommand(
-  command: InputCommand,
-  commands: ICommand[] = []
-): {
-  command: InputCommand;
-  match?: ICommand;
-  matchArgs: string;
-  pipes: string[];
-} {
-  let pipes = [];
-  let match = null;
-  let matchArgs = '';
-  let matchParts: IMatchParts;
-  let nextCommand = command;
+export function parseCommand(command: InputCommand, commands: ICommand[] = []): IParsedCommand {
+  const parsed = {
+    pipes: [],
+    match: null,
+    matchArgs: '',
+    command
+  } as IParsedCommand;
+
+  let matchParts = matchCommand(command, commands);
 
   function parsePipes() {
     // First, split the command by pipes naively.
     // This will split command arguments in half when the argument contains a pipe character.
     // Say "(Vorpal|vorpal)" will be split into ['say "(Vorpal', 'vorpal)'] which isn't good.
-    const naivePipes = String(nextCommand)
+    const naivePipes = String(parsed.command)
       .trim()
       .split('|');
 
@@ -76,30 +71,25 @@ export function parseCommand(
     });
 
     // Set the first pipe to command and the rest to pipes.
-    nextCommand = newPipes.shift();
-    pipes = pipes.concat(newPipes);
+    parsed.command = newPipes.shift();
+    parsed.pipes = parsed.pipes.concat(newPipes);
   }
 
   function parseMatch() {
-    matchParts = matchCommand(nextCommand, commands);
-    match = matchParts.command;
-    matchArgs = matchParts.args;
+    matchParts = matchCommand(parsed.command, commands);
+    parsed.match = matchParts.command;
+    parsed.matchArgs = matchParts.args;
   }
 
   parsePipes();
   parseMatch();
 
-  if (match && typeof match._parse === 'function') {
-    nextCommand = match._parse(nextCommand, matchParts.args || '');
+  if (parsed.match && typeof parsed.match._parse === 'function') {
+    parsed.command = parsed.match._parse(parsed.command, matchParts.args || '');
 
     parsePipes();
     parseMatch();
   }
 
-  return {
-    command: nextCommand,
-    match,
-    matchArgs,
-    pipes
-  };
+  return parsed;
 }

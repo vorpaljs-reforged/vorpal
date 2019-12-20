@@ -10,10 +10,9 @@ import History from './history';
 import intercept from './intercept';
 import LocalStorage from './local-storage';
 import Session from './session';
-import {IVorpal} from './types/types';
+import {ICommand, IVorpal} from './types/types';
 import ui from './ui';
-import * as VorpalUtils from './utils';
-import {humanReadableArgName, pad, padRow, prettifyArray} from './utils';
+import * as utils from './utils';
 import commons from './vorpal-commons';
 
 interface PromptOption {
@@ -32,13 +31,13 @@ interface DataSession {
 
 export default class Vorpal extends EventEmitter implements IVorpal {
   public chalk;
-  public parent: Vorpal;
+  public parent: IVorpal;
   private _version: string;
   private _title: string;
   private _description: string;
   private _banner: string;
   public cmdHistory: History;
-  public commands: Command[];
+  public commands: ICommand[];
   private _queue: any[];
   private _command: any;
   public ui: any;
@@ -101,7 +100,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     this._hooked = false;
 
     // Expose common utilities, like padding.
-    this.util = VorpalUtils;
+    this.util = utils;
 
     this.Session = Session;
 
@@ -143,7 +142,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     options = options || {};
     const args = argv;
     let result: Vorpal | minimist.ParsedArgs = this;
-    const catchExists = this.commands.find(command => !isUndefined(command._catch));
+    const catchExists = this.commands.some(command => command._catch);
     args.shift();
     args.shift();
     if (args.length > 0 || catchExists) {
@@ -542,7 +541,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       this.session.getKeypressResult(key, value, function(err, result) {
         if (!err && result !== undefined) {
           if (Array.isArray(result)) {
-            const formatted = prettifyArray(result);
+            const formatted = utils.prettifyArray(result);
             self.ui.imprint();
             self.session.log(formatted);
           } else {
@@ -822,11 +821,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     // History for our 'up' and 'down' arrows.
     item.session.history(item.session._mode ? modeCommand : item.command);
 
-    const commandData = this.util.parseCommand(item.command, this.commands);
+    const commandData = utils.parseCommand(item.command, this.commands);
     item.command = commandData.command;
     item.pipes = commandData.pipes;
     const match = commandData.match;
-    const matchArgs = commandData.matchArgs;
+    const matchArgs = commandData.matchArgs as string;
 
     function throwHelp(cmd, msg, alternativeMatch?) {
       if (msg) {
@@ -877,12 +876,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       item.commandObject = match;
       const init =
         match._init ||
-        function(arrgs, cb) {
+        function(args, cb) {
           cb();
         };
       const delimiter = match._delimiter || String(item.command) + ':';
 
-      item.args = self.util.buildCommandArgs(
+      item.args = utils.buildCommandArgs(
         matchArgs,
         match,
         item,
@@ -899,13 +898,16 @@ export default class Vorpal extends EventEmitter implements IVorpal {
       // Build the piped commands.
       let allValid = true;
       for (let j = 0; j < item.pipes.length; ++j) {
-        const commandParts = self.util.matchCommand(item.pipes[j], self.commands);
+        const commandParts = utils.matchCommand(item.pipes[j], self.commands);
         if (!commandParts.command) {
           item.session.log(self._commandHelp(item.pipes[j]));
           allValid = false;
           break;
         }
-        commandParts.args = self.util.buildCommandArgs(commandParts.args, commandParts.command);
+        commandParts.args = (utils.buildCommandArgs(
+          commandParts.args,
+          commandParts.command
+        ) as unknown) as string;
         if (isString(commandParts.args) || !isObject(commandParts.args)) {
           throwHelp(item, commandParts.args, commandParts.command);
           allValid = false;
@@ -1139,7 +1141,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         );
       })
       .map(cmd => {
-        const args = cmd._args.map(arg => humanReadableArgName(arg)).join(' ');
+        const args = cmd._args.map(arg => utils.humanReadableArgName(arg)).join(' ');
 
         return [
           cmd._name +
@@ -1178,7 +1180,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
           return cmd;
         })
     ).map(function(cmd) {
-      const prefix = `    ${pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
+      const prefix = `    ${utils.pad(cmd + ' *', width)}  ${counts[cmd]} sub-command${
         counts[cmd] === 1 ? '' : 's'
       }.`;
       return prefix;
@@ -1194,11 +1196,11 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         : '\n  Commands:\n\n' +
           commands
             .map(function(cmd) {
-              const prefix = '    ' + pad(cmd[0], width) + '  ';
+              const prefix = '    ' + utils.pad(cmd[0], width) + '  ';
               const suffixArr = wrap(cmd[1], descriptionWidth - 8).split('\n');
               for (let i = 0; i < suffixArr.length; ++i) {
                 if (i !== 0) {
-                  suffixArr[i] = pad('', width + 6) + suffixArr[i];
+                  suffixArr[i] = utils.pad('', width + 6) + suffixArr[i];
                 }
               }
               const suffix = suffixArr.join('\n');
@@ -1221,7 +1223,7 @@ export default class Vorpal extends EventEmitter implements IVorpal {
     const header = [];
 
     if (this._banner) {
-      header.push(padRow(this._banner), '');
+      header.push(utils.padRow(this._banner), '');
     }
 
     // Only show under specific conditions
@@ -1232,12 +1234,12 @@ export default class Vorpal extends EventEmitter implements IVorpal {
         title += ' v' + this._version;
       }
 
-      header.push(padRow(title));
+      header.push(utils.padRow(title));
 
       if (this._description) {
         const descWidth = process.stdout.columns * 0.75; // Only 75% of the screen
 
-        header.push(padRow(wrap(this._description, descWidth)));
+        header.push(utils.padRow(wrap(this._description, descWidth)));
       }
     }
 

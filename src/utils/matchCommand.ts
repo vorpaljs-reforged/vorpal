@@ -4,7 +4,10 @@ import {ICommand, IMatchParts, InputCommand} from '../types/types';
  * Run a raw command string, e.g. foo -bar against a given list of commands,
  * and if there is a match, parse the results.
  */
-export function matchCommand(commandName: InputCommand, commands: ICommand[] = []): IMatchParts {
+export function matchCommand(
+  commandName: InputCommand,
+  commands: ICommand[] = []
+): IMatchParts<string> {
   const parts = String(commandName)
     .trim()
     .split(' ');

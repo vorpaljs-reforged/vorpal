@@ -1,22 +1,15 @@
 import {noop, isFunction} from 'lodash';
+import {CommandArgs, ICommand, IcommandInstance} from './types/types';
 
-interface CommandInstanceParams {
-  commandWrapper?: any;
-  args?: any;
-  commandObject?: any;
-  command?: any;
-  callback?: any;
-  downstream?: any;
-}
 export class CommandInstance {
   public commandWrapper: any;
-  public args: any;
+  public args: CommandArgs;
   public commandObject: any;
-  public command: any;
+  public command: ICommand;
   public session: any;
   public parent: any;
   public callback: any;
-  public downstream: any;
+  public downstream: IcommandInstance;
   /**
    * Initialize a new `CommandInstance` instance.
    *
@@ -25,8 +18,14 @@ export class CommandInstance {
    * @api public
    */
 
-  constructor(params: CommandInstanceParams = {}) {
-    const {command, commandObject, args, commandWrapper, callback, downstream} = params;
+  constructor({
+    command,
+    commandObject,
+    args,
+    commandWrapper,
+    callback,
+    downstream
+  }: IcommandInstance = {}) {
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
@@ -54,7 +53,7 @@ export class CommandInstance {
       const fn = this.downstream.commandObject._fn || noop;
       this.session.registerCommand();
       this.downstream.args.stdin = args;
-      const onComplete = (err: Error | undefined) => {
+      const onComplete = (err?: Error) => {
         if (this.session.isLocal() && err) {
           this.session.log(err.stack || err);
           this.session.parent.emit('client_command_error', {

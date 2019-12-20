@@ -27,16 +27,16 @@ export default class Command extends EventEmitter implements ICommand {
   public _help;
   public _noHelp;
   public _types;
-  private _init;
+  public _init;
   private _after;
   public _allowUnknownOptions;
   public _autocomplete;
   public _done;
   public _cancel;
   private _usage;
-  private _fn;
-  private _validate;
-  private _parse;
+  public _fn;
+  public _validate;
+  public _parse;
   public parent: IVorpal;
 
   /**

@@ -1,5 +1,8 @@
 import strip from 'strip-ansi';
-import {PADDING_SIZE, PADDING} from '../../constants';
+import {Arg} from '../command';
+
+export const PADDING = '  ';
+export const PADDING_SIZE = PADDING.length;
 
 /**
  * Pads a value with a space or a specified delimiter to match a given width.
@@ -64,4 +67,13 @@ export function prettifyArray(baseArray?: string[]): string {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Makes an argument name pretty for help.
+ */
+export function humanReadableArgName(arg: Arg): string {
+  const name = arg.name + (arg.variadic ? '...' : '');
+
+  return arg.required ? `<${name}>` : `[${name}]`;
 }
