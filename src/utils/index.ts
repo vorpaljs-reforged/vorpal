@@ -1,4 +1,3 @@
 export * from './formatting';
-export * from './commandArgs';
-export * from './matchCommand';
-export * from './parseCommand';
+export * from './args';
+export * from './command';

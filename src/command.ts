@@ -1,5 +1,5 @@
 import {EventEmitter} from 'events';
-import {camelCase, isFunction, isUndefined, isEmpty, isBoolean} from 'lodash';
+import {camelCase, isFunction, isUndefined, isEmpty, isBoolean, isNil} from 'lodash';
 import Option from './option';
 import {IAutocompleteConfig} from './types/autocomplete';
 import {ICommand, IVorpal} from './types/types';
@@ -309,11 +309,7 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public remove() {
-    this._parent.commands = this._parent.commands.filter(command => {
-      if (command._name === this._name) {
-        return false;
-      }
-    });
+    this._parent.commands = this._parent.commands.filter(command => command._name !== this._name);
     return this;
   }
 
@@ -405,7 +401,7 @@ export default class Command extends EventEmitter implements ICommand {
       (this.commands.length ? ' [command]' : '') +
       (this._args.length ? ` ${args.join(' ')}` : '');
 
-    if (str != null) {
+    if (!isNil(str)) {
       return this._usage || usage;
     }
 

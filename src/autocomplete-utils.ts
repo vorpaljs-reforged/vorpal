@@ -1,5 +1,5 @@
 import strip from 'strip-ansi';
-import {isFunction} from 'lodash';
+import {isFunction, isNil} from 'lodash';
 import autocomplete from './autocomplete';
 import {
   AutocompleteCallback,
@@ -237,7 +237,7 @@ export function getMatchObject(this: IVorpal, input: Input<string>, commandNames
   }
 
   if (!matchObject) {
-    matchObject = this.parent.commands.find(cmd => cmd._catch != null);
+    matchObject = this.parent.commands.find(cmd => !isNil(cmd._catch));
     if (matchObject) {
       suffix = input.context;
     }
