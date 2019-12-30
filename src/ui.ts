@@ -1,13 +1,8 @@
-/**
- * Module dependencies.
- */
-
 import chalk from 'chalk';
 import {EventEmitter} from 'events';
 import inquirer from 'inquirer';
-import _ from 'lodash';
 import logUpdate from 'log-update';
-import util from './util';
+import {noop, isFunction, isUndefined} from 'lodash';
 
 interface Redraw {
   (str: string): UI;
@@ -69,7 +64,7 @@ class UI extends EventEmitter {
     this._pipeFn = undefined;
 
     // custom logger disabled for test
-    this._log = process.env.NODE_ENV === 'test' ? _.noop : console.log.bind(console);
+    this._log = process.env.NODE_ENV === 'test' ? noop : console.log.bind(console);
 
     // Custom function on sigint event.
     this._sigintCalled = false;
@@ -159,7 +154,7 @@ class UI extends EventEmitter {
 
     // Sigint handling - make it more graceful.
     const onSigInt = () => {
-      if (_.isFunction(this._sigint) && !this._sigintCalled) {
+      if (isFunction(this._sigint) && !this._sigintCalled) {
         this._sigintCalled = true;
         this._sigint.call(this.parent);
       }
@@ -177,7 +172,7 @@ class UI extends EventEmitter {
    */
 
   public sigint(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._sigint = fn;
     } else {
       throw new Error('vorpal.ui.sigint must be passed in a valid function.');
@@ -416,14 +411,14 @@ class UI extends EventEmitter {
    */
 
   public log(...args) {
-    args = _.isFunction(this._pipeFn) ? this._pipeFn(args) : args;
+    args = isFunction(this._pipeFn) ? this._pipeFn(args) : args;
     if (args.length === 0 || args[0] === '') {
       return this;
     }
     if (this.midPrompt()) {
       const data = this.pause();
       this._log(...args);
-      if (!_.isUndefined(data) && data !== false) {
+      if (!isUndefined(data) && data !== false) {
         this.resume(data);
       } else {
         this._log("Log got back 'false' as data. This shouldn't happen.", data);

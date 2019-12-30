@@ -1,10 +1,4 @@
 /**
- * Module dependencies.
- */
-
-import _ from 'lodash';
-
-/**
  * Intercepts stdout, passes thru callback
  * also pass console.error thru stdout so it goes to callback too
  * (stdout.write and stderr.write are both refs to the same stream.write function)

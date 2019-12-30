@@ -1,5 +1,4 @@
 import Vorpal from '../src/vorpal';
-import * as _ from 'lodash';
 
 describe('session._autocomplete', function() {
   let vorpal;

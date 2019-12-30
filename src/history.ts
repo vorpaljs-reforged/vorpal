@@ -1,6 +1,4 @@
-'use strict';
-
-import _ from 'lodash';
+import {clone} from 'lodash';
 import {LocalStorage} from 'node-localstorage';
 import os from 'os';
 import {normalize, join} from 'path';
@@ -42,7 +40,7 @@ export default class History {
 
     // Load history from local storage
     const persistedHistory = JSON.parse(this._localStorage.getItem(this._storageKey));
-    if (_.isArray(persistedHistory)) {
+    if (Array.isArray(persistedHistory)) {
       Array.prototype.push.apply(this._hist, persistedHistory);
     }
   }
@@ -148,7 +146,7 @@ export default class History {
     // Reassign the command history to a
     // cache, replacing it with a blank
     // history for the mode.
-    this._histCache = _.clone(this._hist);
+    this._histCache = clone(this._hist);
     this._histCtrCache = parseFloat(this._histCtr.toString());
     this._hist = [];
     this._histCtr = 0;

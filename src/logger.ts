@@ -1,10 +1,5 @@
-/**
- * Module dependencies.
- */
-
-import _ from 'lodash';
 import {inspect} from 'util';
-import util from './util';
+import {pad} from './utils';
 
 function viewed(str: string) {
   // eslint-disable-next-line no-control-regex
@@ -71,7 +66,7 @@ function Logger(cons) {
         padsWidth += arg;
         pads++;
       }
-      if (_.isArray(arg) && typeof arg[0] === 'number') {
+      if (Array.isArray(arg) && typeof arg[0] === 'number') {
         padsWidth += arg[0];
         pads++;
       }
@@ -87,9 +82,9 @@ function Logger(cons) {
       let done = true;
       for (let i = 0; i < input.length; ++i) {
         if (typeof input[i] === 'number') {
-          str += util.pad('', input[i], ' ');
-        } else if (_.isArray(input[i]) && typeof input[i][0] === 'number') {
-          str += util.pad('', input[i][0], input[i][1]);
+          str += pad('', input[i], ' ');
+        } else if (Array.isArray(input[i]) && typeof input[i][0] === 'number') {
+          str += pad('', input[i][0], input[i][1]);
         } else {
           const chosenWidth = colsWidth + 0;
           let trimmed = trimTo(input[i], colsWidth);
@@ -105,7 +100,7 @@ function Logger(cons) {
             color = '\x1B[' + number + 'm';
           }
           input[i] = color + String(input[i].slice(trimmedLength, input[i].length)).trim();
-          str += util.pad(String(trimmed).trim(), chosenWidth, ' ');
+          str += pad(String(trimmed).trim(), chosenWidth, ' ');
           if (viewed(input[i]).trim() !== '') {
             done = false;
           }

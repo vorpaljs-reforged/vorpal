@@ -1,27 +1,15 @@
-/**
- * Module dependencies.
- */
+import {noop, isFunction} from 'lodash';
+import {CommandArgs, ICommand, IcommandInstance} from './types/types';
 
-import _ from 'lodash';
-import util from './util';
-
-interface CommandInstanceParams {
-  commandWrapper?: any;
-  args?: any;
-  commandObject?: any;
-  command?: any;
-  callback?: any;
-  downstream?: any;
-}
 export class CommandInstance {
   public commandWrapper: any;
-  public args: any;
+  public args: CommandArgs;
   public commandObject: any;
-  public command: any;
+  public command: ICommand;
   public session: any;
   public parent: any;
   public callback: any;
-  public downstream: any;
+  public downstream: IcommandInstance;
   /**
    * Initialize a new `CommandInstance` instance.
    *
@@ -30,8 +18,14 @@ export class CommandInstance {
    * @api public
    */
 
-  constructor(params: CommandInstanceParams = {}) {
-    const {command, commandObject, args, commandWrapper, callback, downstream} = params;
+  constructor({
+    command,
+    commandObject,
+    args,
+    commandWrapper,
+    callback,
+    downstream
+  }: IcommandInstance = {}) {
     this.command = command;
     this.commandObject = commandObject;
     this.args = args;
@@ -56,10 +50,10 @@ export class CommandInstance {
 
   public log(...args) {
     if (this.downstream) {
-      const fn = this.downstream.commandObject._fn || _.noop;
+      const fn = this.downstream.commandObject._fn || noop;
       this.session.registerCommand();
       this.downstream.args.stdin = args;
-      const onComplete = (err: Error | undefined) => {
+      const onComplete = (err?: Error) => {
         if (this.session.isLocal() && err) {
           this.session.log(err.stack || err);
           this.session.parent.emit('client_command_error', {
@@ -71,7 +65,7 @@ export class CommandInstance {
       };
 
       const validate = this.downstream.commandObject._validate;
-      if (_.isFunction(validate)) {
+      if (isFunction(validate)) {
         try {
           validate.call(this.downstream, this.downstream.args);
         } catch (e) {
@@ -83,7 +77,7 @@ export class CommandInstance {
       }
 
       const res = fn.call(this.downstream, this.downstream.args, onComplete);
-      if (res && _.isFunction(res.then)) {
+      if (res && isFunction(res.then)) {
         res.then(onComplete, onComplete);
       }
     } else {

@@ -1,13 +1,10 @@
-/**
- * Module dependencies.
- */
-
 import {EventEmitter} from 'events';
-import _ from 'lodash';
+import {camelCase, isFunction, isUndefined, isEmpty, isBoolean, isNil} from 'lodash';
 import Option from './option';
 import {IAutocompleteConfig} from './types/autocomplete';
 import {ICommand, IVorpal} from './types/types';
-import util from './util';
+import {humanReadableArgName, pad} from './utils';
+
 export interface Arg {
   required: boolean;
   name: string;
@@ -17,7 +14,7 @@ export interface Arg {
 export default class Command extends EventEmitter implements ICommand {
   public commands: ICommand[] = [];
   public options: Option[];
-  private _args;
+  public _args;
   public _aliases: string[];
   public _name;
   private _relay;
@@ -29,17 +26,17 @@ export default class Command extends EventEmitter implements ICommand {
   public _catch;
   public _help;
   public _noHelp;
-  private _types;
-  private _init;
+  public _types;
+  public _init;
   private _after;
   public _allowUnknownOptions;
   public _autocomplete;
   public _done;
   public _cancel;
   private _usage;
-  private _fn;
-  private _validate;
-  private _parse;
+  public _fn;
+  public _validate;
+  public _parse;
   public parent: IVorpal;
 
   /**
@@ -82,7 +79,7 @@ export default class Command extends EventEmitter implements ICommand {
   public option(flags, description, autocomplete?): Command {
     const option = new Option(flags, description, autocomplete);
     const oname = option.name();
-    const name = _.camelCase(oname);
+    const name = camelCase(oname);
     let defaultValue;
 
     // preassign default value only for --no-*, [optional], or <required>
@@ -104,7 +101,7 @@ export default class Command extends EventEmitter implements ICommand {
     // and conditionally invoke the callback
     this.on(oname, val => {
       // unassigned or bool
-      if (_.isBoolean(this[name]) && _.isUndefined(this[name])) {
+      if (isBoolean(this[name]) && isUndefined(this[name])) {
         // if no value, bool true, and we have a default, then use it!
         if (val === null) {
           this[name] = option.bool ? defaultValue || true : false;
@@ -246,7 +243,7 @@ export default class Command extends EventEmitter implements ICommand {
       if (supported.indexOf(item) === -1) {
         throw new Error('An invalid type was passed into command.types(): ' + item);
       }
-      types[item] = !_.isArray(types[item]) ? [types[item]] : types[item];
+      types[item] = !Array.isArray(types[item]) ? [types[item]] : types[item];
     }
     this._types = types;
     return this;
@@ -255,22 +252,22 @@ export default class Command extends EventEmitter implements ICommand {
   /**
    * Defines an alias for a given command.
    *
-   * @param {String} alias
+   * @param {String[]} aliases
    * @return {Command}
    * @api public
    */
 
-  public alias(...aliases) {
+  public alias(...aliases): this {
     for (const alias of aliases) {
-      if (_.isArray(alias)) {
+      if (Array.isArray(alias)) {
         for (const subalias of alias) {
           this.alias(subalias);
         }
         return this;
       }
       this._parent.commands.forEach(cmd => {
-        if (!_.isEmpty(cmd._aliases)) {
-          if (_.includes(cmd._aliases, alias)) {
+        if (!isEmpty(cmd._aliases)) {
+          if (cmd._aliases.includes(alias)) {
             const msg =
               'Duplicate alias "' +
               alias +
@@ -312,12 +309,7 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public remove() {
-    const self = this;
-    this._parent.commands = _.reject(this._parent.commands, function(command) {
-      if (command._name === self._name) {
-        return true;
-      }
-    });
+    this._parent.commands = this._parent.commands.filter(command => command._name !== this._name);
     return this;
   }
 
@@ -402,14 +394,14 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public usage(str?) {
-    const args = this._args.map(arg => util.humanReadableArgName(arg));
+    const args = this._args.map(arg => humanReadableArgName(arg));
 
     const usage =
       '[options]' +
       (this.commands.length ? ' [command]' : '') +
       (this._args.length ? ` ${args.join(' ')}` : '');
 
-    if (_.isNil(str)) {
+    if (!isNil(str)) {
       return this._usage || usage;
     }
 
@@ -429,8 +421,8 @@ export default class Command extends EventEmitter implements ICommand {
     const width = this._largestOptionLength();
 
     // Prepend the help information
-    return [util.pad('--help', width) + '  output usage information']
-      .concat(this.options.map(option => `${util.pad(option.flags, width)}  ${option.description}`))
+    return [pad('--help', width) + '  output usage information']
+      .concat(this.options.map(option => `${pad(option.flags, width)}  ${option.description}`))
       .join('\n');
   }
 
@@ -454,7 +446,7 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public help(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._help = fn;
     }
     return this;
@@ -470,7 +462,7 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public parse(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._parse = fn;
     }
     return this;
@@ -485,7 +477,7 @@ export default class Command extends EventEmitter implements ICommand {
    */
 
   public after(fn) {
-    if (_.isFunction(fn)) {
+    if (isFunction(fn)) {
       this._after = fn;
     }
     return this;

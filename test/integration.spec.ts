@@ -1,7 +1,7 @@
-import Vorpal from '../src/vorpal';
-import commands from './util/server';
 import * as fs from 'fs';
-import * as _ from 'lodash';
+import {noop} from 'lodash';
+import commands from './util/server';
+import Vorpal from '../src/vorpal';
 import intercept from '../src/intercept';
 
 describe('integration tests:', () => {
@@ -541,13 +541,13 @@ describe('integration tests:', () => {
                 clearInterval(cancelInt);
               }
             }, 1000);
-            return new Promise(_.noop);
+            return new Promise(noop);
           });
       });
       it('should cancel promise', () => {
         vorpal
           .exec('LongRunning')
-          .then(_.noop)
+          .then(noop)
           .catch(function(instance) {
             instance._cancelled = true;
           });
@@ -566,12 +566,12 @@ describe('integration tests:', () => {
           .action(function() {
             this.cancel();
           })
-          .cancel(_.noop);
+          .cancel(noop);
 
         vorpal.exec('SelfCancel');
       });
       it('should handle event client_command_cancelled', () => {
-        vorpal.on('client_command_cancelled', _.noop);
+        vorpal.on('client_command_cancelled', noop);
         longRunningCommand.cancel(function() {
           this._cancelled = true;
         });
@@ -582,7 +582,7 @@ describe('integration tests:', () => {
 
     describe('events', () => {
       it('should handle event command_registered', () => {
-        vorpal.on('command_registered', _.noop).command('newMethod');
+        vorpal.on('command_registered', noop).command('newMethod');
       });
       it('should handle event client_keypress', () => {
         vorpal
@@ -604,17 +604,17 @@ describe('integration tests:', () => {
           .ui.submit('');
       });
       it('should handle event client_command_executed', () => {
-        vorpal.on('client_command_executed', _.noop);
+        vorpal.on('client_command_executed', noop);
         vorpal.exec('help');
       });
       it('should handle event client_command_error', () => {
-        vorpal.on('client_command_error', _.noop);
-        vorpal.exec('fail me plzz').catch(_.noop); // was causing PromiseNotHAndled
+        vorpal.on('client_command_error', noop);
+        vorpal.exec('fail me plzz').catch(noop); // was causing PromiseNotHAndled
       });
       it('should handle piped event client_command_error', () => {
         const vorpal2 = new Vorpal();
         vorpal2
-          .on('client_command_error', _.noop)
+          .on('client_command_error', noop)
           .command('fail')
           .action(function(args, cb) {
             cb('failed');
