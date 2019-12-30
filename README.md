@@ -1,26 +1,20 @@
-# Vorpal
+# vorpal-reforged
 
-[![NPM Version](https://img.shields.io/npm/v/vorpal.svg)](https://www.npmjs.com/package/vorpal)
-[![Forked From](https://img.shields.io/badge/Forked%20From-dthree%2Fvorpal-lightgrey.svg)](https://github.com/dthree/vorpal)
-[![Status](https://img.shields.io/badge/status-Refactor%20in%20progress-yellow.svg)](https://github.com/vorpaljs-reforged/vorpal/projects/1)
-[![Build Status](https://travis-ci.com/vorpaljs-reforged/vorpal.svg)](https://travis-ci.com/vorpaljs-reforged/vorpal/)
-[![NPM Downloads](https://img.shields.io/npm/dt/vorpal.svg)](https://www.npmjs.com/package/vorpal)
-[![Package Quality](http://npm.packagequality.com/shield/vorpal.svg)](http://packagequality.com/#?package=vorpal)
-[![codecov](https://codecov.io/gh/vorpaljs-reforged/vorpal/branch/master/graph/badge.svg)](https://codecov.io/gh/vorpaljs-reforged/vorpal)
-[![XO code style](https://img.shields.io/badge/code_style-XO-5ed9c7.svg)](https://github.com/sindresorhus/xo)
-[![Gitter](https://badges.gitter.im/dthree/vorpal.svg)](https://gitter.im/dthree/vorpal)
+[![NPM Version](https://img.shields.io/npm/v/vorpal-reforged.svg)](https://www.npmjs.com/package/vorpal-reforged)
+[![Build Status](https://travis-ci.com/vorpaljs-reforged/vorpal-reforged.svg)](https://travis-ci.com/vorpaljs-reforged/vorpal-reforged/)
+[![NPM Downloads](https://img.shields.io/npm/dt/vorpal-reforged.svg)](https://www.npmjs.com/package/vorpal-reforged)
+[![Package Quality](http://npm.packagequality.com/shield/vorpal-reforged.svg)](http://packagequality.com/#?package=vorpal-reforged)
+[![codecov](https://codecov.io/gh/vorpaljs-reforged/vorpal-reforged/branch/master/graph/badge.svg)](https://codecov.io/gh/vorpaljs-reforged/vorpal-reforged)
 
 > Conquer the command-line. :crossed_swords:
--------
-> :building_construction: ***This is a Fork aiming at reforging vorpal into typescript, and bringing a 2.0*** :construction:
+
+---
+
+> *reforging vorpal into typescript*
 
 > :construction_worker: You can join the effort here if you want [:link: on slack](https://join.slack.com/t/vorpal-workspace/shared_invite/enQtNTU3NTU3MTAzNzEyLTE4ODg2YjA1OTg0ZDMyY2I4M2Q3MGZhYjVlZDk1ZDY5NWJiZWFmYjJmYzk1ODdmYmU5ZjAzNGEzNDk5NDFhNWY)
-------
-> Develop Status:
-[![Build Status](https://travis-ci.com/vorpaljs-reforged/vorpal.svg?branch=develop)](https://travis-ci.com/vorpaljs-reforged/vorpal/branch=develop)
-[![codecov](https://codecov.io/gh/vorpaljs-reforged/vorpal/branch/develop/graph/badge.svg)](https://codecov.io/gh/vorpaljs-reforged/vorpal/branch/develop)
 
-```text
+```
               (O)
               <M
    o          <M
@@ -36,10 +30,6 @@
 ```
 
 Vorpal is Node's first framework for building interactive CLI applications. With a simple and powerful API, Vorpal opens the door to a new breed of rich, immersive CLI environments like [cash](https://github.com/dthree/cash) and [wat](https://github.com/dthree/wat).
-
-## Notice
-
-This is now an [OPEN Open Source](http://openopensource.org/) project. I am not able to invest a significant amount of time into maintaining Vorpal and so am looking for volunteers who would like to be active maintainers of the project. If you are interested, shoot me a note.
 
 ## Contents
 
@@ -77,7 +67,7 @@ Made with :heart: by [dthree](https://github.com/dthree).
 Install `vorpal` into your project:
 
 ```bash
-$ npm install vorpal --save
+$ npm install vorpal-reforged --save
 ```
 
 Create a `.js` file and add the following:
@@ -128,13 +118,12 @@ There's the basics. Once you get the hang of it, [follow this tutorial](http://d
 
 ##### Community
 
-Questions? Use the `vorpal.js` StackOverflow tag for fast answers that help others, or jump into chat on Gitter.
+Questions? Use the `vorpal.js` StackOverflow tag for fast answers that help others, or jump into chat on Slack.
 
 - [Stack Overflow](http://stackoverflow.com/questions/tagged/vorpal.js)
-- [Gitter Chat](https://gitter.im/dthree/vorpal?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+- [Slack](https://join.slack.com/t/vorpal-workspace/shared_invite/enQtNTU3NTU3MTAzNzEyLTE4ODg2YjA1OTg0ZDMyY2I4M2Q3MGZhYjVlZDk1ZDY5NWJiZWFmYjJmYzk1ODdmYmU5ZjAzNGEzNDk5NDFhNWY)
 - [Vorpal extensions](https://github.com/vorpaljs/awesome-vorpaljs#vorpal-extensions)
 - [Projects made with Vorpal](https://github.com/vorpaljs/awesome-vorpaljs)
-- [Follow @vorpaljs](https://twitter.com/vorpaljs)
 
 ## [API](https://github.com/dthree/vorpal/wiki)
 
